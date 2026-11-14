@@ -34,6 +34,8 @@ namespace Ironclad.Core
             State.run = r;
             r.cars.Add(NewCar("engine"));
             foreach (var id in State.train) if (r.cars.Count - 1 < Slots) r.cars.Add(NewCar(id));
+            int head = PerkLevel("quarter");
+            if (head > 0) foreach (var c in r.cars) { c.field = head; if (c.platingMax > 0) { c.platingMax = PlateOf(c); c.plating = c.platingMax; } }
             r.hullMax = HullMax; r.hull = r.hullMax;
             r.scrip = StartScrip;
             r.whistleIn = 0;
@@ -211,6 +213,14 @@ namespace Ironclad.Core
                 else r.hull = Math.Min(r.hullMax, r.hull + r.hullMax * def.Mend * 0.2 * SupportMult(car) * dt);
             }
             if (HullMend > 0) r.hull = Math.Min(r.hullMax, r.hull + r.hullMax * HullMend * dt);
+            int spare = PerkLevel("spare");
+            for (int c = 1; c < r.cars.Count; c++)
+            {
+                var car = r.cars[c];
+                if (!car.down) { car.downFor = 0; continue; }
+                car.downFor += dt;
+                if (spare > 0 && car.downFor >= Content.SpareSeconds - Content.SpareLess * spare) { car.plating = Math.Max(car.plating, car.platingMax * 0.25); car.down = false; car.downFor = 0; Touch(); }
+            }
 
             // The fallen are cleared away.
             r.enemies.RemoveAll(e => e.hp <= 0);
@@ -340,7 +350,7 @@ namespace Ironclad.Core
             var d = Content.Enemy(e.kind);
             double scrip = d.Bounty * Math.Pow(Content.BountyPerMile, r.mile - 1) * ScripMult;
             r.scrip += scrip; r.kills++; State.kills++;
-            if (d.Boss) { State.bosses++; r.steel += Content.BossSteel * MileSteel(Route, r.mile) / Content.SteelPerMileBase * SteelMult; }
+            if (d.Boss) { State.bosses++; State.seals++; r.seals++; r.steel += Content.BossSteel * MileSteel(Route, r.mile) / Content.SteelPerMileBase * SteelMult; }
             if (r.mark == e.id) r.mark = 0;
             Fell?.Invoke(e, scrip);
         }
@@ -383,11 +393,13 @@ namespace Ironclad.Core
             var r = State.run;
             r.offer.Clear();
             var left = new List<CardDef>(Content.Cards);
-            for (int i = 0; i < 3 && left.Count > 0; i++)
+            int lucky = PerkLevel("lucky");
+            double epic = Content.RarityOdds[2] + 0.01 * lucky, rare = Content.RarityOdds[1] + 0.03 * lucky;
+            for (int i = 0; i < 3 + PerkLevel("hand") && left.Count > 0; i++)
             {
                 int k = (int)(Roll() * left.Count);
                 double roll = Roll();
-                int rarity = roll < Content.RarityOdds[2] ? 2 : roll < Content.RarityOdds[2] + Content.RarityOdds[1] ? 1 : 0;
+                int rarity = roll < epic ? 2 : roll < epic + rare ? 1 : 0;
                 r.offer.Add(new Pick { card = left[k].Id, rarity = rarity });
                 left.RemoveAt(k);
             }
@@ -474,7 +486,7 @@ namespace Ironclad.Core
                 for (int c = 0; c < r.cars.Count; c++) { double d = Reach(e.x, e.z, c); if (d < best) { best = d; near = c; } }
                 if (best > Content.WhistleRange) continue;
                 bool boss = Content.Enemy(e.kind).Boss;
-                e.stun = Content.WhistleStun * (boss ? 0.5 : 1);
+                e.stun = (Content.WhistleStun + PerkLevel("flags")) * (boss ? 0.5 : 1);
                 if (boss) continue;
                 double dx = e.x - CarX(near), dz = e.z, len = Math.Sqrt(dx * dx + dz * dz);
                 if (len < 1e-6) { dx = 0; dz = 1; len = 1; }
@@ -509,7 +521,7 @@ namespace Ironclad.Core
             var r = State.run;
             r.revived = true;
             r.phase = (int)Phase.Rolling;
-            r.hull = r.hullMax * Content.ReviveHull;
+            r.hull = r.hullMax * Math.Min(1, Content.ReviveHull + 0.1 * PerkLevel("wind"));
             foreach (var c in r.cars) { c.plating = c.platingMax; c.down = false; }
             r.enemies.Clear(); r.mark = 0;
             r.mileTime = 0;

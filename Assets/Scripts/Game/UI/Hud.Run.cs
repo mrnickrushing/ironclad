@@ -15,7 +15,27 @@ namespace Ironclad.Game
         RectTransform _hullBar, _hint; Button _whistle;
         float _hullFlash;
 
-        public void HullHit() { _hullFlash = 1; }
+        public void HullHit()
+        {
+            _hullFlash = 1;
+            if (Time.unscaledTime - _lastHullBuzz > 0.6f) { _lastHullBuzz = Time.unscaledTime; Haptics.Light(); }      // felt, but not a constant buzz
+        }
+        float _lastHullBuzz;
+
+        const float AutoCollectAfter = 12;
+        Text _collectLabel; float _overAuto;
+
+        /// <summary>With AUTO on, a finished run collects itself after a few seconds and the train sets off again.</summary>
+        void UpdateOver()
+        {
+            var s = S;
+            if (!s.State.auto || !s.RunEnded || ModalOpen) return;
+            var p = UnityEngine.InputSystem.Pointer.current;
+            if (p != null && p.press.isPressed) _overAuto = AutoCollectAfter;      // someone is here: let them choose
+            _overAuto -= Time.unscaledDeltaTime;
+            if (_collectLabel != null) _collectLabel.text = "COLLECT  <size=28>" + Mathf.CeilToInt(Mathf.Max(0, _overAuto)) + "</size>";
+            if (_overAuto <= 0 && s.CloseRun()) { Sfx.Play("claim", 0.6f); GameRoot.Instance.Save(true); }
+        }
 
         static string Short(string type)
         {
@@ -193,14 +213,15 @@ namespace Ironclad.Game
                 {
                     int k = i; var pick = r.offer[i]; var def = Content.Card(pick.card);
                     var card = Ui.ArtImg("Card", p, "card", Color.white, 26); card.raycastTarget = true;
-                    card.rectTransform.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2((i - 1) * 440, -36), new Vector2(410, 370));
-                    var band = Ui.Img("Band", card.transform, RarityColors[pick.rarity], true); band.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -14), new Vector2(370, 50));
+                    int nc = r.offer.Count; float cw = nc <= 3 ? 410 : nc == 4 ? 340 : 276, gap = cw + 22;
+                    card.rectTransform.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2((i - (nc - 1) * 0.5f) * gap, -36), new Vector2(cw, 370));
+                    var band = Ui.Img("Band", card.transform, RarityColors[pick.rarity], true); band.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -14), new Vector2(cw - 40, 50));
                     Ui.Label("R", band.transform, RarityNames[pick.rarity], 28, Color.white).rectTransform.Fill();
-                    var nm = Ui.Label("N", card.transform, def.Name, 40, Ui.Ink); nm.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -76), new Vector2(380, 90));
+                    var nm = Ui.Label("N", card.transform, def.Name, 40, Ui.Ink); nm.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -70), new Vector2(cw - 30, 70));
                     nm.resizeTextForBestFit = true; nm.resizeTextMinSize = 24; nm.resizeTextMaxSize = 40;
-                    var bl = Ui.Label("B", card.transform, Content.Blurb(def, (Rarity)pick.rarity), 30, Ui.Dim, TextAnchor.MiddleCenter, false); bl.rectTransform.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -10), new Vector2(360, 130));
+                    var bl = Ui.Label("B", card.transform, Content.Blurb(def, (Rarity)pick.rarity), 30, Ui.Dim, TextAnchor.MiddleCenter, false); bl.rectTransform.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -34), new Vector2(cw - 44, 120)); bl.resizeTextForBestFit = true; bl.resizeTextMinSize = 20; bl.resizeTextMaxSize = 30;
                     var take = Ui.Button("Take", card.transform, "TAKE", Ui.Green, () => { if (S.TakeCard(k)) { Sfx.Play("claim", 0.8f); Haptics.Success(); } }, 38);
-                    ((RectTransform)take.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 16), new Vector2(330, 84));
+                    ((RectTransform)take.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 16), new Vector2(cw - 80, 84));
                 }
                 bool canRoll = s.State.gems >= Sim.RerollGems;
                 var roll = Ui.Button("Roll", p, "3 OTHER CARDS  ·  " + Sim.RerollGems + " gems", canRoll ? Ui.Grape : Ui.Off, canRoll ? (Action)(() => { if (S.RerollCards()) Sfx.Play("click"); }) : null, 26);
@@ -278,7 +299,7 @@ namespace Ironclad.Game
             bool best = r.mile - 1 >= s.State.best[r.route] && r.mile > 1;
             Ui.Label("M", p, "MILE " + r.mile, 96, Ui.Ink).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -80), new Vector2(900, 110));
             Ui.Label("L", p, s.Route.Name + (best ? "  ·  <color=#C8501E>your furthest yet</color>" : "  ·  best " + s.State.best[r.route]), 32, Ui.Dim, TextAnchor.MiddleCenter, false).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -190), new Vector2(900, 40));
-            Ui.Label("K", p, Format.Money(r.kills) + " raiders turned back  ·  " + r.cards.Count + (r.cards.Count == 1 ? " card" : " cards"), 30, Ui.Dim, TextAnchor.MiddleCenter, false).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -234), new Vector2(900, 40));
+            Ui.Label("K", p, Format.Money(r.kills) + " raiders turned back  ·  " + r.cards.Count + (r.cards.Count == 1 ? " card" : " cards") + (r.seals > 0 ? "  ·  <color=#7A3FB0>+" + r.seals + (r.seals == 1 ? " seal" : " seals") + "</color>" : ""), 30, Ui.Dim, TextAnchor.MiddleCenter, false).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -234), new Vector2(900, 40));
             var unbuilt = s.Unbuilt; var nextPlans = s.NextPlans;
             string nextLine = unbuilt.Count > 0 ? "<color=#2E7D32>You can build the " + unbuilt[0].Name + " now (TRAIN)</color>" : nextPlans != null ? "Next plans: the " + nextPlans.Name + " at mile " + nextPlans.Mile : null;
             if (nextLine != null) Ui.Label("N", p, nextLine, 28, Ui.Dim, TextAnchor.MiddleCenter, false).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -420), new Vector2(940, 40));
@@ -308,6 +329,7 @@ namespace Ironclad.Game
                 if (S.CloseRun()) { Sfx.Play("claim", 0.9f); Haptics.Success(); GameRoot.Instance.Save(true); if (mile >= 20) RateSoon(); }
             }, 44);
             ((RectTransform)c.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(AdReady(AdReward.DoubleRun) ? 250 : 0, 44), new Vector2(470, 120));
+            _collectLabel = c.GetComponentInChildren<Text>(); _overAuto = AutoCollectAfter;
         }
     }
 

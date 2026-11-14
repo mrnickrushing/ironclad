@@ -23,7 +23,7 @@ namespace Ironclad.Core
                     best = Math.Max(best, total / (miles * Content.MileSeconds) * 3600);
                 }
                 double mult = (1 + Content.Upgrade("steel").Step * UpgradeLevel("steel")) * (Owns("ironclad.doubler") ? 2 : 1);
-                return best * Content.DepotShare * mult;
+                return best * Content.DepotShare * mult * (1 + 0.1 * PerkLevel("patrol"));
             }
         }
 

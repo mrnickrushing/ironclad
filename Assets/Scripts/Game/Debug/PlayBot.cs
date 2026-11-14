@@ -70,6 +70,7 @@ namespace Ironclad.Game
                     if (_screen == Page.Today) { if (s.GiftReady) s.ClaimGift(); for (int i = 0; i < Sim.TasksADay; i++) s.ClaimTask(i); }
                     if (_screen == Page.Awards) foreach (var a in Sim.Achievements) s.ClaimAchievement(a.Id);
                     if (_screen == Page.Workshop || _screen == Page.Train) BotSpend(s);
+                    if (_screen == Page.Workshop) foreach (var d in Content.Perks) s.BuyPerk(d.Id);
                     if (_screen == Page.Train && s.State.train.Count > 1 && rnd.Next(3) == 0) s.Shunt(rnd.Next(s.State.train.Count), rnd.Next(s.State.train.Count));
                     CloseScreen();
                     return;

@@ -38,7 +38,7 @@ namespace Ironclad.Game
 
         static readonly Dictionary<string, string> About = new Dictionary<string, string>
         {
-            { "WORKSHOP", "Steel buys these for good: every run after starts stronger." },
+            { "WORKSHOP", "Steel buys these for good. Seals, further down, buy rarer things." },
             { "THE TRAIN", "Build wagons, raise their levels, and choose the order they are coupled in." },
             { "TODAY", "A gift every day and three tasks. A missed day loses nothing." },
             { "AWARDS", "Gems for what you've done on the line. Tap a green one to take it." },
@@ -130,6 +130,13 @@ namespace Ironclad.Game
                 y = Entry(y, Ui.Ic(id == "slots" ? "box" : id == "speed" ? "bolt" : id == "whistle" ? "bell" : id == "scrip" || id == "start" ? "coins" : id == "steel" ? "sack" : id == "hull" || id == "plate" || id == "mend" ? "wrench" : "target"), Ui.Ink,
                     u.Name + "  <size=24><color=#7A5A40>level " + s.UpgradeLevel(id) + "</color></size>", u.Blurb + ".  " + UpgradeNow(s, u),
                     max ? null : Format.Money(cost) + " steel", Ui.Green, max || !can ? null : (Action)(() => { if (S.BuyUpgrade(id)) { Sfx.Play("build", 0.6f); Haptics.Light(); } }), max ? "MAX" : null);
+            }
+            y = Heading(y, "THE BARON'S SEALS: you have " + s.State.seals + ". One from every carriage you bring down.");
+            foreach (var d in Content.Perks)
+            {
+                var id = d.Id; bool max = s.PerkMaxed(id); int cost = s.PerkCost(id); bool can = s.State.seals >= cost;
+                y = Entry(y, Ui.Ic("medal"), Ui.Ink, d.Name + "  <size=24><color=#7A5A40>level " + s.PerkLevel(id) + " of " + d.Max + "</color></size>", d.Blurb + ".",
+                    max ? null : cost + (cost == 1 ? " seal" : " seals"), Ui.Grape, max || !can ? null : (Action)(() => { if (S.BuyPerk(id)) { Sfx.Play("star", 0.7f); Haptics.Success(); GameRoot.Instance.Save(); } }), max ? "MAX" : null);
             }
             EndList(-y + 30);
         }

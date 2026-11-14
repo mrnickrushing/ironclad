@@ -144,6 +144,34 @@ namespace Ironclad.Tests
         }
 
         [Test]
+        public void SealsComeFromTheBaronsCarriagesAndBuyPerks()
+        {
+            var s = Strong(120);
+            s.StartRun();
+            Play(s, 22 * 11);
+            Assert.AreEqual(1, s.State.seals);
+            Assert.AreEqual(1, s.Run.seals);
+            Assert.IsFalse(s.BuyPerk("quarter"), "three seals");
+            s.State.seals = 100;
+            Assert.IsTrue(s.BuyPerk("quarter")); Assert.IsTrue(s.BuyPerk("quarter"));
+            Assert.AreEqual(100 - 3 - 6, s.State.seals);
+            Assert.IsTrue(s.BuyPerk("hand")); Assert.IsTrue(s.BuyPerk("flags")); Assert.IsTrue(s.BuyPerk("spare")); Assert.IsTrue(s.BuyPerk("patrol")); Assert.IsTrue(s.BuyPerk("wind"));
+            s.Retire(); s.CloseRun();
+
+            s.StartRun();
+            Assert.IsTrue(s.Run.cars.All(c => c.field == 2), "the quartermaster's two levels");
+            var g = s.Run.cars[1];
+            g.plating = 0; g.down = true;
+            for (int i = 0; i < 50; i++) { s.Tick(0.5); g.plating = System.Math.Min(g.plating, g.platingMax); }
+            Assert.IsFalse(g.down, "spare plating brings it back");
+            for (int i = 0; i < 2000 && !s.AtStation && !s.RunEnded; i++) s.Tick(0.5);
+            Assert.AreEqual(4, s.Run.offer.Count, "an extra hand");
+            s.State.seals = 500;
+            for (int i = 0; i < 40; i++) Assert.IsTrue(s.BuyPerk("patrol") || s.PerkMaxed("patrol"));
+            Assert.AreEqual(10, s.PerkLevel("patrol"));
+        }
+
+        [Test]
         public void AdvertsStopAtTheDaysLimitAndComeBackTheNextDay()
         {
             double now = 1_700_000_000;

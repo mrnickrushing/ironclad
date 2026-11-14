@@ -53,6 +53,14 @@ namespace Ironclad.Core
         public int Max;                 // 0: no limit
     }
 
+    /// <summary>Something the Baron's seals buy for good. Seals come from his carriages: one for each brought down.</summary>
+    public sealed class PerkDef
+    {
+        public string Id, Name, Blurb;
+        public int Cost;                // seals for the first level; each next level costs that much more
+        public int Max;
+    }
+
     public enum Rarity { Common, Rare, Epic }
 
     /// <summary>A card offered at a station: it lasts for the run.</summary>
@@ -138,6 +146,20 @@ namespace Ironclad.Core
             new UpgradeDef { Id = "slots", Name = "Longer Train", Blurb = "Couple on one more wagon", Cost = 150, Growth = 9, Step = 1, Max = MaxSlots - StartSlots },
             new UpgradeDef { Id = "speed", Name = "Regulator", Blurb = "A faster running speed to choose", Cost = 60, Growth = 25, Step = 1, Max = 3 },
         };
+
+        public static readonly List<PerkDef> Perks = new List<PerkDef>
+        {
+            new PerkDef { Id = "quarter", Name = "Quartermaster", Blurb = "Every car starts a run one field level higher", Cost = 3, Max = 5 },
+            new PerkDef { Id = "spare", Name = "Spare Plating", Blurb = "A knocked-out wagon comes back by itself, sooner each level", Cost = 4, Max = 3 },
+            new PerkDef { Id = "hand", Name = "An Extra Hand", Blurb = "One more card to choose from at every station", Cost = 10, Max = 2 },
+            new PerkDef { Id = "lucky", Name = "A Lucky Table", Blurb = "Rare and Epic cards turn up more often", Cost = 5, Max = 5 },
+            new PerkDef { Id = "flags", Name = "Signal Flags", Blurb = "The whistle stuns for a second longer", Cost = 3, Max = 3 },
+            new PerkDef { Id = "wind", Name = "Second Wind", Blurb = "Back on the rails with a tenth more hull", Cost = 4, Max = 4 },
+            new PerkDef { Id = "patrol", Name = "More Patrols", Blurb = "The depot brings home a tenth more steel", Cost = 2, Max = 10 },
+        };
+        public const double SpareSeconds = 26, SpareLess = 6;      // a knocked-out wagon's wait, and what each level of Spare Plating takes off
+
+        public static PerkDef Perk(string id) { return Perks.Find(p => p.Id == id); }
 
         public static readonly List<CardDef> Cards = new List<CardDef>
         {

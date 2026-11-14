@@ -91,6 +91,7 @@ namespace Ironclad.Game
             }
             if (_shown == Face.Run || _shown == Face.Station) UpdateRun();
             if (_shown == Face.Depot) UpdateDepot();
+            if (_shown == Face.Over) UpdateOver();
             UpdateHand();
             UpdatePops();
             UpdateToast();

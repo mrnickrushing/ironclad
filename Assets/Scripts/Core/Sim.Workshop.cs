@@ -31,6 +31,26 @@ namespace Ironclad.Core
             return true;
         }
 
+        // ---- what the Baron's seals buy ----
+
+        public int PerkLevel(string id) { var u = State.perks.Find(x => x.id == id); return u == null ? 0 : u.level; }
+        public bool PerkMaxed(string id) { return PerkLevel(id) >= Content.Perk(id).Max; }
+        public int PerkCost(string id) { return Content.Perk(id).Cost * (PerkLevel(id) + 1); }
+
+        public bool BuyPerk(string id)
+        {
+            var d = Content.Perk(id);
+            if (d == null || PerkMaxed(id)) return false;
+            int cost = PerkCost(id);
+            if (State.seals < cost) return false;
+            State.seals -= cost;
+            var u = State.perks.Find(x => x.id == id);
+            if (u == null) State.perks.Add(u = new Level { id = id });
+            u.level++;
+            Touch();
+            return true;
+        }
+
         /// <summary>The best mile reached on any line.</summary>
         public int BestMile { get { int b = 0; foreach (int m in State.best) b = Math.Max(b, m); return b; } }
 

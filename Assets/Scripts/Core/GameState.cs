@@ -13,6 +13,7 @@ namespace Ironclad.Core
         public double plating, platingMax;  // the engine has none: blows on it go to the hull
         public int field;                   // levels bought with scrip on this run
         public double cooldown;
+        public double downFor;              // seconds it has been out (Spare Plating brings it back)
         public bool down;                   // plating gone: it stops firing and raiders pass it by until a quarter is back
         public bool Out { get { return down; } }
     }
@@ -59,6 +60,7 @@ namespace Ironclad.Core
         public List<Pick> offer = new List<Pick>();         // on the table at a station
         public bool revived;
         public bool doubled;                // the run's steel was doubled after it ended
+        public int seals;                   // seals won on this run (already in the save's count)
         public double time;                 // seconds rolled
     }
 
@@ -79,6 +81,8 @@ namespace Ironclad.Core
         public List<string> train = new List<string>();      // the wagons coupled on, front to back (the engine isn't listed)
         public List<Level> cars = new List<Level>();         // wagons built, and their workshop levels
         public List<Level> upgrades = new List<Level>();
+        public int seals;                    // from the Baron's carriages
+        public List<Level> perks = new List<Level>();        // what seals have bought
         public List<int> best = new List<int>();             // best mile on each line
         public RunState run;                // null between runs
         public long runs, kills, miles, whistles, cardsTaken, bosses;
@@ -111,6 +115,8 @@ namespace Ironclad.Core
             if (train == null) train = new List<string>();
             if (cars == null) cars = new List<Level>();
             if (upgrades == null) upgrades = new List<Level>();
+            if (perks == null) perks = new List<Level>();
+            perks.RemoveAll(u => u == null || Content.Perk(u.id) == null);
             if (best == null) best = new List<int>();
             if (owned == null) owned = new List<string>();
             if (transactions == null) transactions = new List<string>();
