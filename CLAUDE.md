@@ -7,8 +7,9 @@ Original names and places only, nothing recreated from an existing game. Free mo
 in `CREDITS.md` and in the game). Adverts are rewarded only, never shown unasked.
 
 The project was started from Reel Empire (`~/reelempire`): the platform code (`Game/Platform`, `App/Store`,
-`App/Telemetry`, `UI/Ui`, `UI/LoadingScreen`), the tools and the conventions are the same. Service ids that belong to
-this game don't exist yet and are marked `REPLACE` (RevenueCat key, AdMob app and rewarded unit, App Store id).
+`App/Telemetry`, `UI/Ui`, `UI/LoadingScreen`), the tools and the conventions are the same. The services are this game's own: App Store Connect app
+"Ironclad: Rail Defence" (Apple ID 6834888824, bundle `com.rushingtech.ironclad`, team PH4AKDQ4Q7), RevenueCat project
+`c5d6cc32`, AdMob app `~7307958921` with rewarded unit `/2358884575`, statistics worker `ironclad-stats`.
 
 - `Assets/Scripts/Core` (no Unity dependency): `Content` (wagons, raiders, lines, workshop upgrades, cards, tuning),
   `GameState` (the save, including the run in progress), `Sim` (tick in fixed 0.05 s steps at the running speed),

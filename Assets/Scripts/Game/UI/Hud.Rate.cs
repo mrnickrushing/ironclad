@@ -12,7 +12,7 @@ namespace Ironclad.Game
     {
         const string RateAskedPref = "re_rate_asked";
         const int RateFromStars = 12;
-        public const string ReviewUrl = "https://apps.apple.com/app/idREPLACE?action=write-review";
+        public const string ReviewUrl = "https://apps.apple.com/app/id6834888824?action=write-review";
 
         float _rateIn = -1;
         RectTransform _rateCard;

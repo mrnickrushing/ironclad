@@ -16,7 +16,7 @@ namespace Ironclad.Game
         // The rewarded unit from the AdMob account, and Google's public test unit, which only ever serves test
         // adverts: debug and TestFlight builds use that one, so nobody testing taps a real advert (Google closes
         // accounts for that).
-        const string LiveUnit = "REPLACE_WITH_REWARDED_UNIT", TestUnit = "ca-app-pub-3940256099942544/1712485313";
+        const string LiveUnit = "ca-app-pub-2509790196257770/2358884575", TestUnit = "ca-app-pub-3940256099942544/1712485313";
         static string RewardedUnit { get { return Telemetry.TestBuild ? TestUnit : LiveUnit; } }
 
         static bool _started, _loading;
