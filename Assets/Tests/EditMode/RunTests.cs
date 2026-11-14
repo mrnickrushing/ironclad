@@ -253,12 +253,15 @@ namespace Ironclad.Tests
 
             Assert.IsFalse(s.ClaimTask(0));
             s.Tick(0.1);
-            s.State.kills += 250;
+            Assert.AreEqual(3, Enumerable.Range(0, Sim.TasksADay).Select(i => s.TaskAt(i).Id).Distinct().Count(), "three different tasks a day");
+            s.State.kills += 250; s.State.miles += 30; s.State.cardsTaken += 2; s.State.whistles += 5; s.State.bosses += 2; s.State.runs += 3;
             Assert.IsTrue(s.ClaimTask(0));
             Assert.IsFalse(s.ClaimTask(0));
             Assert.AreEqual(10, s.State.gems);
+            string first = s.TaskAt(0).Id;
             now += 86400;
             Assert.AreEqual(0, s.TaskProgress(0), "a new day starts the count again");
+            Assert.AreNotEqual(first, s.TaskAt(0).Id, "and sets other tasks");
         }
 
         [Test]

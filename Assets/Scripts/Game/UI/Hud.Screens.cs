@@ -183,9 +183,9 @@ namespace Ironclad.Game
             var tr = (RectTransform)take.transform; tr.anchorMin = tr.anchorMax = new Vector2(0.5f, 1); tr.pivot = new Vector2(0.5f, 1); tr.anchoredPosition = new Vector2(0, y); tr.sizeDelta = new Vector2(560, 96);
             y -= 116;
             y = Heading(y, "TODAY'S TASKS");
-            for (int i = 0; i < Sim.Tasks.Count; i++)
+            for (int i = 0; i < Sim.TasksADay; i++)
             {
-                var t = Sim.Tasks[i]; int k = i; bool done = s.TaskDone(i), claimed = s.TaskClaimed(i);
+                var t = s.TaskAt(i); int k = i; bool done = s.TaskDone(i), claimed = s.TaskClaimed(i);
                 y = Entry(y, Ui.Ic("tasks"), Ui.Ink, string.Format(t.Text, Format.Money(t.Goal)), Format.Money(s.TaskProgress(i)) + " of " + Format.Money(t.Goal) + " today",
                     claimed ? null : "+" + t.Gems + " gems", Ui.Green, done && !claimed ? (Action)(() => { if (S.ClaimTask(k)) { Sfx.Play("claim", 0.8f); Haptics.Success(); GameRoot.Instance.Save(); } }) : null, claimed ? "DONE" : null, done && !claimed);
             }

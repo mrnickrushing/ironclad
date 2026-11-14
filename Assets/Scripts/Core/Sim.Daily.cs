@@ -40,31 +40,39 @@ namespace Ironclad.Core
             return true;
         }
 
+        /// <summary>Every task there is; three of them are set each day.</summary>
         public static readonly List<TaskDef> Tasks = new List<TaskDef>
         {
             new TaskDef { Id = "kills", Text = "Turn back {0} raiders", Goal = 250, Gems = 5, Stat = s => s.State.kills },
             new TaskDef { Id = "miles", Text = "Roll {0} miles", Goal = 30, Gems = 5, Stat = s => s.State.miles },
             new TaskDef { Id = "cards", Text = "Take {0} station cards", Goal = 2, Gems = 5, Stat = s => s.State.cardsTaken },
+            new TaskDef { Id = "whistle", Text = "Sound the whistle {0} times", Goal = 5, Gems = 5, Stat = s => s.State.whistles },
+            new TaskDef { Id = "boss", Text = "Bring down {0} of the Baron's carriages", Goal = 2, Gems = 5, Stat = s => s.State.bosses },
+            new TaskDef { Id = "runs", Text = "Finish {0} runs", Goal = 3, Gems = 5, Stat = s => s.State.runs },
         };
+        public const int TasksADay = 3;
+
+        /// <summary>The task in this place today (0..2): the day picks three different ones from the list.</summary>
+        public TaskDef TaskAt(int place) { return Tasks[(int)(((Today % Tasks.Count) + Tasks.Count + place * 2) % Tasks.Count)]; }
 
         /// <summary>The day's counts start when the day does.</summary>
         void RollTasks()
         {
-            if (State.taskDay == Today && State.taskBase.Count == Tasks.Count) return;
+            if (State.taskDay == Today && State.taskBase.Count == TasksADay) return;
             State.taskDay = Today; State.taskClaimed = 0;
             State.taskBase.Clear();
-            foreach (var t in Tasks) State.taskBase.Add(t.Stat(this));
+            for (int i = 0; i < TasksADay; i++) State.taskBase.Add(TaskAt(i).Stat(this));
         }
 
-        public double TaskProgress(int index) { RollTasks(); return Math.Min(Tasks[index].Goal, Tasks[index].Stat(this) - State.taskBase[index]); }
-        public bool TaskDone(int index) { return TaskProgress(index) >= Tasks[index].Goal; }
-        public bool TaskClaimed(int index) { RollTasks(); return (State.taskClaimed & (1 << index)) != 0; }
+        public double TaskProgress(int place) { RollTasks(); return Math.Max(0, Math.Min(TaskAt(place).Goal, TaskAt(place).Stat(this) - State.taskBase[place])); }
+        public bool TaskDone(int place) { return TaskProgress(place) >= TaskAt(place).Goal; }
+        public bool TaskClaimed(int place) { RollTasks(); return (State.taskClaimed & (1 << place)) != 0; }
 
-        public bool ClaimTask(int index)
+        public bool ClaimTask(int place)
         {
-            if (index < 0 || index >= Tasks.Count || !TaskDone(index) || TaskClaimed(index)) return false;
-            State.taskClaimed |= 1 << index;
-            State.gems += Tasks[index].Gems;
+            if (place < 0 || place >= TasksADay || !TaskDone(place) || TaskClaimed(place)) return false;
+            State.taskClaimed |= 1 << place;
+            State.gems += TaskAt(place).Gems;
             Touch();
             return true;
         }
@@ -75,7 +83,7 @@ namespace Ironclad.Core
             get
             {
                 int n = GiftReady ? 1 : 0;
-                for (int i = 0; i < Tasks.Count; i++) if (TaskDone(i) && !TaskClaimed(i)) n++;
+                for (int i = 0; i < TasksADay; i++) if (TaskDone(i) && !TaskClaimed(i)) n++;
                 return n;
             }
         }
