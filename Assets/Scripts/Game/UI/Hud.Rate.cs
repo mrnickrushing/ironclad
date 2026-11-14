@@ -46,8 +46,8 @@ namespace Ironclad.Game
             var box = Ui.ArtImg("Box", _rateCard, "panel", Color.white, 60).rectTransform;
             box.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(920, 520));
             var star = Ui.ArtImg("Star", box, "star", Color.white, 0); star.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 0.5f), new Vector2(0, -10), new Vector2(150, 150));
-            Ui.Label("T", box, "ENJOYING REEL EMPIRE?", 58, Ui.Ink).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -96), new Vector2(840, 80));
-            Ui.Label("B", box, "If you like running your harbour, a quick rating on the App Store helps other players find it.", 36, Ui.Dim, TextAnchor.UpperCenter, false)
+            Ui.Label("T", box, "ENJOYING IRONCLAD?", 58, Ui.Ink).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -96), new Vector2(840, 80));
+            Ui.Label("B", box, "If you like holding the line, a quick rating on the App Store helps other players find it.", 36, Ui.Dim, TextAnchor.UpperCenter, false)
                 .rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -190), new Vector2(800, 160));
             var yes = Ui.Button("Yes", box, "RATE IT", Ui.Green, () => { CloseRateCard(); RequestRating(); }, 46);
             ((RectTransform)yes.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(210, 50), new Vector2(400, 120));

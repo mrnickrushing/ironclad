@@ -4,7 +4,7 @@ using UnityEngine.Rendering;
 
 namespace Ironclad.Game
 {
-    /// <summary>Boots the game in an empty scene: the simulation from the save, the light, the camera, the harbour and the HUD.</summary>
+    /// <summary>Boots the game in an empty scene: the simulation from the save, the light, the camera, the train and the HUD.</summary>
     public sealed class GameRoot : MonoBehaviour
     {
         public static GameRoot Instance { get; private set; }
@@ -49,17 +49,16 @@ namespace Ironclad.Game
             bool fresh = state == null;
             if (fresh) state = GameState.New();
             Sim = new Sim(state) { UtcOffset = System.TimeZoneInfo.Local.GetUtcOffset(System.DateTime.Now).TotalSeconds };
-            if (fresh) Sim.StartAtMorning();
             if (!fresh && state.savedAt > 0) AwaySeconds = System.Math.Max(0, SaveSystem.Now - state.savedAt);
             Store.Start();
 
             var sun = new GameObject("Sun").AddComponent<Light>();
             sun.type = LightType.Directional;
-            sun.color = new Color(1f, 0.96f, 0.88f);
+            sun.color = new Color(1f, 0.93f, 0.8f);
             sun.intensity = 1.35f;
             sun.shadowBias = 0.6f; sun.shadowNormalBias = 0.5f;
             sun.shadows = LightShadows.Soft;
-            sun.transform.rotation = Quaternion.Euler(42, -150, 0);
+            sun.transform.rotation = Quaternion.Euler(38, -128, 0);
             // The sky: an HDRI for the background, the ambient light and the reflections in glass and paint.
             var skyTex = Resources.Load<Cubemap>("Sky/sky");
             if (skyTex != null)
@@ -77,8 +76,8 @@ namespace Ironclad.Game
             RenderSettings.ambientGroundColor = new Color(0.3f, 0.32f, 0.26f);
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.Linear;
-            RenderSettings.fogColor = new Color(0.74f, 0.83f, 0.92f);
-            RenderSettings.fogStartDistance = 380; RenderSettings.fogEndDistance = 1000;
+            RenderSettings.fogColor = new Color(0.86f, 0.8f, 0.68f);
+            RenderSettings.fogStartDistance = 170; RenderSettings.fogEndDistance = 520;
 
             Shader.SetGlobalFloat("_NightGlow", 0);
             gameObject.AddComponent<Telemetry>();   // anonymous play statistics (off in the Editor)
@@ -91,14 +90,13 @@ namespace Ironclad.Game
 
         bool _ready;
 
-        /// <summary>The launch, a step a frame behind the loading screen: the harbour, then the interface.</summary>
+        /// <summary>The launch, a step a frame behind the loading screen: the train, then the interface.</summary>
         System.Collections.IEnumerator Launch()
         {
             var loading = LoadingScreen.Show();
             yield return null; yield return null;          // the screen is up before the heavy work starts
             loading.Progress = 0.25f;
-            HarbourView.Create(transform);
-            WeatherFx.Create(transform);
+            TrainView.Create(transform);
             loading.Progress = 0.7f;
             yield return null;
             Hud.Create();
@@ -113,19 +111,18 @@ namespace Ironclad.Game
             AppleAccount.Update();
             if (!_ready) return;
             Sim.Tick(Time.deltaTime * Speed);
-            Sim.TickOthers(Time.deltaTime * Speed);
             GameCenter.Sync(Sim);
-            if (Sim.State.tutorialStep == 2) Ads.Start();      // no advert SDK while Marta is still teaching
+            if (Sim.State.runs >= 1) Ads.Start();      // no advert SDK until the first run is over
             Ads.Tick();
-            Sfx.TickMusic(Sim.Night, Time.unscaledDeltaTime);
-            Sfx.TickAmbience(Sim.Night, Time.unscaledDeltaTime);
+            Sfx.TickMusic(0, Time.unscaledDeltaTime);
+            Sfx.TickAmbience(0, Time.unscaledDeltaTime);
             if ((_saveIn -= Time.unscaledDeltaTime) <= 0) { _saveIn = 10f; Save(); }
             KeepAwake();
         }
 
         float _lastTouch;
-        /// <summary>The screen stays on while the harbour is being played and for five minutes after the last touch,
-        /// then the device's own auto-lock applies again (an idle harbour earns while away anyway).</summary>
+        /// <summary>The screen stays on while the game is being played and for five minutes after the last touch,
+        /// then the device's own auto-lock applies again (the depot earns while away anyway).</summary>
         void KeepAwake()
         {
             var p = UnityEngine.InputSystem.Pointer.current;
@@ -168,16 +165,16 @@ namespace Ironclad.Game
         {
             SaveSystem.Delete();
             CloudSave.Erase();
-            Rebuild(GameState.New()); Sim.StartAtMorning();
+            Rebuild(GameState.New());
         }
 
         void Rebuild(GameState state)
         {
             Sim = new Sim(state) { UtcOffset = System.TimeZoneInfo.Local.GetUtcOffset(System.DateTime.Now).TotalSeconds };
             AwaySeconds = 0;
-            if (HarbourView.Instance != null) Destroy(HarbourView.Instance.gameObject);
+            if (TrainView.Instance != null) Destroy(TrainView.Instance.gameObject);
             if (Hud.Instance != null) Destroy(Hud.Instance.gameObject);
-            HarbourView.Create(transform);
+            TrainView.Create(transform);
             Hud.Create();
         }
     }

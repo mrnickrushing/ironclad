@@ -71,7 +71,7 @@ namespace Ironclad.Game
                 var packed = CWCloudGet(SaveKey);
                 if (string.IsNullOrEmpty(packed)) return null;
                 var s = JsonUtility.FromJson<GameState>(Unpack(packed));
-                return s != null && s.harbours != null && s.harbours.Count > 0 ? s : null;
+                return s != null && s.cars != null && s.cars.Count > 0 ? s : null;
             }
             catch (Exception e) { Debug.LogWarning("iCloud save unreadable: " + e.Message); return null; }
         }

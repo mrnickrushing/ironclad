@@ -9,14 +9,14 @@ using UnityEngine.SocialPlatforms.GameCenter;
 namespace Ironclad.Game
 {
     /// <summary>
-    /// Apple's Game Center: five leaderboards and the game's achievements, mirrored. The player signs in with their
+    /// Apple's Game Center: three leaderboards and the game's achievements, mirrored. The player signs in with their
     /// own Game Center account (iOS asks once); nothing goes through our servers. Ids must match the ones created in
     /// App Store Connect by Tools/appstore/gamecenter.py: leaderboards <c>ironclad.board.*</c>, achievements
     /// <c>ironclad.ach.&lt;achievement id&gt;</c>. Does nothing in the Editor.
     /// </summary>
     public static class GameCenter
     {
-        public const string Earnings = "ironclad.board.earnings", Species = "ironclad.board.species", Stars = "ironclad.board.stars", Heaviest = "ironclad.board.heaviest", Derby = "ironclad.board.derby";
+        public const string Miles = "ironclad.board.miles", Distance = "ironclad.board.distance", Raiders = "ironclad.board.raiders";
         public const string AchievementPrefix = "ironclad.ach.";
         const string SentKey = "gc.sent";
 
@@ -44,12 +44,9 @@ namespace Ironclad.Game
         {
             if (s == null || !SignedIn || Time.unscaledTime < _next) return;
             _next = Time.unscaledTime + 20;
-            // Lifetime earnings as its power of ten in hundredths (1.00M = 600): the sums outgrow what a board can hold.
-            Score(Earnings, s.State.lifetime > 1 ? (long)(System.Math.Log10(s.State.lifetime) * 100) : 0);
-            Score(Species, s.SpeciesCaught);
-            Score(Stars, s.Stars);
-            Score(Heaviest, (long)s.HeaviestKg);
-            Score(Derby, System.Math.Max(s.State.derbyScore, s.State.derbyLastScore));
+            Score(Miles, s.BestMile);
+            Score(Distance, s.State.miles);
+            Score(Raiders, s.State.kills);
             if (_sent == null) _sent = new HashSet<string>(PlayerPrefs.GetString(SentKey, "").Split(new[] { ',' }, System.StringSplitOptions.RemoveEmptyEntries));
             foreach (var a in Sim.Achievements)
             {

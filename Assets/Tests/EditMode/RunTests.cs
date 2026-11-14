@@ -80,7 +80,7 @@ namespace Ironclad.Tests
             s.State.upgrades.Add(new Level { id = "hull", level = 60 });
             s.StartRun();
             for (int i = 0; i < 2000 && !s.AtStation && !s.RunEnded; i++) s.Tick(0.5);
-            Assert.IsTrue(s.AtStation, "a strong train reaches the first station");
+            Assert.IsTrue(s.AtStation, "a strong train reaches the first station: mile " + s.Run.mile + " t " + s.Run.mileTime + " ended " + s.RunEnded + " foes " + s.Run.enemies.Count + " queue " + s.Run.queue.Count + " boss " + s.Run.bossOut);
             return s;
         }
 

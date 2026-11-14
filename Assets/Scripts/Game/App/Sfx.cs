@@ -107,6 +107,68 @@ namespace Ironclad.Game
             return clip;
         }
 
+        /// <summary>
+        /// The sounds of the fight, made here rather than recorded: bursts of filtered noise for shots and blasts, a
+        /// ring for struck plate, a chord with breath in it for the whistle.
+        /// </summary>
+        static AudioClip Synth(string name)
+        {
+            const int rate = 22050;
+            float seconds, cutoff, decay, tone = 0, toneLevel = 0, drop = 0;
+            switch (name)
+            {
+                case "shot": seconds = 0.12f; cutoff = 5200; decay = 34; tone = 190; toneLevel = 0.35f; drop = 0.5f; break;
+                case "rifle": seconds = 0.38f; cutoff = 3600; decay = 13; tone = 130; toneLevel = 0.5f; drop = 0.6f; break;
+                case "cannon": seconds = 0.7f; cutoff = 1400; decay = 6.5f; tone = 72; toneLevel = 0.9f; drop = 0.55f; break;
+                case "boom": seconds = 1.1f; cutoff = 900; decay = 4.2f; tone = 52; toneLevel = 1f; drop = 0.5f; break;
+                case "fall": seconds = 0.2f; cutoff = 1500; decay = 18; tone = 150; toneLevel = 0.5f; drop = 0.7f; break;
+                case "clang": seconds = 0.35f; cutoff = 6000; decay = 12; tone = 880; toneLevel = 0.6f; break;
+                case "zap": seconds = 0.2f; cutoff = 8000; decay = 16; tone = 1400; toneLevel = 0.5f; drop = 0.8f; break;
+                case "flame": seconds = 0.4f; cutoff = 1100; decay = 5; break;
+                case "whistle": return WhistleClip();
+                default: return null;
+            }
+            int n = (int)(seconds * rate);
+            var data = new float[n];
+            var rng = new System.Random(name.GetHashCode());
+            float lp = 0, a = Mathf.Clamp01(2 * Mathf.PI * cutoff / rate), phase = 0;
+            for (int i = 0; i < n; i++)
+            {
+                float t = i / (float)rate, k = i / (float)n;
+                lp += a * ((float)rng.NextDouble() * 2 - 1 - lp);
+                float env = Mathf.Exp(-decay * t) * Mathf.Min(1, i / 40f) * (1 - k * k * k);
+                phase += 2 * Mathf.PI * tone * (1 - drop * k) / rate;
+                float ring = name == "clang" ? Mathf.Sin(phase) * 0.5f + Mathf.Sin(phase * 2.76f) * 0.3f + Mathf.Sin(phase * 5.4f) * 0.2f : Mathf.Sin(phase);
+                data[i] = Mathf.Clamp((lp * 1.8f + ring * toneLevel) * env, -1, 1);
+            }
+            var clip = AudioClip.Create(name, n, 1, rate, false);
+            clip.SetData(data, 0);
+            return clip;
+        }
+
+        static AudioClip WhistleClip()
+        {
+            const int rate = 22050; const float seconds = 1.5f;
+            int n = (int)(seconds * rate);
+            var data = new float[n];
+            var rng = new System.Random(7);
+            float lp = 0;
+            float[] notes = { 392f, 494f, 587f };      // a steam whistle's three bells
+            for (int i = 0; i < n; i++)
+            {
+                float t = i / (float)rate;
+                lp += 0.35f * ((float)rng.NextDouble() * 2 - 1 - lp);
+                float env = Mathf.Min(1, t / 0.08f) * Mathf.Min(1, (seconds - t) / 0.35f);
+                float bend = 1 - 0.03f * Mathf.Exp(-t * 9);
+                float v = 0;
+                foreach (float f in notes) v += Mathf.Sin(2 * Mathf.PI * f * bend * t) * 0.2f + Mathf.Sin(2 * Mathf.PI * f * 2 * bend * t) * 0.06f;
+                data[i] = (v + lp * 0.35f) * env * 0.8f;
+            }
+            var clip = AudioClip.Create("whistle", n, 1, rate, false);
+            clip.SetData(data, 0);
+            return clip;
+        }
+
         static AudioClip Clip(string name)
         {
             AudioClip[] takes;
@@ -116,6 +178,7 @@ namespace Ironclad.Game
                 var a = Resources.Load<AudioClip>("Audio/" + name);
                 if (a != null) list.Add(a);
                 for (int i = 2; i <= 4; i++) { var b = Resources.Load<AudioClip>("Audio/" + name + "_" + i); if (b != null) list.Add(b); }
+                if (list.Count == 0) { var made = Synth(name); if (made != null) list.Add(made); }
                 _clips[name] = takes = list.ToArray();
             }
             return takes.Length == 0 ? null : takes[Random.Range(0, takes.Length)];

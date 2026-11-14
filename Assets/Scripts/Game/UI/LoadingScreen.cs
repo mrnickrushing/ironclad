@@ -17,18 +17,13 @@ namespace Ironclad.Game
 
         static readonly string[] Tips =
         {
-            "The weakest stage holds the whole harbour back. The chain bar at the top glows red on it.",
-            "Hire a skipper and the boat sails by itself, even while you're away.",
-            "Levels 10, 25, 50 and 100 double a dock. Level 25 and 100 make its boat twice as fast.",
-            "The market has a favourite every day: that product sells for half as much again.",
-            "Smoked and canned fish sell for far more, but the hall works them slowly. Upgrade the hall to keep up.",
-            "What the hall can't keep up with is sold fresh: nothing is ever wasted.",
-            "Some fish only bite at night, in the rain or in one season. Check the book.",
-            "The first catch of a new species pays gems.",
-            "A new dock lands eight times what the one before it does.",
-            "The docks hold two hours of work while you're away. Come back before they fill.",
-            "Buy NEXT to go straight to the next milestone level.",
-            "No ads here. Ever.",
+            "Raiders from behind reach the last wagon first. Put something tough there.",
+            "A Supply Car makes the wagons either side of it fire faster.",
+            "Scrip only lasts the run. Spend it.",
+            "The whistle throws back everything near the train.",
+            "Tap a raider to point every gun at it.",
+            "Every tenth mile there is a station, and a card to keep for the run.",
+            "The depot's patrols bring steel home while you're away.",
         };
 
         CanvasGroup _group;
@@ -50,8 +45,8 @@ namespace Ironclad.Game
             var root = Ui.Canvas("Loading canvas", transform);
             root.GetComponent<Canvas>().sortingOrder = 100;
             _group = root.gameObject.AddComponent<CanvasGroup>();
-            // A bright sea: turquoise shading to deep blue at the bottom, with soft rays behind the name.
-            var back = Ui.Img("Back", root, new Color(0.13f, 0.72f, 0.8f));
+            // A frontier sunset: burnt orange shading to dark earth at the bottom, with soft rays behind the name.
+            var back = Ui.Img("Back", root, new Color(0.78f, 0.42f, 0.22f));
             back.rectTransform.Fill(); back.raycastTarget = true;
             var hero = Resources.Load<Sprite>("UI/Loading/hero");
             if (hero != null)
@@ -63,18 +58,18 @@ namespace Ironclad.Game
             else
                 for (int i = 0; i < 8; i++)
                 {
-                    var band = Ui.Img("Deep", root, new Color(0.04f, 0.3f, 0.55f, 0.16f)).rectTransform;
+                    var band = Ui.Img("Deep", root, new Color(0.3f, 0.1f, 0.06f, 0.16f)).rectTransform;
                     band.Band(false, 0, 620 * (8 - i) / 8f);
                 }
 
             _rays = Ui.ArtImg("Rays", root, "rays", new Color(1f, 1f, 1f, 0.22f), 0).rectTransform;
             _rays.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 0.5f), new Vector2(0, -300), new Vector2(1500, 1500));
-            var title = Ui.Label("Title", root, "REEL EMPIRE", 180, Color.white);
+            var title = Ui.Label("Title", root, "IRONCLAD", 180, Color.white);
             title.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -150), new Vector2(1400, 210));
             title.Stroke(7f);
             var ribbon = Ui.Ribbon("Ribbon", root, Ui.Coral);
             ribbon.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -360), new Vector2(520, 118));
-            var sub = Ui.Label("Sub", ribbon.transform, "IDLE TYCOON", 54, Color.white);
+            var sub = Ui.Label("Sub", ribbon.transform, "RAIL DEFENCE", 54, Color.white);
             sub.rectTransform.Fill(); sub.rectTransform.offsetMin = new Vector2(0, 24); sub.Stroke(2.5f);
 
             // The bar: a paper track, a green fill, a coin riding its leading edge.
@@ -116,7 +111,7 @@ namespace Ironclad.Game
             _fill.anchorMax = new Vector2(Mathf.Max(0.02f, _shown), 1);
             _plane.anchorMin = _plane.anchorMax = new Vector2(Mathf.Max(0.02f, _shown), 0.5f);
             _plane.anchoredPosition = new Vector2(0, Mathf.Sin(_age * 6) * 2);
-            _percent.text = _shown >= 0.999f ? "LINES AWAY!" : "Rigging the boats  " + Mathf.RoundToInt(_shown * 100) + "%";
+            _percent.text = _shown >= 0.999f ? "ALL ABOARD!" : "Raising steam  " + Mathf.RoundToInt(_shown * 100) + "%";
             _rays.localRotation = Quaternion.Euler(0, 0, _age * 10);
             if (Done && _shown >= 0.999f && _age > 2.2f)
             {

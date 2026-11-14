@@ -6,38 +6,32 @@ import os, subprocess, sys
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 F = os.path.join(ROOT, "art-src", "free")
 G = "/Models/GLB format/"
-WAT, CAR, IND, MINI, PIR, SUR, NAT = "watercraft-kit" + G, "car-kit" + G, "city-kit-industrial" + G, "mini-characters" + G, "pirate-kit" + G, "survival-kit" + G, "nature-kit/Models/GLTF format/"
+TRN, TD, MINI, PIR, SUR, NAT = "train-kit" + G, "tower-defense-kit" + G, "mini-characters" + G, "pirate-kit" + G, "survival-kit" + G, "nature-kit/Models/GLTF format/"
 MODELS = {  # id: (source, "size" | "height"[, pose, extra args...])
-    "truck": (CAR + "delivery.glb", "size"), "van": (CAR + "van.glb", "size"),
-    "hall": (IND + "building-m.glb", "size"), "market": (IND + "building-i.glb", "size"), "shed": (IND + "building-h.glb", "size"),
-    "tank": (IND + "detail-tank.glb", "size"), "container": (IND + "shipping-container-a.glb", "size"),
-    "pier": (PIR + "structure-platform-dock.glb", "size"), "pier_small": (PIR + "structure-platform-dock-small.glb", "size"),
-    "stall": (PIR + "structure-roof.glb", "height"), "barrel": (PIR + "barrel.glb", "height"), "crate": (PIR + "crate.glb", "size"), "chest": (PIR + "chest.glb", "size"),
-    "palm_a": (PIR + "palm-detailed-straight.glb", "height"), "palm_b": (PIR + "palm-detailed-bend.glb", "height"), "flag": (PIR + "flag-high-pennant.glb", "height"),
-    "rocks_a": (PIR + "rocks-a.glb", "size"), "rocks_b": (PIR + "rocks-b.glb", "size"), "rocks_sand": (PIR + "rocks-sand-a.glb", "size"), "tower": (PIR + "tower-watch.glb", "height"),
-    "box": (SUR + "box.glb", "size"), "box_open": (SUR + "box-large-open.glb", "size"), "bucket": (SUR + "bucket.glb", "height"), "fish": (SUR + "fish-large.glb", "size"), "signpost": (SUR + "signpost.glb", "height"),
-    "tree_a": (NAT + "tree_default.glb", "height"), "tree_b": (NAT + "tree_detailed.glb", "height"), "tree_c": (NAT + "tree_cone.glb", "height"), "tree_d": (NAT + "tree_oak.glb", "height"),
-    "tree_pine": (NAT + "tree_pineRoundA.glb", "height"), "tree_pine_b": (NAT + "tree_pineTallA.glb", "height"), "bush": (NAT + "plant_bushLarge.glb", "size"), "bush_b": (NAT + "plant_bushDetailed.glb", "size"),
+    "loco": (TRN + "train-locomotive-a.glb", "size"), "loco_b": (TRN + "train-locomotive-b.glb", "size"), "loco_c": (TRN + "train-locomotive-c.glb", "size"),
+    "flatbed": (TRN + "train-carriage-flatbed.glb", "size"), "flatbed_wood": (TRN + "train-carriage-flatbed-wood.glb", "size"),
+    "boxcar": (TRN + "train-carriage-box.glb", "size"), "coalcar": (TRN + "train-carriage-coal.glb", "size"), "tankcar": (TRN + "train-carriage-tank.glb", "size"),
+    "woodcar": (TRN + "train-carriage-wood.glb", "size"), "lumbercar": (TRN + "train-carriage-lumber.glb", "size"), "dirtcar": (TRN + "train-carriage-dirt.glb", "size"),
+    "rail": (TRN + "railroad-straight.glb", "size"), "handcar_base": (TRN + "train-carriage-flatbed.glb", "size"),
+    "turret": (TD + "weapon-turret.glb", "size"), "cannon": (TD + "weapon-cannon.glb", "size"), "ballista": (TD + "weapon-ballista.glb", "size"), "catapult": (TD + "weapon-catapult.glb", "size"),
+    "ship_cannon": (PIR + "cannon.glb", "size"), "barrel": (PIR + "barrel.glb", "height"), "crate": (PIR + "crate.glb", "size"), "chest": (PIR + "chest.glb", "size"),
+    "tower": (PIR + "tower-watch.glb", "height"), "flag": (PIR + "flag-high-pennant.glb", "height"),
+    "box": (SUR + "box.glb", "size"), "signpost": (SUR + "signpost.glb", "height"), "tent": (NAT + "tent_detailedOpen.glb", "size"), "campfire": (NAT + "campfire_stones.glb", "size"),
+    "tree_a": (NAT + "tree_default.glb", "height"), "tree_oak": (NAT + "tree_oak.glb", "height"), "tree_pine": (NAT + "tree_pineRoundA.glb", "height"), "tree_pine_b": (NAT + "tree_pineTallA.glb", "height"),
+    "cactus_a": (NAT + "cactus_tall.glb", "height"), "cactus_b": (NAT + "cactus_short.glb", "height"),
+    "bush": (NAT + "plant_bushLarge.glb", "size"), "grass": (NAT + "grass_large.glb", "size"), "flowers": (NAT + "flower_yellowA.glb", "size"),
     "rock_a": (NAT + "rock_largeA.glb", "size"), "rock_b": (NAT + "rock_largeC.glb", "size"), "rock_c": (NAT + "rock_tallB.glb", "size"), "rock_d": (NAT + "stone_largeB.glb", "size"),
-    "lily": (NAT + "lily_large.glb", "size"), "log_stack": (NAT + "log_stackLarge.glb", "size"), "flowers": (NAT + "flower_yellowA.glb", "size"), "grass": (NAT + "grass_large.glb", "size"),
-    "buoy": (WAT + "buoy-flag.glb", "height"),
-    "stone_tall": (NAT + "stone_tallB.glb", "size"), "stone_big": (NAT + "stone_largeA.glb", "size"),
-    "fence": (NAT + "fence_simple.glb", "size"), "wheat": (NAT + "crops_wheatStageB.glb", "height"), "corn": (NAT + "crops_cornStageD.glb", "height"),
-    "flowers_red": (NAT + "flower_redA.glb", "size"), "flowers_purple": (NAT + "flower_purpleA.glb", "size"), "mushrooms": (NAT + "mushroom_redGroup.glb", "size"),
-    "stump": (NAT + "stump_old.glb", "size"), "tent": (NAT + "tent_detailedOpen.glb", "size"), "campfire": (NAT + "campfire_stones.glb", "size"), "canoe": (NAT + "canoe.glb", "size"),
+    "cliff": (NAT + "cliff_block_rock.glb", "size"), "fence": (NAT + "fence_simple.glb", "size"), "stump": (NAT + "stump_old.glb", "size"), "log_stack": (NAT + "log_stackLarge.glb", "size"),
 }
-# Single models from poly.pizza (Quaternius and MaverickFX, CC0), fetched by props.py.
-P = "props/"
-for mid, mode in (("big_barn", "size"), ("barn", "size"), ("open_barn", "size"), ("small_barn", "size"), ("silo_house", "height"), ("market_stalls", "size"),
-                  ("market_stalls_b", "size"), ("market_stand", "height"), ("market_stand_b", "height"), ("dock_long", "size"), ("dock", "size"),
-                  ("storage_hut", "size"), ("bucket_fish", "size"), ("lighthouse", "height"), ("container_red", "size"), ("pallet", "size")):
-    MODELS[mid] = (P + mid + ".glb", mode)
-BOATS = ["boat-row-small", "boat-row-large", "boat-fishing-small", "boat-sail-a", "boat-tug-a", "boat-tow-a", "boat-tug-c", "ship-cargo-a"]
-for i, b in enumerate(BOATS): MODELS["boat_%d" % i] = (WAT + b + ".glb", "size")
-# The dock hands: three kit people, each frozen in four walking strides and standing.
-for i, k in enumerate(["character-male-a", "character-female-b", "character-male-d"]):
+# Raiders: kit people, each frozen in four strides and standing.
+for i, k in enumerate(["character-male-a", "character-male-b", "character-male-c", "character-male-d", "character-male-e", "character-male-f"]):
     for tag, pose in (("w0", "walk:f0"), ("w1", "walk:f0.25"), ("w2", "walk:f0.5"), ("w3", "walk:f0.75"), ("idle", "idle:f0")):
-        MODELS["hand_%d_%s" % (i, tag)] = (MINI + k + ".glb", "height", pose)
+        MODELS["man_%d_%s" % (i, tag)] = (MINI + k + ".glb", "height", pose)
+# Single models from poly.pizza (CC0 or CC BY, see art-src/free/props/manifest.json), fetched by props.py.
+P = "props/"
+for mid, mode in (("horse_f", "size"), ("horse_e", "size"), ("west_cart", "size"), ("wagon_c", "size"), ("carriage", "size"), ("cart", "size"), ("cowboy", "height"),
+                  ("saloon", "size"), ("water_tower_c", "height"), ("windmill", "height"), ("dynamite", "height"), ("gatling", "size"), ("big_cannon", "size"), ("minecart", "size")):
+    MODELS[mid] = (P + mid + ".glb", mode)
 out = os.path.join(ROOT, "Assets", "Resources", "Models")
 os.makedirs(out, exist_ok=True)
 for mid in (sys.argv[1:] or list(MODELS)):

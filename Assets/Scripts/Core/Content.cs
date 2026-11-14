@@ -77,9 +77,9 @@ namespace Ironclad.Core
         public const double CarCost = 20, CarGrowth = 1.17, CarPower = 1.10;
         public const double StartScrip = 20;
         public const double CritBase = 0.05, CritDamageBase = 2;
-        public const double WhistleCooldown = 60, WhistleRange = 16, WhistleStun = 3, WhistlePush = 7;
+        public const double WhistleCooldown = 60, WhistleRange = 13, WhistleStun = 3, WhistlePush = 7;
         public const int StartSlots = 2, MaxSlots = 8;
-        public const double SpawnRing = 44;         // how far out raiders appear
+        public const double SpawnRing = 30;         // how far out raiders appear
         public const double ReviveHull = 0.5;
         public const double StationHull = 0.3;      // share of the hull a station puts back
         public const double DepotHours = 8;         // the depot's patrols earn for this long unattended
@@ -90,27 +90,27 @@ namespace Ironclad.Core
 
         public static readonly List<CarDef> Cars = new List<CarDef>
         {
-            new CarDef { Id = "engine", Name = "Deck Gun", Blurb = "The engine's own gun. Never leaves the front.", Damage = 6, Interval = 0.8, Range = 16 },
-            new CarDef { Id = "gatling", Name = "Gatling Car", Blurb = "A storm of small rounds at whoever is closest.", Damage = 4, Interval = 0.2, Range = 15 },
-            new CarDef { Id = "cannon", Name = "Cannon Car", Blurb = "A slow shell that bursts among them.", Damage = 28, Interval = 2.2, Range = 22, Splash = 3.5, Flight = 0.5, Steel = 60, Mile = 6 },
+            new CarDef { Id = "engine", Name = "Deck Gun", Blurb = "The engine's own gun. Never leaves the front.", Damage = 6, Interval = 0.8, Range = 13 },
+            new CarDef { Id = "gatling", Name = "Gatling Car", Blurb = "A storm of small rounds at whoever is closest.", Damage = 4, Interval = 0.2, Range = 12 },
+            new CarDef { Id = "cannon", Name = "Cannon Car", Blurb = "A slow shell that bursts among them.", Damage = 28, Interval = 2.2, Range = 17, Splash = 3.5, Flight = 0.5, Steel = 60, Mile = 6 },
             new CarDef { Id = "supply", Name = "Supply Car", Blurb = "The wagons either side of it fire a quarter faster.", Aim = Aim.None, Haste = 0.25, Steel = 250, Mile = 12 },
-            new CarDef { Id = "rifle", Name = "Sharpshooter Car", Blurb = "Picks out the toughest raider from far off. Crits often.", Aim = Aim.Strongest, Damage = 48, Interval = 2.4, Range = 30, Crit = 0.2, Steel = 900, Mile = 18 },
+            new CarDef { Id = "rifle", Name = "Sharpshooter Car", Blurb = "Picks out the toughest raider from far off. Crits often.", Aim = Aim.Strongest, Damage = 48, Interval = 2.4, Range = 24, Crit = 0.2, Steel = 900, Mile = 18 },
             new CarDef { Id = "armour", Name = "Armoured Car", Blurb = "Three times the plating, and the wagons either side take a third less.", Aim = Aim.None, Plating = 3, Shield = 0.33, Steel = 3000, Mile = 25 },
-            new CarDef { Id = "flame", Name = "Furnace Car", Blurb = "Burns everything that gets close.", Aim = Aim.Around, Damage = 5, Interval = 0.25, Range = 8, Steel = 9000, Mile = 32 },
-            new CarDef { Id = "mortar", Name = "Mortar Car", Blurb = "Lobs a heavy shell at the far ones. Can't hit close in.", Aim = Aim.Farthest, Damage = 70, Interval = 4, Range = 36, MinRange = 10, Splash = 5.5, Flight = 1.2, Steel = 30000, Mile = 40 },
+            new CarDef { Id = "flame", Name = "Furnace Car", Blurb = "Burns everything that gets close.", Aim = Aim.Around, Damage = 5, Interval = 0.25, Range = 7, Steel = 9000, Mile = 32 },
+            new CarDef { Id = "mortar", Name = "Mortar Car", Blurb = "Lobs a heavy shell at the far ones. Can't hit close in.", Aim = Aim.Farthest, Damage = 70, Interval = 4, Range = 28, MinRange = 8, Splash = 5.5, Flight = 1.2, Steel = 30000, Mile = 40 },
             new CarDef { Id = "repair", Name = "Fitters' Car", Blurb = "Fitters put plating back on the worst-hit wagon as you roll.", Aim = Aim.None, Mend = 0.03, Steel = 90000, Mile = 50 },
-            new CarDef { Id = "dynamo", Name = "Dynamo Car", Blurb = "An arc that jumps from raider to raider.", Damage = 16, Interval = 1, Range = 16, Chain = 3, Steel = 300000, Mile = 60 },
+            new CarDef { Id = "dynamo", Name = "Dynamo Car", Blurb = "An arc that jumps from raider to raider.", Damage = 16, Interval = 1, Range = 13, Chain = 3, Steel = 300000, Mile = 60 },
         };
 
         public static readonly List<EnemyDef> Enemies = new List<EnemyDef>
         {
             new EnemyDef { Id = "outrider", Name = "Outrider", Hp = 14, Speed = 6, Damage = 4, Interval = 1, Bounty = 1, Threat = 1, Mile = 1 },
             new EnemyDef { Id = "sledge", Name = "Sledgeman", Hp = 60, Speed = 2.6, Damage = 14, Interval = 1.6, Bounty = 3, Threat = 3, Mile = 4 },
-            new EnemyDef { Id = "gunwagon", Name = "Gun Wagon", Hp = 32, Speed = 3.5, Damage = 5, Interval = 1.5, Range = 13, Bounty = 3, Threat = 3, Mile = 7 },
+            new EnemyDef { Id = "gunwagon", Name = "Gun Wagon", Hp = 32, Speed = 3.5, Damage = 5, Interval = 1.5, Range = 10, Bounty = 3, Threat = 3, Mile = 7 },
             new EnemyDef { Id = "powder", Name = "Powder Monkey", Hp = 18, Speed = 7.5, Damage = 40, Interval = 1, Bounty = 2, Threat = 2, Mile = 12, Blast = true },
             new EnemyDef { Id = "handcar", Name = "Handcar Gang", Hp = 45, Speed = 9, Damage = 8, Interval = 0.9, Bounty = 4, Threat = 3, Mile = 16, Rail = true },
-            new EnemyDef { Id = "warwagon", Name = "War Wagon", Hp = 320, Speed = 2, Damage = 22, Interval = 2, Range = 11, Bounty = 16, Threat = 12, Mile = 22 },
-            new EnemyDef { Id = "boss", Name = "The Baron's Carriage", Hp = 420, Speed = 1.6, Damage = 30, Interval = 2, Range = 9, Bounty = 50, Threat = 0, Mile = 10, Boss = true },
+            new EnemyDef { Id = "warwagon", Name = "War Wagon", Hp = 320, Speed = 2, Damage = 22, Interval = 2, Range = 9, Bounty = 16, Threat = 12, Mile = 22 },
+            new EnemyDef { Id = "boss", Name = "The Baron's Carriage", Hp = 420, Speed = 1.6, Damage = 30, Interval = 2, Range = 7, Bounty = 50, Threat = 0, Mile = 10, Boss = true },
         };
 
         public static readonly List<RouteDef> Routes = new List<RouteDef>

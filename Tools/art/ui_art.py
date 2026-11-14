@@ -8,8 +8,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 OUT = os.path.join(ROOT, "Assets", "Resources", "UI", "Fx")
 os.makedirs(OUT, exist_ok=True)
 S = 4                                   # supersampling
-INK = (22, 50, 79)
-PAPER, PAPER2 = (255, 246, 227), (243, 226, 192)
+INK = (46, 27, 18)
+PAPER, PAPER2 = (246, 231, 198), (228, 205, 160)
 
 
 def canvas(w, h): return Image.new("RGBA", (w * S, h * S), (0, 0, 0, 0))
@@ -63,15 +63,29 @@ d.polygon([(p[0] * S, p[1] * S) for p in [(x0, y0), (x1, y0), (x1 - 15, 41), (x1
 d.polygon([(p[0] * S, p[1] * S) for p in [(x0 + 5, y1 - 9), (x1 - 5, y1 - 9), (x1, y1), (x0, y1)]], fill=(205, 205, 205, 255))
 save(im, "ribbon", 256, 96)
 
-# The coin: gold, with a fish stamped on it.
+# The coin (scrip): gold, with a star stamped on it.
 im = canvas(128, 132); d = ImageDraw.Draw(im)
 d.ellipse([4 * S, 10 * S, 124 * S, 130 * S], fill=INK + (80,)); d.ellipse([4 * S, 4 * S, 124 * S, 124 * S], fill=INK + (255,))
 d.ellipse([11 * S, 11 * S, 117 * S, 117 * S], fill=(230, 150, 30, 255)); d.ellipse([11 * S, 11 * S, 117 * S, 110 * S], fill=(255, 197, 51, 255))
 d.ellipse([22 * S, 20 * S, 106 * S, 102 * S], outline=(255, 226, 130, 255), width=4 * S)
-fish = (214, 132, 22, 255)
-d.ellipse([34 * S, 46 * S, 84 * S, 78 * S], fill=fish); d.polygon([(80 * S, 62 * S), (100 * S, 46 * S), (100 * S, 78 * S)], fill=fish)
-d.ellipse([44 * S, 55 * S, 51 * S, 62 * S], fill=(255, 226, 130, 255))
+mark = (214, 132, 22, 255)
+import math
+pts = []
+for i in range(10):
+    ang = -math.pi / 2 + i * math.pi / 5; rad = 30 if i % 2 == 0 else 13
+    pts.append(((64 + math.cos(ang) * rad) * S, (61 + math.sin(ang) * rad) * S))
+d.polygon(pts, fill=mark)
 save(im, "coin", 128, 132)
+
+# Steel: an ingot.
+im = canvas(128, 132); d = ImageDraw.Draw(im)
+def ingot(off, col, grow=0):
+    d.polygon([((14 - grow) * S, (92 + grow + off) * S), ((34 - grow) * S, (38 - grow + off) * S), ((94 + grow) * S, (38 - grow + off) * S), ((114 + grow) * S, (92 + grow + off) * S)], fill=col)
+ingot(8, INK + (80,), 7); ingot(0, INK + (255,), 7); ingot(0, (120, 136, 156, 255)); 
+d.polygon([(34 * S, 38 * S), (94 * S, 38 * S), (100 * S, 56 * S), (28 * S, 56 * S)], fill=(190, 204, 220, 255))
+d.polygon([(28 * S, 56 * S), (100 * S, 56 * S), (114 * S, 92 * S), (14 * S, 92 * S)], fill=(146, 162, 182, 255))
+d.line([(40 * S, 46 * S), (88 * S, 46 * S)], fill=(232, 240, 248, 255), width=3 * S)
+save(im, "steel", 128, 132)
 
 # The gem: a cut stone in sea-glass purple.
 im = canvas(128, 132); d = ImageDraw.Draw(im)

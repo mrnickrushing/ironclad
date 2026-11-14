@@ -5,10 +5,7 @@ import json, os, re, sys, time, urllib.request
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.join(ROOT, "art-src", "free", "props")
 UA = {"User-Agent": "Mozilla/5.0 asset-pipeline"}
-IDS = {"big_barn": "q1N3xn2SpC", "barn": "vSqQNA7ez6", "open_barn": "ZIdWHxYsUv", "small_barn": "aTcDP7UERC", "silo_house": "ZgstejsAcN",
-       "market_stalls": "jSqGy8V0MQ", "market_stalls_b": "4ZAhRv2tLG", "market_stand": "DGIM5HGISb", "market_stand_b": "hts7l0NZxW",
-       "dock_long": "bN9Oz3niNm", "dock": "XViKoBh2UN", "dock_stairs": "IaUtCxMAxg", "storage_hut": "BsTn4bKSGb", "hut": "I0IzdnH2iN",
-       "bucket_fish": "G61jVPof0G", "lighthouse": "KRebJXIRb8", "container_red": "vzzCNUB6Zn", "pallet": "MwOFAOgOhg"}
+IDS = {"horse_a": "5ocnVSh_ZF-", "horse_b": "qvTrSG9pZF", "horse_c": "f0_m8hH9BI9", "horse_d": "2csviMCmO46", "horse_e": "F8HAAcLeBL", "horse_f": "2lIMvzwQBV3", "horse_g": "b48xU1GsYOT", "horse_h": "c3lXOu8gooq", "wagon_a": "7PGwjkWbUrS", "wagon_b": "136bU5GesHs", "wagon_c": "9J0ma6qneqK", "wagon_d": "8HnKzYQeRYD", "west_cart": "7Yhe7Ari-5j", "carriage": "6qE9DrRTExX", "cart": "l7bDe7ak6j", "cowboy": "S8hq7LEXTT", "saloon": "82JBTSsWag4", "water_tower": "9JYqZyTiVkU", "water_tower_b": "tMK8bhapAK", "water_tower_c": "WGSUkExDJ4", "dynamite": "HvLXdxqAkB", "gatling": "T8ofhRSenf", "big_cannon": "J15vlPVvKK", "windmill": "ctIRaIM3zXu", "minecart": "fjvk6xVJ3u3", "town_sign": "VSZubp0ru3"}
 os.makedirs(OUT, exist_ok=True)
 mp = os.path.join(OUT, "manifest.json")
 man = json.load(open(mp)) if os.path.exists(mp) else {}

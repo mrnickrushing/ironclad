@@ -17,9 +17,9 @@ namespace Ironclad.Game
         public static Font Body { get { return _body ?? (_body = Resources.Load<Font>("Fonts/Fredoka-SemiBold") ?? Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf")); } }
 
         // Cut paper and stickers: cream panels, candy colours, navy ink for outlines and for text on paper.
-        public static readonly Color Ink = new Color(0.086f, 0.196f, 0.31f, 1f), Paper = new Color(1f, 0.965f, 0.89f, 1f), Panel = new Color(1f, 0.965f, 0.89f, 1f), Card = new Color(0.98f, 0.9f, 0.76f, 1f);
-        public static readonly Color Gold = new Color(1f, 0.77f, 0.2f), Green = new Color(0.3f, 0.77f, 0.42f), Blue = new Color(0.1f, 0.71f, 0.78f), Red = new Color(1f, 0.42f, 0.34f), Coral = new Color(1f, 0.42f, 0.34f), Grape = new Color(0.48f, 0.38f, 1f);
-        public static readonly Color Dim = new Color(0.086f, 0.196f, 0.31f, 0.78f), Off = new Color(0.72f, 0.76f, 0.8f), Faint = new Color(0.086f, 0.196f, 0.31f, 0.1f);
+        public static readonly Color Ink = new Color(0.18f, 0.105f, 0.07f, 1f), Paper = new Color(0.965f, 0.905f, 0.776f, 1f), Panel = new Color(0.965f, 0.905f, 0.776f, 1f), Card = new Color(0.94f, 0.85f, 0.68f, 1f);
+        public static readonly Color Gold = new Color(0.95f, 0.68f, 0.16f), Green = new Color(0.36f, 0.68f, 0.28f), Blue = new Color(0.2f, 0.52f, 0.66f), Red = new Color(0.8f, 0.26f, 0.2f), Coral = new Color(0.8f, 0.26f, 0.2f), Grape = new Color(0.55f, 0.36f, 0.72f);
+        public static readonly Color Dim = new Color(0.18f, 0.105f, 0.07f, 0.78f), Off = new Color(0.7f, 0.66f, 0.6f), Faint = new Color(0.18f, 0.105f, 0.07f, 0.1f);
 
         /// <summary>White lettering with a navy outline and a drop, for text on colour or over the world.</summary>
         public static Text Stroke(this Text t, float width = 2.5f)
