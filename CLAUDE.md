@@ -39,6 +39,13 @@ The project was started from Reel Empire (`~/reelempire`): the platform code (`G
   `Tools/appstore/iap.py` (the same products as `Sim.Products`). Web pages are the `gh-pages` branch
   (https://mrnickrushing.github.io/ironclad/).
 
+- Long-term layers: daily gift and three daily tasks from six (`Sim.Daily`), awards, gems for each station first
+  reached on a line, and the Baron's seals (`Content.Perks`, `Sim.BuyPerk`: one seal a boss, seven lasting perks, the
+  workshop's second section). With AUTO on, `Hud.UpdateOver` collects a finished run after a countdown.
+- `Game/Debug/PlayBot.cs` (editor only) plays through the real HUD methods: `PlayBot.Begin(10)`, `PlayBot.Report()`.
+- `Tools/ios-export.sh` switches the Editor to the iOS platform and recompiles before building, and refuses an export
+  without the AdMob id or the entitlements. Music is `Tools/art/music.py` ("day" while rolling, "night" at rest).
+
 ## Verify every change
 
 ```bash
