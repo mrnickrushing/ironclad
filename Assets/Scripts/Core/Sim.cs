@@ -10,7 +10,7 @@ namespace Ironclad.Core
     public sealed partial class Sim
     {
         public readonly GameState State;
-        public Sim(GameState state) { State = state; state.Repair(); }
+        public Sim(GameState state) { State = state; state.Repair(); if (state.run == null && !RouteOpen(state.route)) state.route = 0; }
 
         /// <summary>Something the interface shows has changed (levels, unlocks, owned things, the phase of the run).</summary>
         public event Action Changed;
