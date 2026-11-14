@@ -530,6 +530,46 @@ namespace Ironclad.Game
             return best;
         }
 
+        // ---- pictures of the cars, for the interface ----
+
+        readonly Dictionary<string, Sprite> _icons = new Dictionary<string, Sprite>();
+
+        /// <summary>A picture of a car with its weapon, rendered once from the real model.</summary>
+        public Sprite Icon(string type)
+        {
+            Sprite sp;
+            if (_icons.TryGetValue(type, out sp)) return sp;
+            var stage = new GameObject("IconStage").transform;
+            stage.position = new Vector3(0, -900, 0);
+            var v = new CarView { Root = new GameObject(type).transform };
+            v.Root.SetParent(stage, false);
+            BuildCar(v, type);
+            if (v.Gun != null) v.Gun.localRotation = Quaternion.Euler(0, v.AimOffset, 0);
+            var b = new Bounds(stage.position, Vector3.zero); bool any = false;
+            foreach (var r in stage.GetComponentsInChildren<Renderer>()) { if (!any) { b = r.bounds; any = true; } else b.Encapsulate(r.bounds); }
+            var camGo = new GameObject("IconCam"); camGo.transform.SetParent(stage, false);
+            var cam = camGo.AddComponent<Camera>();
+            cam.orthographic = true; cam.orthographicSize = Mathf.Max(b.size.x * 0.56f, b.size.y * 0.75f);
+            cam.clearFlags = CameraClearFlags.SolidColor; cam.backgroundColor = new Color(0, 0, 0, 0);
+            cam.nearClipPlane = 0.1f; cam.farClipPlane = 80; cam.enabled = false;
+            var rot = Quaternion.Euler(22, 28, 0);
+            cam.transform.rotation = rot; cam.transform.position = b.center - rot * Vector3.forward * 30;
+            var data = UnityEngine.Rendering.Universal.CameraExtensions.GetUniversalAdditionalCameraData(cam);
+            data.renderPostProcessing = false; data.renderShadows = false;
+            const int N = 256;
+            var rt = RenderTexture.GetTemporary(N, N, 24, RenderTextureFormat.ARGB32);
+            bool fog = RenderSettings.fog; RenderSettings.fog = false;
+            cam.targetTexture = rt; cam.Render();
+            RenderSettings.fog = fog;
+            var prev = RenderTexture.active; RenderTexture.active = rt;
+            var tex = new Texture2D(N, N, TextureFormat.RGBA32, false);
+            tex.ReadPixels(new Rect(0, 0, N, N), 0, 0); tex.Apply();
+            RenderTexture.active = prev; cam.targetTexture = null; RenderTexture.ReleaseTemporary(rt);
+            DestroyImmediate(stage.gameObject);
+            sp = Sprite.Create(tex, new Rect(0, 0, N, N), new Vector2(0.5f, 0.5f), 100);
+            return _icons[type] = sp;
+        }
+
         /// <summary>Where a car is, for the interface (signs over wagons).</summary>
         public Vector3 CarPosition(int index) { return index >= 0 && index < _cars.Count ? _cars[index].Root.position : Vector3.zero; }
     }

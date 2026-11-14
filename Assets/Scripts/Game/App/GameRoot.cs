@@ -96,10 +96,10 @@ namespace Ironclad.Game
             var loading = LoadingScreen.Show();
             yield return null; yield return null;          // the screen is up before the heavy work starts
             loading.Progress = 0.25f;
-            TrainView.Create(transform);
+            if (TrainView.Instance == null) TrainView.Create(transform);
             loading.Progress = 0.7f;
             yield return null;
-            Hud.Create();
+            if (Hud.Instance == null) Hud.Create();
             loading.Progress = 0.9f;
             yield return null;
             _ready = true;

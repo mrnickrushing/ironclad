@@ -38,6 +38,7 @@ namespace Ironclad.Game
             _root = Ui.Rect("Safe", canvas); _root.Fill(); _root.gameObject.AddComponent<SafeArea>();
             _fxLayer = Ui.Rect("Fx", _root); _fxLayer.Fill();
             _face = Ui.Rect("Face", _root); _face.Fill();
+            _handLayer = Ui.Rect("Hand", _root); _handLayer.Fill();
             _screenRoot = Ui.Rect("Screen", _root); _screenRoot.Fill();
             _modal = Ui.Rect("Modal", _root); _modal.Fill();
             _sim = S;
@@ -73,7 +74,7 @@ namespace Ironclad.Game
                 _shown = want; _dirty = false;
                 if (changed && _screen != Page.None && want != Face.Depot) CloseScreen();
                 Ui.Clear(_face);
-                _chips.Clear();
+                _chips.Clear(); _departButton = null; _workshopButton = null; _whistle = null;
                 switch (want)
                 {
                     case Face.Depot: BuildDepot(); break;
@@ -85,6 +86,7 @@ namespace Ironclad.Game
             }
             if (_shown == Face.Run || _shown == Face.Station) UpdateRun();
             if (_shown == Face.Depot) UpdateDepot();
+            UpdateHand();
             UpdatePops();
             UpdateToast();
             UpdateRate();
@@ -110,6 +112,61 @@ namespace Ironclad.Game
             var sp = cam.WorldToScreenPoint(world);
             if (sp.z <= 0) return false;
             return RectTransformUtility.ScreenPointToLocalPointInRectangle(_fxLayer, sp, null, out canvasPos);
+        }
+
+        // ---- the first steps: a welcome, then a hand that points at the next thing to press ----
+
+        RectTransform _handLayer, _hand, _departButton, _workshopButton;
+
+        void Welcome()
+        {
+            var card = Card(980, 600, "ALL ABOARD");
+            Ui.Label("B", card, "The Baron's raiders hold every mile of this line.\n\nYour train fights by itself. Take it as far down the track as you can: every mile pays <b>steel</b>, and steel builds a stronger train for the next run.", 34, Ui.Ink, TextAnchor.UpperCenter, false)
+                .rectTransform.Band(true, -100, 300, 60);
+            var go = Ui.Button("Go", card, "LET'S ROLL", Ui.Green, () => { S.State.tutorialStep = 1; CloseCard(); GameRoot.Instance.Save(); }, 46);
+            ((RectTransform)go.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 44), new Vector2(460, 124));
+        }
+
+        /// <summary>What the hand should point at right now (null: nothing).</summary>
+        RectTransform HandTarget()
+        {
+            var s = S; var r = s.Run;
+            if (ModalOpen || ScreenOpen || s.State.tutorialStep >= 2) return null;
+            if (_shown == Face.Depot)
+            {
+                if (s.State.runs == 0) return _departButton;
+                if (s.State.upgrades.Count == 0 && s.State.steel >= s.UpgradeCost("hull")) return _workshopButton;
+                if (s.State.upgrades.Count > 0 && s.State.runs >= 2) { s.State.tutorialStep = 2; return null; }
+                return s.State.runs <= 2 ? _departButton : null;
+            }
+            if (_shown == Face.Run && r != null && s.State.runs == 0)
+            {
+                bool bought = false; foreach (var c in r.cars) if (c.field > 0) bought = true;
+                if (!bought)
+                {
+                    Chip best = null;
+                    foreach (var c in _chips) if (c.Car < r.cars.Count && r.scrip >= s.FieldCost(c.Car) && (best == null || c.Car > best.Car)) best = c;
+                    if (best != null) return (RectTransform)best.Buy.transform;
+                }
+                if (s.State.whistles == 0 && s.WhistleReady && r.enemies.Count >= 6 && _whistle != null) return (RectTransform)_whistle.transform;
+            }
+            return null;
+        }
+
+        void UpdateHand()
+        {
+            if (_shown == Face.Depot && S.State.tutorialStep == 0 && !ModalOpen && S.State.runs == 0) Welcome();
+            var target = HandTarget();
+            if (target == null) { if (_hand != null) _hand.gameObject.SetActive(false); return; }
+            if (_hand == null)
+            {
+                var img = Ui.ArtImg("Hand", _handLayer, "hand", Color.white, 0);
+                _hand = img.rectTransform; _hand.sizeDelta = new Vector2(120, 120); _hand.pivot = new Vector2(0.3f, 1f);
+            }
+            _hand.gameObject.SetActive(true);
+            var corners = new Vector3[4]; target.GetWorldCorners(corners);
+            var mid = (corners[0] + corners[2]) * 0.5f;
+            _hand.position = mid + new Vector3(0, (-10 + Mathf.Abs(Mathf.Sin(Time.unscaledTime * 5)) * -22) * _hand.lossyScale.y, 0);
         }
 
         // ---- shared pieces ----

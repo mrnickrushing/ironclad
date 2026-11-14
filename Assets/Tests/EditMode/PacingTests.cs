@@ -15,7 +15,7 @@ namespace Ironclad.Tests
                 string best = null; double cost = double.MaxValue; bool car = false;
                 foreach (var u in Content.Upgrades)
                 {
-                    if (s.UpgradeMaxed(u.Id) || u.Id == "whistle" || u.Id == "speed") continue;
+                    if (s.UpgradeMaxed(u.Id) || u.Id == "whistle") continue;
                     double c = s.UpgradeCost(u.Id);
                     if (c < cost) { cost = c; best = u.Id; car = false; }
                 }
@@ -51,6 +51,7 @@ namespace Ironclad.Tests
             while (clock < 6 * 3600 && run < 400)
             {
                 Spend(s);
+                s.SetSpeed(s.SpeedsOpen - 1);
                 s.StartRun(); run++;
                 double started = clock;
                 for (int i = 0; i < 200000 && !s.RunEnded; i++)
@@ -64,9 +65,9 @@ namespace Ironclad.Tests
                 for (int r = Content.Routes.Count - 1; r > 0; r--) if (s.RouteOpen(r) && s.State.best[r - 1] >= Content.Routes[r].Opens + 15) { s.ChooseRoute(r); break; }
                 if (clock >= next || run <= 6)
                 {
-                    TestContext.Out.WriteLine("{0,5:0.00} h  run {1,3}  {2,-9} mile {3,3}  {4,5:0.0} min  +{5,-8} steel {6,-8} power {7,2} train [{8}]",
+                    TestContext.Out.WriteLine("{0,5:0.00} h  run {1,3}  {2,-9} mile {3,3}  {4,5:0.0} min x{9}  +{5,-8} steel {6,-8} power {7,2} train [{8}]",
                         clock / 3600, run, Content.Routes[route].Id, mile, (clock - started) / 60, Format.Money(steel), Format.Money(s.State.steel),
-                        s.UpgradeLevel("power"), string.Join(" ", s.State.train.Select(id => id + s.CarLevel(id))));
+                        s.UpgradeLevel("power"), string.Join(" ", s.State.train.Select(id => id + s.CarLevel(id))), s.Speed);
                     if (run > 6) next = clock + 900;
                 }
             }

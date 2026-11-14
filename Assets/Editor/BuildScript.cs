@@ -16,7 +16,7 @@ namespace Ironclad.EditorTools
         // Only small shaders go here: an always-included shader is built in every variant it has (URP/Lit has over half
         // a million). The URP ones the game makes materials from at runtime ship through material assets instead
         // (EnsureMaterials), so only the variants those use are built.
-        static readonly string[] Shaders = { "Ironclad/VertexLit", "Skybox/Cubemap" };
+        static readonly string[] Shaders = { "Ironclad/VertexLit", "Ironclad/FxAdd", "Ironclad/FxAlpha", "Skybox/Cubemap" };
 
         /// <summary>Resources/Materials/Surface.mat (URP Lit with a normal map) and Weather.mat (transparent particles): the runtime copies these.</summary>
         [MenuItem("Ironclad/Ensure runtime materials")]

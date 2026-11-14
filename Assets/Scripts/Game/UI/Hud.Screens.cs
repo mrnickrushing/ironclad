@@ -153,7 +153,7 @@ namespace Ironclad.Game
                 double cost = s.CarCost(id); bool can = s.State.steel >= cost;
                 string stats = d.Support ? d.Blurb : d.Blurb + "  " + Format.Money(d.Damage * Math.Pow(Content.CarPower, Math.Max(0, lv - 1)) * s.DamageMult) + " damage every " + d.Interval.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + " s";
                 if (!plans) y = Entry(y, Ui.Ic("lock"), Ui.Dim, d.Name, "The plans turn up at mile " + d.Mile + " on any line.", null, Ui.Off, null, "MILE " + d.Mile);
-                else y = Entry(y, Ui.Ic(d.Support ? "wrench" : "target"), Ui.Ink, d.Name + (built ? "  <size=24><color=#7A5A40>level " + lv + "</color></size>" : ""), stats,
+                else y = Entry(y, TrainView.Instance != null ? TrainView.Instance.Icon(id) : null, Color.white, d.Name + (built ? "  <size=24><color=#7A5A40>level " + lv + "</color></size>" : ""), stats,
                     (built ? "" : "BUILD  ") + Format.Money(cost) + " steel", built ? Ui.Green : Ui.Gold, can ? (Action)(() => { if (S.BuyCar(id)) { Sfx.Play("build", 0.7f); Haptics.Light(); } }) : null, null, !built);
             }
             EndList(-y + 30);

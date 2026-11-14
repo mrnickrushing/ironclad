@@ -26,7 +26,14 @@ namespace Ironclad.Game
             }
         }
 
-        static readonly Color ChipTop = new Color(0.36f, 0.22f, 0.15f);
+        /// <summary>The picture of a car, from the model itself.</summary>
+        static Image CarPicture(Transform parent, string type)
+        {
+            var img = Ui.Img("Pic", parent, Color.white);
+            if (TrainView.Instance != null) img.sprite = TrainView.Instance.Icon(type);
+            img.preserveAspect = true;
+            return img;
+        }
 
         void BuildRun()
         {
@@ -59,14 +66,15 @@ namespace Ironclad.Game
                 int car = i; var c = r.cars[i];
                 var chip = new Chip { Car = i };
                 chip.Back = Ui.ArtImg("Chip", _face, "card", Color.white, 26);
-                chip.Back.rectTransform.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(x0 + (n - 1 - i) * w - 110, 14), new Vector2(w - 8, 168));
-                var name = Ui.Label("N", chip.Back.transform, Short(c.type), 26, Ui.Ink); name.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -8), new Vector2(w - 20, 32));
-                name.resizeTextForBestFit = true; name.resizeTextMinSize = 16; name.resizeTextMaxSize = 26;
-                chip.Level = Ui.Label("L", chip.Back.transform, "", 22, Ui.Dim, TextAnchor.MiddleCenter, false); chip.Level.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -38), new Vector2(w - 20, 26));
-                Image plate; Bar(chip.Back.transform, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -68), new Vector2(w - 34, 18), Ui.Blue, out plate); chip.Plate = plate;
+                chip.Back.rectTransform.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(x0 + (n - 1 - i) * w - 110, 14), new Vector2(w - 8, 176));
+                var pic = CarPicture(chip.Back.transform, c.type); pic.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, 58), new Vector2(Mathf.Min(w - 24, 124), Mathf.Min(w - 24, 124)));
+                var name = Ui.Label("N", chip.Back.transform, Short(c.type), 22, Ui.Ink); name.rectTransform.Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(12, -50), new Vector2(w * 0.62f, 26)); name.alignment = TextAnchor.MiddleLeft;
+                name.resizeTextForBestFit = true; name.resizeTextMinSize = 14; name.resizeTextMaxSize = 22;
+                chip.Level = Ui.Label("L", chip.Back.transform, "", 22, Ui.Dim, TextAnchor.MiddleRight); chip.Level.rectTransform.Place(new Vector2(1, 1), new Vector2(1, 1), new Vector2(-12, -50), new Vector2(w * 0.32f, 26));
+                Image plate; Bar(chip.Back.transform, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -80), new Vector2(w - 30, 14), Ui.Blue, out plate); chip.Plate = plate;
                 if (i == 0) plate.transform.parent.gameObject.SetActive(false);
                 chip.Buy = Ui.Button("Buy", chip.Back.transform, "", Ui.Green, () => BuyField(car), 28);
-                ((RectTransform)chip.Buy.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 14), new Vector2(w - 28, 66));
+                ((RectTransform)chip.Buy.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 12), new Vector2(w - 24, 64));
                 chip.Cost = chip.Buy.GetComponentInChildren<Text>(); chip.BuyImg = chip.Buy.GetComponent<Image>();
                 chip.Buy.gameObject.AddComponent<HoldRepeat>().Tap = () => BuyField(car);
                 _chips.Add(chip);
@@ -80,7 +88,7 @@ namespace Ironclad.Game
 
             // One line of help while the game is new.
             var hint = Ui.ArtImg("Hint", _face, "plate", Ui.Ink, 36); _hint = hint.rectTransform;
-            _hint.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-110, 196), new Vector2(980, 66));
+            _hint.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-110, 262), new Vector2(980, 66));
             _hintText = Ui.Label("T", _hint, "", 30, Color.white, TextAnchor.MiddleCenter, false); _hintText.rectTransform.Fill(8); _hintText.rectTransform.offsetMin = new Vector2(8, 12);
             UpdateRun();
         }
@@ -144,7 +152,7 @@ namespace Ironclad.Game
                 double cost = s.FieldCost(c.Car); bool can = r.scrip >= cost;
                 c.Cost.text = Format.Money(cost);
                 c.BuyImg.color = can ? Ui.Green : Ui.Off;
-                c.Level.text = "level " + (car.field + 1);
+                c.Level.text = "Lv " + (car.field + 1);
                 if (car.platingMax > 0) { float p = Mathf.Clamp01((float)(car.plating / car.platingMax)); c.Plate.rectTransform.anchorMax = new Vector2(Mathf.Max(0.03f, p), 1); c.Plate.color = car.Out ? Ui.Coral : Ui.Blue; }
                 c.Back.color = car.Out ? new Color(1f, 0.7f, 0.66f) : Color.white;
             }
@@ -208,7 +216,8 @@ namespace Ironclad.Game
             var s = S; int n = s.State.train.Count; float w = Mathf.Min(170, 1250f / (n + 1));
             float x0 = -(n) * w / 2;
             var eng = Ui.ArtImg("Engine", p, "card", new Color(0.86f, 0.8f, 0.7f), 26); eng.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(x0 + n * w, at.y), new Vector2(w - 8, 110));
-            Ui.Label("N", eng.transform, "ENGINE", 24, Ui.Ink).rectTransform.Fill(6);
+            var el = Ui.Label("N", eng.transform, "ENGINE", 20, Ui.Ink, TextAnchor.LowerCenter); el.rectTransform.Fill(6); el.rectTransform.offsetMin = new Vector2(6, 14);
+            CarPicture(eng.transform, "engine").rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, 14), new Vector2(92, 92));
             for (int i = 0; i < n; i++)
             {
                 int place = i; bool picked = _shuntFrom == i;
@@ -219,6 +228,8 @@ namespace Ironclad.Game
                     _dirty = true;
                 }, 24);
                 ((RectTransform)b.transform).Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(x0 + (n - 1 - i) * w, at.y), new Vector2(w - 8, 110));
+                var bl = b.GetComponentInChildren<Text>(); bl.alignment = TextAnchor.LowerCenter; bl.fontSize = 20;
+                var bp = CarPicture(b.transform, s.State.train[i]); bp.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, 14), new Vector2(92, 92));
                 if (n > 1 && picked)
                 {
                     var x = Ui.Button("X", b.transform, "✕", Ui.Coral, () => { _shuntFrom = -1; if (S.Uncouple(place)) Sfx.Play("close", 0.5f); _dirty = true; }, 24);

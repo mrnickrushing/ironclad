@@ -48,6 +48,7 @@ namespace Ironclad.Game
             // DEPART, and whether to set off again by itself.
             var go = Ui.Button("Depart", _face, "DEPART", Ui.Green, () => { if (S.StartRun()) { Sfx.Play("dispatch", 0.9f); Haptics.Medium(); GameRoot.Instance.Save(); } }, 64);
             ((RectTransform)go.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 150), new Vector2(520, 150));
+            _departButton = (RectTransform)go.transform;
             var auto = Ui.Button("Auto", _face, s.State.auto ? "AUTO: ON" : "AUTO: OFF", s.State.auto ? Ui.Blue : Ui.Off, () => { S.State.auto = !S.State.auto; _dirty = true; Toast(S.State.auto ? "The train sets off again by itself after each run" : "The train waits for you after each run"); }, 26);
             ((RectTransform)auto.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(390, 164), new Vector2(210, 76));
 
@@ -61,6 +62,7 @@ namespace Ironclad.Game
                 var pg = pages[i];
                 var b = Ui.Button(names[i], _face, null, tints[i], () => Open(pg), 30);
                 var rt = (RectTransform)b.transform; rt.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2((i - 2) * 300, 16), new Vector2(284, 112));
+                if (pg == Page.Workshop) _workshopButton = rt;
                 var ic = Ui.Img("I", rt, Color.white); ic.sprite = Ui.Ic(icons[i]); ic.preserveAspect = true; ic.rectTransform.Place(new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(22, 6), new Vector2(56, 56));
                 var l = Ui.Label("L", rt, names[i], 30, Color.white); l.rectTransform.Fill(); l.rectTransform.offsetMin = new Vector2(80, 14); l.rectTransform.offsetMax = new Vector2(-12, 0); l.Stroke(2f);
                 if (pg == Page.Awards)

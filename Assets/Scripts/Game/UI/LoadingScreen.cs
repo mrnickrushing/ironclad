@@ -62,7 +62,7 @@ namespace Ironclad.Game
                     band.Band(false, 0, 620 * (8 - i) / 8f);
                 }
 
-            _rays = Ui.ArtImg("Rays", root, "rays", new Color(1f, 1f, 1f, 0.22f), 0).rectTransform;
+            _rays = Ui.ArtImg("Rays", root, "rays", new Color(1f, 1f, 1f, hero != null ? 0f : 0.22f), 0).rectTransform;
             _rays.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 0.5f), new Vector2(0, -300), new Vector2(1500, 1500));
             var title = Ui.Label("Title", root, "IRONCLAD", 180, Color.white);
             title.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -150), new Vector2(1400, 210));
@@ -85,9 +85,10 @@ namespace Ironclad.Game
             _percent.rectTransform.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 420), new Vector2(800, 54));
             _percent.Stroke(2.5f);
 
-            var tip = Ui.Label("Tip", root, Tips[Random.Range(0, Tips.Length)], 36, Color.white, TextAnchor.MiddleCenter, false);
-            tip.rectTransform.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 220), new Vector2(1000, 100));
-            tip.Stroke(2f);
+            var tipPlate = Ui.ArtImg("TipPlate", root, "plate", Ui.Ink, 36);
+            tipPlate.rectTransform.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 232), new Vector2(1180, 76));
+            var tip = Ui.Label("Tip", tipPlate.transform, Tips[Random.Range(0, Tips.Length)], 32, Color.white, TextAnchor.MiddleCenter, false);
+            tip.rectTransform.Fill(8); tip.rectTransform.offsetMin = new Vector2(8, 12);
 
             // The studio's mark on its own dark plate (it is drawn for a dark ground).
             var plate = Ui.Img("Studio", root, new Color(0.05f, 0.09f, 0.17f, 1f), true).rectTransform;

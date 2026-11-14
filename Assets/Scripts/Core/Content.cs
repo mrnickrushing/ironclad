@@ -72,7 +72,7 @@ namespace Ironclad.Core
         public const int StationEvery = 10;         // miles between stations (a boss rides on each of those miles)
         public const double HullBase = 150, PlateBase = 60;
         public const double HpPerMile = 1.085, DamagePerMile = 1.05, BountyPerMile = 1.035, SteelPerMile = 1.055;
-        public const double SteelPerMileBase = 8, BossSteel = 6;
+        public const double SteelPerMileBase = 10, BossSteel = 6;
         public const double FieldCost = 10, FieldGrowth = 1.36, FieldPower = 1.22;
         public const double CarCost = 20, CarGrowth = 1.17, CarPower = 1.10;
         public const double StartScrip = 20;
@@ -110,7 +110,7 @@ namespace Ironclad.Core
             new EnemyDef { Id = "powder", Name = "Powder Monkey", Hp = 18, Speed = 7.5, Damage = 40, Interval = 1, Bounty = 2, Threat = 2, Mile = 12, Blast = true },
             new EnemyDef { Id = "handcar", Name = "Handcar Gang", Hp = 45, Speed = 9, Damage = 8, Interval = 0.9, Bounty = 4, Threat = 3, Mile = 16, Rail = true },
             new EnemyDef { Id = "warwagon", Name = "War Wagon", Hp = 320, Speed = 2, Damage = 22, Interval = 2, Range = 9, Bounty = 16, Threat = 12, Mile = 22 },
-            new EnemyDef { Id = "boss", Name = "The Baron's Carriage", Hp = 420, Speed = 1.6, Damage = 30, Interval = 2, Range = 7, Bounty = 50, Threat = 0, Mile = 10, Boss = true },
+            new EnemyDef { Id = "boss", Name = "The Baron's Carriage", Hp = 230, Speed = 1.6, Damage = 20, Interval = 2, Range = 7, Bounty = 50, Threat = 0, Mile = 10, Boss = true },
         };
 
         public static readonly List<RouteDef> Routes = new List<RouteDef>
@@ -136,7 +136,7 @@ namespace Ironclad.Core
             new UpgradeDef { Id = "mend", Name = "Running Repairs", Blurb = "The hull mends 0.05% a second more", Cost = 80, Growth = 1.25, Step = 0.0005, Max = 40 },
             new UpgradeDef { Id = "whistle", Name = "Bigger Whistle", Blurb = "The whistle is ready 2 seconds sooner", Cost = 100, Growth = 1.3, Step = 2, Max = 15 },
             new UpgradeDef { Id = "slots", Name = "Longer Train", Blurb = "Couple on one more wagon", Cost = 150, Growth = 9, Step = 1, Max = MaxSlots - StartSlots },
-            new UpgradeDef { Id = "speed", Name = "Regulator", Blurb = "A faster running speed to choose", Cost = 100, Growth = 30, Step = 1, Max = 3 },
+            new UpgradeDef { Id = "speed", Name = "Regulator", Blurb = "A faster running speed to choose", Cost = 60, Growth = 25, Step = 1, Max = 3 },
         };
 
         public static readonly List<CardDef> Cards = new List<CardDef>
