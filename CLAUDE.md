@@ -10,6 +10,34 @@ The project was started from Reel Empire (`~/reelempire`): the platform code (`G
 `App/Telemetry`, `UI/Ui`, `UI/LoadingScreen`), the tools and the conventions are the same. Service ids that belong to
 this game don't exist yet and are marked `REPLACE` (RevenueCat key, AdMob app and rewarded unit, App Store id).
 
+- `Assets/Scripts/Core` (no Unity dependency): `Content` (wagons, raiders, lines, workshop upgrades, cards, tuning),
+  `GameState` (the save, including the run in progress), `Sim` (tick in fixed 0.05 s steps at the running speed),
+  `Sim.Run` (miles, spawning, raiders striking, cars firing, shells, mending, stations and cards, whistle, mark,
+  revive, closing a run), `Sim.Workshop` (steel, upgrades, building and coupling wagons, the multipliers a run is
+  fought with, field levels), `Sim.Depot` (steel while away), `Sim.Daily` (gift, tasks), `Sim.Achievements`,
+  `Sim.Ads` (rewarded only: revive, double the run, double the depot), `Sim.Store`, `Sim.Reminders`.
+  Car 0 is the engine at x = 0; wagons trail at `Sim.CarX(i)`; z is across the track. Raiders strike the nearest car
+  that isn't `Out`; a wagon is out from plating 0 until a quarter is mended.
+- Tests (`Assets/Tests/EditMode`): `RunTests`, `GameCenterTests`, `PacingTests` (a greedy player's first hours: run
+  `Tools/core-test.sh --logger "console;verbosity=detailed" --filter "Name~FirstHours"` after any tuning change).
+  Build sessions with `TestGame.New()` (fixed clock).
+- `Assets/Scripts/Game` (everything built from code at runtime; `GameRoot` boots in any scene): `World/TrainView`
+  (the train stands at the origin and the country scrolls past: ground sheet, props and rails wrap every
+  `Span * 2`; a station slides in when the run stops; `BuildCar` puts a weapon on each wagon, `BuildFoe` makes each
+  raider; the simulation's events drive tracers, shells, bursts), `World/Fx` (two particle systems, pooled lines,
+  shells, rings), `World/Models` (`Along`: a kit model laid along the track; `Tall`: stood at a height),
+  `App/CameraRig`, `App/Sfx` (interface sounds are files; the fight's sounds are synthesised in `Synth`).
+- Interface (`UI/Hud*.cs`): four faces picked by the run's phase (`Hud.Depot`, `Hud.Run` for the run, the station
+  and the end), screens over the depot (`Hud.Screens`: workshop, train, today, awards, shop, settings), `Hud.Signs`
+  (words rising from the fight, the toast). Parchment, oxblood and brass, painted by `Tools/art/ui_art.py`.
+  Check new screens at 1800x830 (`Tools/unity-capture.sh`).
+- Art: `python3 -I Tools/art/kenney.py <kits>` and `python3 -I Tools/art/props.py` fetch into `art-src/free`
+  (ignored by git); `python3 -I Tools/art/models.py [id...]` converts to `Assets/Resources/Models/<id>.fbx`.
+  Keep `CREDITS.md` and `Hud.Screens.CreditsText` in step with what ships.
+- App Store: `docs/appstore/listing.json`, `gamecenter.json` (+ badges from `Tools/art/gc_badges.py`),
+  `Tools/appstore/iap.py` (the same products as `Sim.Products`). Web pages are the `gh-pages` branch
+  (https://mrnickrushing.github.io/ironclad/).
+
 ## Verify every change
 
 ```bash

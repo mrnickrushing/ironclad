@@ -28,15 +28,14 @@ SCREENSHOT = os.environ.get("IAP_SCREENSHOT") or \
 
 # productId, type, price (USD), display name (<= 30), description (<= 45)
 PRODUCTS = [
-    ("ironclad.gems.small", "CONSUMABLE", "1.99", "Handful of Gems", "100 gems"),
-    ("ironclad.gems.medium", "CONSUMABLE", "4.99", "Bucket of Gems", "300 gems"),
-    ("ironclad.gems.large", "CONSUMABLE", "9.99", "Crate of Gems", "700 gems"),
-    ("ironclad.gems.huge", "CONSUMABLE", "19.99", "Hold Full of Gems", "1,600 gems"),
-    ("ironclad.starter", "NON_CONSUMABLE", "2.99", "Deckhand's Pack", "250 gems, an extra porter and truck for good"),
-    ("ironclad.ledger", "NON_CONSUMABLE", "7.99", "Captain's Ledger", "All income doubled for good, in every harbour"),
-    ("ironclad.fleet", "NON_CONSUMABLE", "4.99", "Second Boat Out", "Send two voyages at once, for good"),
-    ("ironclad.nightcrew", "NON_CONSUMABLE", "4.99", "Night Crew", "4 more hours of away earnings, for good"),
-    ("ironclad.season", "NON_RENEWING_SUBSCRIPTION", "7.99", "Season Pass", "Premium rewards for the current season"),
+    ("ironclad.gems.small", "CONSUMABLE", "1.99", "Pouch of Gems", "100 gems"),
+    ("ironclad.gems.medium", "CONSUMABLE", "4.99", "Strongbox of Gems", "300 gems"),
+    ("ironclad.gems.large", "CONSUMABLE", "9.99", "Mail Sack of Gems", "700 gems"),
+    ("ironclad.gems.huge", "CONSUMABLE", "19.99", "Boxcar of Gems", "1,600 gems"),
+    ("ironclad.starter", "NON_CONSUMABLE", "2.99", "Fireman's Pack", "250 gems and 1,500 steel"),
+    ("ironclad.doubler", "NON_CONSUMABLE", "7.99", "Rolling Mill", "All steel doubled, for good"),
+    ("ironclad.pass", "NON_CONSUMABLE", "4.99", "Conductor's Pass", "Advert rewards without the advert"),
+    ("ironclad.depot", "NON_CONSUMABLE", "3.99", "Night Shift", "The depot works 4 more hours"),
 ]
 
 

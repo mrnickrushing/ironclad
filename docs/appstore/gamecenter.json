@@ -1,0 +1,226 @@
+{
+ "leaderboards": [
+  {
+   "id": "ironclad.board.miles",
+   "ref": "miles",
+   "name": "Furthest Mile",
+   "description": "The furthest mile you have reached on any line.",
+   "suffix": " miles",
+   "singular": " mile",
+   "glyph": "compass",
+   "tier": 3,
+   "image": "gamecenter/board_miles.png"
+  },
+  {
+   "id": "ironclad.board.distance",
+   "ref": "distance",
+   "name": "Miles Rolled",
+   "description": "Every mile your trains have ever finished.",
+   "suffix": " miles",
+   "singular": " mile",
+   "glyph": "road",
+   "tier": 2,
+   "image": "gamecenter/board_distance.png"
+  },
+  {
+   "id": "ironclad.board.raiders",
+   "ref": "raiders",
+   "name": "Raiders Turned Back",
+   "description": "Every raider your guns have ever stopped.",
+   "suffix": " raiders",
+   "singular": " raider",
+   "glyph": "medal",
+   "tier": 2,
+   "image": "gamecenter/board_raiders.png"
+  }
+ ],
+ "achievements": [
+  {
+   "id": "ironclad.ach.mile10",
+   "ref": "mile10",
+   "name": "First Station",
+   "before": "Reach mile 10 on any line.",
+   "after": "Done: reach mile 10 on any line.",
+   "points": 10,
+   "glyph": "compass",
+   "tier": 0,
+   "image": "gamecenter/mile10.png"
+  },
+  {
+   "id": "ironclad.ach.mile25",
+   "ref": "mile25",
+   "name": "Out of Sight of Town",
+   "before": "Reach mile 25 on any line.",
+   "after": "Done: reach mile 25 on any line.",
+   "points": 15,
+   "glyph": "compass",
+   "tier": 1,
+   "image": "gamecenter/mile25.png"
+  },
+  {
+   "id": "ironclad.ach.mile50",
+   "ref": "mile50",
+   "name": "Half a Hundred",
+   "before": "Reach mile 50 on any line.",
+   "after": "Done: reach mile 50 on any line.",
+   "points": 25,
+   "glyph": "compass",
+   "tier": 2,
+   "image": "gamecenter/mile50.png"
+  },
+  {
+   "id": "ironclad.ach.mile100",
+   "ref": "mile100",
+   "name": "The Century",
+   "before": "Reach mile 100 on any line.",
+   "after": "Done: reach mile 100 on any line.",
+   "points": 50,
+   "glyph": "compass",
+   "tier": 3,
+   "image": "gamecenter/mile100.png"
+  },
+  {
+   "id": "ironclad.ach.badlands",
+   "ref": "badlands",
+   "name": "Into the Badlands",
+   "before": "Open Badlands Cut.",
+   "after": "Done: open Badlands Cut.",
+   "points": 20,
+   "glyph": "globe",
+   "tier": 1,
+   "image": "gamecenter/badlands.png"
+  },
+  {
+   "id": "ironclad.ach.pass",
+   "ref": "pass",
+   "name": "Over the Top",
+   "before": "Open the High Pass.",
+   "after": "Done: open the High Pass.",
+   "points": 30,
+   "glyph": "globe",
+   "tier": 2,
+   "image": "gamecenter/pass.png"
+  },
+  {
+   "id": "ironclad.ach.canyon",
+   "ref": "canyon",
+   "name": "The Baron's Country",
+   "before": "Open Black Canyon.",
+   "after": "Done: open Black Canyon.",
+   "points": 60,
+   "glyph": "globe",
+   "tier": 3,
+   "image": "gamecenter/canyon.png"
+  },
+  {
+   "id": "ironclad.ach.kills1k",
+   "ref": "kills1k",
+   "name": "Line Holder",
+   "before": "Turn back 1,000 raiders.",
+   "after": "Done: turn back 1,000 raiders.",
+   "points": 10,
+   "glyph": "medal",
+   "tier": 0,
+   "image": "gamecenter/kills1k.png"
+  },
+  {
+   "id": "ironclad.ach.kills25k",
+   "ref": "kills25k",
+   "name": "Scourge of the Frontier",
+   "before": "Turn back 25,000 raiders.",
+   "after": "Done: turn back 25,000 raiders.",
+   "points": 30,
+   "glyph": "medal",
+   "tier": 2,
+   "image": "gamecenter/kills25k.png"
+  },
+  {
+   "id": "ironclad.ach.boss5",
+   "ref": "boss5",
+   "name": "Carriage Breaker",
+   "before": "Bring down 5 of the Baron's carriages.",
+   "after": "Done: bring down 5 of the Baron's carriages.",
+   "points": 15,
+   "glyph": "crown",
+   "tier": 1,
+   "image": "gamecenter/boss5.png"
+  },
+  {
+   "id": "ironclad.ach.boss50",
+   "ref": "boss50",
+   "name": "The Baron's Bane",
+   "before": "Bring down 50 of the Baron's carriages.",
+   "after": "Done: bring down 50 of the Baron's carriages.",
+   "points": 40,
+   "glyph": "crown",
+   "tier": 2,
+   "image": "gamecenter/boss50.png"
+  },
+  {
+   "id": "ironclad.ach.wagons4",
+   "ref": "wagons4",
+   "name": "Rolling Arsenal",
+   "before": "Build 4 kinds of wagon.",
+   "after": "Done: build 4 kinds of wagon.",
+   "points": 15,
+   "glyph": "hammer",
+   "tier": 1,
+   "image": "gamecenter/wagons4.png"
+  },
+  {
+   "id": "ironclad.ach.wagons9",
+   "ref": "wagons9",
+   "name": "Every Plan in the Drawer",
+   "before": "Build all 9 kinds of wagon.",
+   "after": "Done: build all 9 kinds of wagon.",
+   "points": 50,
+   "glyph": "hammer",
+   "tier": 3,
+   "image": "gamecenter/wagons9.png"
+  },
+  {
+   "id": "ironclad.ach.long",
+   "ref": "long",
+   "name": "The Long Train",
+   "before": "Couple on 8 wagons.",
+   "after": "Done: couple on 8 wagons.",
+   "points": 40,
+   "glyph": "road",
+   "tier": 2,
+   "image": "gamecenter/long.png"
+  },
+  {
+   "id": "ironclad.ach.cards30",
+   "ref": "cards30",
+   "name": "A Full Hand",
+   "before": "Take 30 station cards.",
+   "after": "Done: take 30 station cards.",
+   "points": 15,
+   "glyph": "star",
+   "tier": 1,
+   "image": "gamecenter/cards30.png"
+  },
+  {
+   "id": "ironclad.ach.whistle50",
+   "ref": "whistle50",
+   "name": "Full Head of Steam",
+   "before": "Sound the whistle 50 times.",
+   "after": "Done: sound the whistle 50 times.",
+   "points": 10,
+   "glyph": "bell",
+   "tier": 0,
+   "image": "gamecenter/whistle50.png"
+  },
+  {
+   "id": "ironclad.ach.runs100",
+   "ref": "runs100",
+   "name": "Regular Service",
+   "before": "Set off on 100 runs.",
+   "after": "Done: set off on 100 runs.",
+   "points": 20,
+   "glyph": "trophy",
+   "tier": 1,
+   "image": "gamecenter/runs100.png"
+  }
+ ]
+}
