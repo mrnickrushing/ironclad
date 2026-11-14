@@ -119,9 +119,10 @@ namespace Ironclad.Game
         string Hint()
         {
             var s = S; var r = s.Run;
-            if (r == null || s.State.runs >= 3) return null;
-            if (r.phase == (int)Phase.Station) return null;
+            if (r == null || r.phase == (int)Phase.Station) return null;
+            if (s.State.runs >= 3) { if (s.State.runs < 12) for (int i = 1; i < r.cars.Count; i++) if (r.cars[i].Out) return r.scrip >= s.FieldCost(i) ? "A wagon is out of action: tap FIX to put its plating back" : "A wagon with no plating stops firing until it is fixed or you reach a station"; return null; }
             bool canBuy = false; for (int i = 0; i < r.cars.Count; i++) if (r.scrip >= s.FieldCost(i)) canBuy = true;
+            for (int i = 1; i < r.cars.Count; i++) if (r.cars[i].Out) return r.scrip >= s.FieldCost(i) ? "A wagon is out of action: tap FIX to put its plating back" : "A wagon with no plating stops firing until it is fixed or you reach a station";
             if (canBuy) return "You have scrip: tap a green button below to make that wagon stronger";
             if (s.State.whistles == 0 && s.WhistleReady && r.enemies.Count >= 6) return "Too many? Sound the WHISTLE to throw them back";
             if (s.State.runs == 0 && r.mile <= 2) return "Your guns fire by themselves. Raiders pay scrip when they fall";
@@ -139,7 +140,11 @@ namespace Ironclad.Game
             _hullFill.color = Color.Lerp(hull > 0.5f ? Ui.Green : hull > 0.25f ? Ui.Gold : Ui.Coral, Color.white, _hullFlash);
             _hullText.text = Format.Money(Math.Ceiling(r.hull)) + " / " + Format.Money(r.hullMax);
             _mileText.text = "MILE " + r.mile;
-            _mileFill.rectTransform.anchorMax = new Vector2(Mathf.Clamp((float)(r.mileTime / Content.MileSeconds), 0.02f, 1), 1);
+            // On the Baron's mile the bar under the ribbon is his carriage's health; otherwise how far through the mile.
+            EnemyState boss = null; foreach (var e in r.enemies) if (e.hp > 0 && Content.Enemy(e.kind).Boss) { boss = e; break; }
+            float bar = boss != null ? (float)(boss.hp / boss.hpMax) : (float)(r.mileTime / Content.MileSeconds);
+            _mileFill.rectTransform.anchorMax = new Vector2(Mathf.Clamp(bar, 0.02f, 1), 1);
+            _mileFill.color = boss != null ? Ui.Coral : Ui.Gold;
             bool rollingFace = _shown == Face.Run;
             if (_lineText.gameObject.activeSelf != rollingFace) { _lineText.gameObject.SetActive(rollingFace); _mileFill.transform.parent.gameObject.SetActive(rollingFace); }
             _lineText.text = s.Route.Name + (s.BossMile ? "  ·  <color=#FFB347>THE BARON'S CARRIAGE</color>" : "  ·  station at mile " + ((r.mile - 1) / Content.StationEvery + 1) * Content.StationEvery);
@@ -152,9 +157,9 @@ namespace Ironclad.Game
                 if (c.Car >= r.cars.Count) continue;
                 var car = r.cars[c.Car];
                 double cost = s.FieldCost(c.Car); bool can = r.scrip >= cost;
-                c.Cost.text = Format.Money(cost);
-                c.BuyImg.color = can ? Ui.Green : Ui.Off;
-                c.Level.text = "Lv " + (car.field + 1);
+                c.Cost.text = (car.Out ? "FIX " : "") + Format.Money(cost);
+                c.BuyImg.color = can ? (car.Out ? Ui.Gold : Ui.Green) : Ui.Off;
+                c.Level.text = car.Out ? "<color=#C8321E>OUT</color>" : "Lv " + (car.field + 1);
                 if (car.platingMax > 0) { float p = Mathf.Clamp01((float)(car.plating / car.platingMax)); c.Plate.rectTransform.anchorMax = new Vector2(Mathf.Max(0.03f, p), 1); c.Plate.color = car.Out ? Ui.Coral : Ui.Blue; }
                 c.Back.color = car.Out ? new Color(1f, 0.7f, 0.66f) : Color.white;
             }
@@ -265,13 +270,16 @@ namespace Ironclad.Game
             var s = S; var r = s.Run;
             var dim = Ui.Img("Dim", _face, new Color(0.14f, 0.07f, 0.04f, 0.5f)); dim.raycastTarget = true; dim.rectTransform.Fill();
             var panel = Ui.ArtImg("Over", _face, "panel", Color.white, 60); panel.raycastTarget = true;
-            var p = panel.rectTransform; p.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -10), new Vector2(1040, 780));
+            var p = panel.rectTransform; p.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -10), new Vector2(1040, 820));
             var ribbon = Ui.Ribbon("R", p, Ui.Coral); ribbon.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 0.5f), new Vector2(0, -8), new Vector2(700, 116));
             var t = Ui.Label("T", ribbon.transform, "END OF THE LINE", 50, Color.white); t.rectTransform.Fill(); t.rectTransform.offsetMin = new Vector2(40, 24); t.rectTransform.offsetMax = new Vector2(-40, 0); t.Stroke(2.5f);
             bool best = r.mile - 1 >= s.State.best[r.route] && r.mile > 1;
             Ui.Label("M", p, "MILE " + r.mile, 96, Ui.Ink).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -80), new Vector2(900, 110));
             Ui.Label("L", p, s.Route.Name + (best ? "  ·  <color=#C8501E>your furthest yet</color>" : "  ·  best " + s.State.best[r.route]), 32, Ui.Dim, TextAnchor.MiddleCenter, false).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -190), new Vector2(900, 40));
             Ui.Label("K", p, Format.Money(r.kills) + " raiders turned back  ·  " + r.cards.Count + (r.cards.Count == 1 ? " card" : " cards"), 30, Ui.Dim, TextAnchor.MiddleCenter, false).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -234), new Vector2(900, 40));
+            var unbuilt = s.Unbuilt; var nextPlans = s.NextPlans;
+            string nextLine = unbuilt.Count > 0 ? "<color=#2E7D32>You can build the " + unbuilt[0].Name + " now (TRAIN)</color>" : nextPlans != null ? "Next plans: the " + nextPlans.Name + " at mile " + nextPlans.Mile : null;
+            if (nextLine != null) Ui.Label("N", p, nextLine, 28, Ui.Dim, TextAnchor.MiddleCenter, false).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -420), new Vector2(940, 40));
             var steel = Ui.ArtImg("Steel", p, "well", Color.white, 30); steel.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -290), new Vector2(620, 120));
             Ui.Label("S", steel.transform, "+" + Format.Money(s.RunSteel) + " steel" + (r.doubled ? "  (doubled)" : ""), 56, Ui.Ink).rectTransform.Fill(8);
 

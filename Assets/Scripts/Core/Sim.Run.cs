@@ -349,7 +349,9 @@ namespace Ironclad.Core
             double steel = MileSteel(Route, r.mile) * SteelMult;
             r.steel += steel;
             State.miles++;
+            int before = BestMile;
             if (r.mile > State.best[r.route]) State.best[r.route] = r.mile;
+            if (BestMile > before) foreach (var d in Content.Cars) if (d.Mile > before && d.Mile <= BestMile && d.Id != "engine" && !Built(d.Id)) Plans?.Invoke(d);
             MileDone?.Invoke(r.mile, steel);
             if (BossMile) { EnterStation(); return; }
             r.mile++; r.mileTime = 0;

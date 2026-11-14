@@ -42,17 +42,19 @@ namespace Ironclad.Game
             _screenRoot = Ui.Rect("Screen", _root); _screenRoot.Fill();
             _modal = Ui.Rect("Modal", _root); _modal.Fill();
             _sim = S;
-            _sim.Changed += OnChanged;
+            _sim.Changed += OnChanged; _sim.Plans += OnPlans;
             if (GameRoot.Instance.PendingCloud != null) OfferCloud();
         }
 
         void OnDestroy()
         {
-            if (_sim != null) _sim.Changed -= OnChanged;
+            if (_sim != null) { _sim.Changed -= OnChanged; _sim.Plans -= OnPlans; }
             if (Instance == this) Instance = null;
         }
 
         void OnChanged() { _dirty = true; }
+
+        void OnPlans(CarDef d) { Toast("Plans found: the " + d.Name + ". Build it in TRAIN after this run"); Sfx.Play("star", 0.8f); Haptics.Success(); }
 
         Face Wanted
         {
@@ -73,6 +75,7 @@ namespace Ironclad.Game
                 bool changed = want != _shown;
                 _shown = want; _dirty = false;
                 if (changed && _screen != Page.None && want != Face.Depot) CloseScreen();
+                if (changed && ModalOpen) CloseCard();      // a card belongs to the face it was opened over
                 Ui.Clear(_face);
                 _chips.Clear(); _departButton = null; _workshopButton = null; _whistle = null;
                 switch (want)

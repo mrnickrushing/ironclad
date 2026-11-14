@@ -26,10 +26,7 @@ namespace Ironclad.Game
             rig.Cam.backgroundColor = new Color(0.86f, 0.8f, 0.68f);
             go.tag = "MainCamera";
             go.AddComponent<AudioListener>();
-            // The fight is 90 m deep (raiders appear 44 m out on each side): stand far enough back to see all of it
-            // on a wide phone, and a little further on a tablet so the whole train is in view.
-            float aspect = Screen.height > 0 ? (float)Screen.width / Screen.height : 1.78f;
-            rig.Distance = Mathf.Clamp(86f * Mathf.Max(1f, 1.75f / aspect), 86f, 130f);
+            rig.Distance = 86f;
             rig._shown = rig.Distance; rig._wantFocus = rig.Focus;
             rig.Place();
             Instance = rig;
@@ -37,16 +34,19 @@ namespace Ironclad.Game
         }
 
         /// <summary>Where the view rests: the middle of the train.</summary>
-        public void Centre(float x, float length = 0)
+        public void Centre(float x, float length = 0) { _wantFocus = new Vector3(x, 0, -5); _length = length; _zoomed = false; }      // a little toward the viewer: the wagons' buttons cover the bottom of the screen
+        float _length; bool _zoomed;
+
+        /// <summary>How far back to stand for this screen: the fight's depth on a wide phone, further on a narrower
+        /// screen, and always far enough that the whole train is in view with room at both ends. Worked out from the
+        /// camera's own aspect every frame: the screen's size can be wrong for the first frames after launch.</summary>
+        float Fit()
         {
-            _wantFocus = new Vector3(x, 0, 0);
-            // Far enough back that the whole train is in view with room at both ends (a tablet's screen is narrower).
-            float aspect = Screen.height > 0 ? (float)Screen.width / Screen.height : 1.78f;
-            float need = (length + 26) / (2 * Mathf.Tan(Cam.fieldOfView * 0.5f * Mathf.Deg2Rad) * aspect);
-            _base = Mathf.Clamp(86f * Mathf.Max(1f, 1.75f / aspect), 86f, 130f);
-            Distance = Mathf.Clamp(Mathf.Max(_base, need), MinDistance, MaxDistance);
+            float aspect = Cam.aspect > 0.1f ? Cam.aspect : 1.78f;
+            float need = (_length + 26) / (2 * Mathf.Tan(Cam.fieldOfView * 0.5f * Mathf.Deg2Rad) * aspect);
+            float rest = Mathf.Clamp(86f * Mathf.Max(1f, 1.75f / aspect), 86f, 130f);
+            return Mathf.Clamp(Mathf.Max(rest, need), MinDistance, MaxDistance);
         }
-        float _base;
 
         /// <summary>Drag by screen pixels: the ground moves with the finger.</summary>
         public void Pan(Vector2 pixels)
@@ -62,13 +62,17 @@ namespace Ironclad.Game
         float _heldFor;
 
         /// <summary>Zoom by a factor (over 1 = closer).</summary>
-        public void Zoom(float factor) { Distance = Mathf.Clamp(Distance / Mathf.Max(0.01f, factor), MinDistance, MaxDistance); }
+        public void Zoom(float factor) { _zoomed = true; _zoomFor = 8; Distance = Mathf.Clamp(Distance / Mathf.Max(0.01f, factor), MinDistance, MaxDistance); }
+        float _zoomFor;
 
         public void Shake(float amount) { _shake = Mathf.Max(_shake, amount); }
 
         void LateUpdate()
         {
             float dt = Time.unscaledDeltaTime;
+            // A pinch holds for a while, then the view settles back to fit the train.
+            if (_zoomed && (_zoomFor -= dt) <= 0) _zoomed = false;
+            if (!_zoomed) Distance = Mathf.Lerp(Distance, Fit(), 1 - Mathf.Exp(-4 * dt));
             _shown = Mathf.Lerp(_shown, Distance, 1 - Mathf.Exp(-12 * dt));
             // A few seconds after the last drag the view drifts back to the train.
             if (_held && (_heldFor -= dt) <= 0) _held = false;

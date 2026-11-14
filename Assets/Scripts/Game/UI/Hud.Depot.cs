@@ -8,7 +8,7 @@ namespace Ironclad.Game
     /// <summary>Between runs: the line to cross, DEPART, what the depot's patrols brought, and the way into every screen.</summary>
     public sealed partial class Hud
     {
-        Text _homeSteel, _homeGems, _depotText; RectTransform _depotChip; RectTransform _awardDot, _todayDot;
+        Text _homeSteel, _homeGems, _depotText; RectTransform _depotChip; RectTransform _awardDot, _todayDot, _trainDot;
 
         void BuildDepot()
         {
@@ -65,6 +65,10 @@ namespace Ironclad.Game
                 if (pg == Page.Workshop) _workshopButton = rt;
                 var ic = Ui.Img("I", rt, Color.white); ic.sprite = Ui.Ic(icons[i]); ic.preserveAspect = true; ic.rectTransform.Place(new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(22, 6), new Vector2(56, 56));
                 var l = Ui.Label("L", rt, names[i], 30, Color.white); l.rectTransform.Fill(); l.rectTransform.offsetMin = new Vector2(80, 14); l.rectTransform.offsetMax = new Vector2(-12, 0); l.Stroke(2f);
+                if (pg == Page.Train)
+                {
+                    var tdt = Ui.Img("Dot", rt, Ui.Coral); tdt.sprite = Ui.Circle; _trainDot = tdt.rectTransform; _trainDot.Place(new Vector2(1, 1), new Vector2(0.5f, 0.5f), new Vector2(-10, -8), new Vector2(34, 34));
+                }
                 if (pg == Page.Awards)
                 {
                     var dot = Ui.Img("Dot", rt, Ui.Coral); dot.sprite = Ui.Circle; _awardDot = dot.rectTransform; _awardDot.Place(new Vector2(1, 1), new Vector2(0.5f, 0.5f), new Vector2(-10, -8), new Vector2(34, 34));
@@ -95,6 +99,7 @@ namespace Ironclad.Game
             if (show) _depotText.text = "DEPOT  +" + Format.Money(waiting) + (s.DepotSeconds >= s.DepotCap ? "  (full)" : "");
             if (_awardDot != null) _awardDot.gameObject.SetActive(s.AchievementsReady > 0);
             if (_todayDot != null) _todayDot.gameObject.SetActive(s.TodayReady > 0);
+            if (_trainDot != null) _trainDot.gameObject.SetActive(s.Unbuilt.Count > 0);
         }
 
         /// <summary>The patrols' steel: collect it, or twice over (free once a day, then for an advert).</summary>

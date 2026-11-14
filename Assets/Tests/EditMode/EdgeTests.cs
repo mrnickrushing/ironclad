@@ -105,6 +105,32 @@ namespace Ironclad.Tests
         }
 
         [Test]
+        public void AFieldLevelPutsAKnockedOutWagonBackInTheFight()
+        {
+            var s = TestGame.New();
+            s.StartRun();
+            var g = s.Run.cars[1];
+            g.plating = 0; g.down = true;
+            Assert.IsTrue(s.FieldUpgrade(1));
+            Assert.IsFalse(g.Out);
+            Assert.AreEqual(g.platingMax, g.plating);
+        }
+
+        [Test]
+        public void PlansAreAnnouncedWhenTheirMileIsFirstReached()
+        {
+            var s = Strong(60);
+            var found = new System.Collections.Generic.List<string>();
+            s.Plans += d => found.Add(d.Id);
+            Assert.AreEqual("cannon", s.NextPlans.Id);
+            s.StartRun();
+            Play(s, 22 * 13);
+            CollectionAssert.Contains(found, "cannon");
+            Assert.AreEqual(1, found.Count(f => f == "cannon"));
+            CollectionAssert.Contains(s.Unbuilt.Select(d => d.Id).ToList(), "cannon");
+        }
+
+        [Test]
         public void AdvertsStopAtTheDaysLimitAndComeBackTheNextDay()
         {
             double now = 1_700_000_000;

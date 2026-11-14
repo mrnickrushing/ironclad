@@ -14,7 +14,8 @@ unity status --until-ready --project-path "$ROOT" >/dev/null 2>&1 || true  # e.g
 "${U[@]}" console clear >/dev/null
 "${U[@]}" script eval --result-only "UnityEditor.EditorSettings.asyncShaderCompilation = false; return 0;" >/dev/null  # no cyan placeholders
 "${U[@]}" editor.playmode set_run_in_background >/dev/null
-"${U[@]}" script eval --result-only "var gv=UnityEditor.EditorWindow.GetWindow(typeof(UnityEditor.EditorWindow).Assembly.GetType(\"UnityEditor.GameView\")); gv.maximized=true; UnityEditor.PlayModeWindow.SetCustomRenderingResolution($W,$H,\"iPhone\"); return 0;" >/dev/null || true
+"${U[@]}" script eval --result-only "var gv=UnityEditor.EditorWindow.GetWindow(typeof(UnityEditor.EditorWindow).Assembly.GetType(\"UnityEditor.GameView\")); gv.maximized=true; return 0;" >/dev/null || true
+"${U[@]}" script eval --result-only "UnityEditor.PlayModeWindow.SetCustomRenderingResolution($W,$H,\"iPhone\"); return 0;" >/dev/null || true   # on its own: maximizing can fail, the size must not
 if ! "${U[@]}" script eval --result-only 'return UnityEngine.Application.isPlaying;' | grep -q '"result": true'; then
   "${U[@]}" editor.playmode start >/dev/null
 fi

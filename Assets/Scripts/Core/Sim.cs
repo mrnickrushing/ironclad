@@ -28,6 +28,8 @@ namespace Ironclad.Core
         public event Action<EnemyState> Arrived;
         /// <summary>A mile was finished: the mile and the steel it paid.</summary>
         public event Action<int, double> MileDone;
+        /// <summary>The plans for a wagon have turned up (a best mile was reached).</summary>
+        public event Action<CarDef> Plans;
         /// <summary>The run is over.</summary>
         public event Action RunOver;
 

@@ -37,6 +37,20 @@ namespace Ironclad.Core
         /// <summary>Whether the plans for this wagon have turned up yet.</summary>
         public bool PlansFound(string id) { var d = Content.Car(id); return d != null && BestMile >= d.Mile; }
 
+        /// <summary>The wagon whose plans turn up next (null: every plan is found).</summary>
+        public CarDef NextPlans
+        {
+            get
+            {
+                CarDef next = null;
+                foreach (var d in Content.Cars) if (d.Id != "engine" && !PlansFound(d.Id) && (next == null || d.Mile < next.Mile)) next = d;
+                return next;
+            }
+        }
+
+        /// <summary>Wagons whose plans are found but which haven't been built yet.</summary>
+        public List<CarDef> Unbuilt { get { return Content.Cars.FindAll(d => d.Id != "engine" && PlansFound(d.Id) && !Built(d.Id)); } }
+
         /// <summary>Steel for the next workshop level of a wagon (or to build the first one).</summary>
         public double CarCost(string id)
         {
@@ -182,7 +196,7 @@ namespace Ironclad.Core
             r.scrip -= cost;
             var c = r.cars[car];
             c.field++;
-            if (c.platingMax > 0) { c.platingMax = PlateOf(c); c.plating = c.platingMax; }
+            if (c.platingMax > 0) { c.platingMax = PlateOf(c); c.plating = c.platingMax; c.down = false; }      // and it is back in the fight
             Touch();
             return true;
         }
