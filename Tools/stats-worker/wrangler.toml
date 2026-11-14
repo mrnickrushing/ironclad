@@ -9,4 +9,4 @@ crons = ["23 4 * * *"]   # daily: drop events older than a year
 [[d1_databases]]
 binding = "DB"
 database_name = "ironclad-stats"
-database_id = "e1c51d82-5c0d-41e1-8a35-b1002877b855"
+database_id = "d0d2bc9a-232d-4808-a001-264c79141669"
