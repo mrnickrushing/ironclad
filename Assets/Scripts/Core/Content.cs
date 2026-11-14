@@ -72,7 +72,7 @@ namespace Ironclad.Core
         public const int StationEvery = 10;         // miles between stations (a boss rides on each of those miles)
         public const double HullBase = 150, PlateBase = 60;
         public const double HpPerMile = 1.085, DamagePerMile = 1.05, BountyPerMile = 1.035, SteelPerMile = 1.055;
-        public const double SteelPerMileBase = 10, BossSteel = 6;
+        public const double SteelPerMileBase = 16, BossSteel = 6;
         public const double FieldCost = 10, FieldGrowth = 1.36, FieldPower = 1.22;
         public const double CarCost = 20, CarGrowth = 1.17, CarPower = 1.10;
         public const double StartScrip = 20;

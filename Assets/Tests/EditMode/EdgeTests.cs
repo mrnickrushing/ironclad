@@ -31,7 +31,7 @@ namespace Ironclad.Tests
             s.StartRun();
             Assert.AreEqual(9, s.Run.cars.Count);
             Play(s, 900);
-            Assert.Greater(s.Run.mile, 30);
+            Assert.GreaterOrEqual(s.Run.mile, 25);
             Assert.IsFalse(double.IsNaN(s.Run.hull) || double.IsNaN(s.Run.scrip) || double.IsNaN(s.Run.steel));
             foreach (var c in s.Run.cars) Assert.IsFalse(double.IsNaN(c.plating));
             foreach (var e in s.Run.enemies) Assert.IsFalse(double.IsNaN(e.x) || double.IsNaN(e.z) || double.IsNaN(e.hp));

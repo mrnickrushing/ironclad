@@ -51,6 +51,7 @@ namespace Ironclad.Core
             var r = State.run;
             r.queue.Clear();
             double budget = 5 + 1.5 * r.mile;
+            if (r.mile % Content.StationEvery == 0) budget *= 0.5;      // the Baron's carriage rides with a smaller escort
             var pool = Content.Enemies.FindAll(e => !e.Boss && e.Mile <= r.mile);
             while (budget >= 1 && r.queue.Count < 60)
             {
