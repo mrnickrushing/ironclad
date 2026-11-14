@@ -26,6 +26,9 @@ them, and raiders from behind reach the last wagon first, so order is a real dec
 ## Between runs
 - **Workshop:** damage, hull, plating, rate of fire, crits, scrip, steel, starting scrip, running repairs, the whistle,
   a longer train, faster running speeds.
+- **Seals:** one from every one of the Baron's carriages brought down. They buy seven lasting perks (a higher
+  starting field level, knocked-out wagons that come back, an extra card at stations, better card odds, a longer
+  whistle stun, more hull on a revive, more depot steel).
 - **Lines:** five, each much harder and richer than the last; the next opens at a mile on the one before.
 - **Depot:** while the game is closed, patrols bring home a share of the steel the best line would pay, for eight hours.
   One free double a day.
@@ -37,7 +40,9 @@ rewards without the advert), Night Shift (depot +4 h). Nothing in the game needs
 
 Not done on purpose: forced adverts, energy, pay-only walls, punishing streaks, fake players.
 
+## Daily and long-term
+A seven-day gift (a missed day loses nothing), three daily tasks from a list of six, awards, gems the first time each
+station on a line is reached. With AUTO on a finished run collects itself and the train sets off again.
+
 ## Still to build
-Achievements and Game Center, daily gift and tasks, the guide and first-run tutorial, the world and interface, the art
-(free models), sound, App Store Connect setup, and a card in Ironhorse Frontier that points to this game once it has an
-App Store page.
+A card in Ironhorse Frontier that points to this game once it has an App Store page.
