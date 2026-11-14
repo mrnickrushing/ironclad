@@ -101,7 +101,7 @@ namespace Ironclad.Game
 
         void SoundWhistle()
         {
-            if (S.Whistle()) { Sfx.Play("whistle", 0.9f); Haptics.Medium(); if (CameraRig.Instance != null) CameraRig.Instance.Shake(0.4f); }
+            if (S.Whistle()) { Sfx.Play("whistle", 0.9f); Haptics.Medium(); if (CameraRig.Instance != null) CameraRig.Instance.Shake(0.4f); if (TrainView.Instance != null) TrainView.Instance.WhistleFx(); }
             else Sfx.Play("error", 0.3f);
         }
 

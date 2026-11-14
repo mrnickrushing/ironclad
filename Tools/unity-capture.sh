@@ -20,6 +20,7 @@ if ! "${U[@]}" script eval --result-only 'return UnityEngine.Application.isPlayi
   "${U[@]}" editor.playmode start >/dev/null
 fi
 end=$((SECONDS + WARM)); while [ $SECONDS -lt $end ]; do sleep 1; done
+"${U[@]}" script eval --result-only "UnityEditor.PlayModeWindow.SetCustomRenderingResolution($W,$H,\"iPhone\"); return 0;" >/dev/null || true   # entering Play mode can reset the size
 if [ -n "$EVAL" ]; then
   "${U[@]}" script eval --result-only "$EVAL" >/dev/null || echo "warning: pre-capture eval failed"
   end=$((SECONDS + 2)); while [ $SECONDS -lt $end ]; do sleep 1; done

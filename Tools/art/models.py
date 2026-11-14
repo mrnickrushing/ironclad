@@ -20,7 +20,7 @@ MODELS = {  # id: (source, "size" | "height"[, pose, extra args...])
     "tree_a": (NAT + "tree_default.glb", "height"), "tree_oak": (NAT + "tree_oak.glb", "height"), "tree_pine": (NAT + "tree_pineRoundA.glb", "height"), "tree_pine_b": (NAT + "tree_pineTallA.glb", "height"),
     "cactus_a": (NAT + "cactus_tall.glb", "height"), "cactus_b": (NAT + "cactus_short.glb", "height"),
     "bush": (NAT + "plant_bushLarge.glb", "size"), "grass": (NAT + "grass_large.glb", "size"), "flowers": (NAT + "flower_yellowA.glb", "size"),
-    "rock_a": (NAT + "rock_largeA.glb", "size"), "rock_b": (NAT + "rock_largeC.glb", "size"), "rock_c": (NAT + "rock_tallB.glb", "size"), "rock_d": (NAT + "stone_largeB.glb", "size"),
+    "rock_a": (NAT + "stone_largeA.glb", "size"), "rock_b": (NAT + "stone_largeC.glb", "size"), "rock_c": (NAT + "stone_tallB.glb", "size"), "rock_d": (NAT + "stone_largeB.glb", "size"), "rock_e": (NAT + "stone_tallA.glb", "size"),
     "cliff": (NAT + "cliff_block_rock.glb", "size"), "fence": (NAT + "fence_simple.glb", "size"), "stump": (NAT + "stump_old.glb", "size"), "log_stack": (NAT + "log_stackLarge.glb", "size"),
 }
 # Raiders: kit people, each frozen in four strides and standing.

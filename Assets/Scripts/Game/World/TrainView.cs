@@ -21,15 +21,16 @@ namespace Ironclad.Game
             public Color Ground, Patch, Bed, Fog;
             public string[] Near, Far;      // small things in the fight, big things beyond it
             public float Hue;               // turns the plants' colours
+            public Color Rock = new Color(0.62f, 0.62f, 0.62f);      // the stones are pale: each line paints them its own colour
         }
 
         static readonly Theme[] Themes =
         {
             new Theme { Ground = Palette.Hex(0x93A857), Patch = Palette.Hex(0xA7AE62), Bed = Palette.Hex(0x8C7B62), Fog = Palette.Hex(0xE3D6B4), Near = new[] { "grass", "grass", "flowers", "rock_d", "bush" }, Far = new[] { "tree_oak", "tree_a", "rock_a", "bush", "windmill", "fence", "log_stack" } },
-            new Theme { Ground = Palette.Hex(0xC9774A), Patch = Palette.Hex(0xB5633C), Bed = Palette.Hex(0x7E5A48), Fog = Palette.Hex(0xE8B98C), Near = new[] { "rock_d", "rock_b", "cactus_b", "stump" }, Far = new[] { "cactus_a", "cactus_a", "rock_c", "rock_a", "cliff", "cliff" } },
-            new Theme { Ground = Palette.Hex(0xE9EEF2), Patch = Palette.Hex(0xD3DEE6), Bed = Palette.Hex(0x7A7F88), Fog = Palette.Hex(0xDCE6EE), Near = new[] { "rock_d", "stump", "rock_b" }, Far = new[] { "tree_pine", "tree_pine_b", "tree_pine", "rock_c", "cliff", "log_stack" } },
-            new Theme { Ground = Palette.Hex(0xE6DCC6), Patch = Palette.Hex(0xD6C8AC), Bed = Palette.Hex(0x9A8C78), Fog = Palette.Hex(0xF0E8D8), Near = new[] { "rock_d", "rock_b" }, Far = new[] { "rock_c", "rock_a", "cactus_a", "stump" } },
-            new Theme { Ground = Palette.Hex(0x6E5A5A), Patch = Palette.Hex(0x5C4A4C), Bed = Palette.Hex(0x4A4044), Fog = Palette.Hex(0x8A7478), Near = new[] { "rock_d", "rock_b", "stump" }, Far = new[] { "cliff", "cliff", "rock_c", "rock_a", "cactus_a" } },
+            new Theme { Ground = Palette.Hex(0xC9774A), Patch = Palette.Hex(0xB5633C), Bed = Palette.Hex(0x7E5A48), Fog = Palette.Hex(0xE8B98C), Rock = new Color(0.78f, 0.42f, 0.3f), Near = new[] { "rock_d", "rock_b", "cactus_b", "stump" }, Far = new[] { "cactus_a", "cactus_a", "rock_c", "rock_e", "rock_c", "cactus_b" } },
+            new Theme { Ground = Palette.Hex(0xE9EEF2), Patch = Palette.Hex(0xD3DEE6), Bed = Palette.Hex(0x7A7F88), Fog = Palette.Hex(0xDCE6EE), Rock = new Color(0.8f, 0.86f, 0.95f), Near = new[] { "rock_d", "stump", "rock_b" }, Far = new[] { "tree_pine", "tree_pine_b", "tree_pine", "rock_c", "tree_pine_b", "log_stack" } },
+            new Theme { Ground = Palette.Hex(0xE6DCC6), Patch = Palette.Hex(0xD6C8AC), Bed = Palette.Hex(0x9A8C78), Fog = Palette.Hex(0xF0E8D8), Rock = new Color(0.86f, 0.8f, 0.68f), Near = new[] { "rock_d", "rock_b" }, Far = new[] { "rock_c", "rock_a", "cactus_a", "stump" } },
+            new Theme { Ground = Palette.Hex(0x6E5A5A), Patch = Palette.Hex(0x5C4A4C), Bed = Palette.Hex(0x4A4044), Fog = Palette.Hex(0x8A7478), Rock = new Color(0.36f, 0.3f, 0.33f), Near = new[] { "rock_d", "rock_b", "stump" }, Far = new[] { "rock_c", "rock_e", "rock_c", "rock_e", "rock_a" } },
         };
 
         const float Span = 170;         // the country is drawn this far either side of the engine
@@ -140,14 +141,14 @@ namespace Ironclad.Game
             for (int i = 0; i < 150; i++)
             {
                 string id = t.Near[rnd.Next(t.Near.Length)];
-                var p = Models.Tall(id, _country, R(0.5f, 1.3f));
+                var p = id.StartsWith("rock") ? Models.Tall(id, _country, R(0.5f, 1.3f), t.Rock) : Models.Tall(id, _country, R(0.5f, 1.3f));
                 Place(p, R(-Span, Span), R(5, 46) * (rnd.Next(2) == 0 ? -1 : 1), R(0, 360));
             }
             for (int i = 0; i < 70; i++)
             {
                 string id = t.Far[rnd.Next(t.Far.Length)];
-                float h = id.StartsWith("tree") ? R(7, 12) : id == "windmill" ? 13 : id == "cliff" ? R(9, 20) : id.StartsWith("cactus") ? R(4, 7) : R(2.5f, 6);
-                var p = Models.Tall(id, _country, h);
+                float h = id.StartsWith("tree") ? R(7, 12) : id == "windmill" ? 13 : id == "rock_c" || id == "rock_e" ? R(5, 13) : id.StartsWith("cactus") ? R(4, 7) : R(2.5f, 6);
+                var p = id.StartsWith("rock") ? Models.Tall(id, _country, h, t.Rock) : Models.Tall(id, _country, h);
                 float z = rnd.Next(5) == 0 ? -R(40, 56) : R(24, 150);      // few on the camera's side, where they would hide the fight
                 Place(p, R(-Span, Span), z, R(0, 360));
             }
@@ -318,6 +319,13 @@ namespace Ironclad.Game
                     v.Height = 7.5f; v.Bob = 0.2f;
                     break;
             }
+            // Each line's raiders wear its colours (the kit figures are tinted, darker and harder the further out).
+            int line = S.Run != null ? S.Run.route : 0;
+            if (line > 0)
+            {
+                var wear = LineWear[Mathf.Min(line, LineWear.Length - 1)];
+                foreach (var mr in body.GetComponentsInChildren<MeshRenderer>()) { var m = mr.sharedMaterial; var baseTint = m.HasProperty("_Tint") ? m.GetColor("_Tint") : Color.white; mr.sharedMaterial = Materials.KitTint(baseTint * wear, m.HasProperty("_HueShift") ? m.GetFloat("_HueShift") : 0); }
+            }
             bool big = e.kind == "boss" || e.kind == "warwagon";
             body.localScale = Vector3.one * (big ? 1.15f : 1.5f); v.Height *= big ? 1.15f : 1.5f;
             v.Striders = striders.ToArray();
@@ -327,6 +335,8 @@ namespace Ironclad.Game
             v.Bar.gameObject.SetActive(false);
             return v;
         }
+
+        static readonly Color[] LineWear = { Color.white, new Color(1.1f, 0.85f, 0.7f), new Color(0.8f, 0.9f, 1.15f), new Color(1.15f, 1.1f, 0.95f), new Color(0.7f, 0.6f, 0.7f) };
 
         static Color HorseTint(int id) { float k = 0.75f + (id * 37 % 50) / 100f; return new Color(k, k * 0.95f, k * 0.9f); }
 
@@ -514,6 +524,22 @@ namespace Ironclad.Game
         void OnMile(int mile, double steel)
         {
             if (Hud.Instance != null && _cars.Count > 0) Hud.Instance.Pop(_cars[0].Root.position + Vector3.up * 6, "+" + Format.Money(steel) + " steel", new Color(0.8f, 0.9f, 1f), 36);
+        }
+
+        /// <summary>The whistle: steam bursting from under every car and a ring rolling out over the ground.</summary>
+        public void WhistleFx()
+        {
+            for (int i = 0; i < _cars.Count; i++)
+            {
+                var at = _cars[i].Root.position;
+                Fx.Burst(at + Vector3.up * 0.5f, (float)Content.WhistleRange * 0.9f, new Color(0.95f, 0.97f, 1f));
+                for (int k = 0; k < 10; k++)
+                {
+                    float a = Random.value * Mathf.PI * 2;
+                    Fx.Smoke(at + new Vector3(Mathf.Cos(a) * 2.5f, 0.8f, Mathf.Sin(a) * 1.5f), new Color(1f, 1f, 1f, 0.75f), 2.2f, new Vector3(Mathf.Cos(a), 0.25f, Mathf.Sin(a)) * 9f);
+                }
+            }
+            if (_cars.Count > 0) Fx.Smoke(_cars[0].Root.position + new Vector3(0.6f, 4.2f, 0), new Color(1f, 1f, 1f, 0.9f), 3f, Vector3.up * 9);
         }
 
         /// <summary>The raider nearest a point on the screen (within a thumb's width), or 0.</summary>

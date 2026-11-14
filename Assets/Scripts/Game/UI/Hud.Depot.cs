@@ -23,7 +23,10 @@ namespace Ironclad.Game
             t.resizeTextForBestFit = true; t.resizeTextMinSize = 26; t.resizeTextMaxSize = 44;
             int best = s.State.best[s.State.route];
             string next = s.State.route + 1 < Content.Routes.Count && !s.RouteOpen(s.State.route + 1) ? "  ·  " + Content.Routes[s.State.route + 1].Name + " opens at mile " + Content.Routes[s.State.route + 1].Opens : "";
-            var sub = Ui.Label("S", _face, (best > 0 ? "Furthest: mile " + best : def.Blurb) + next, 28, Color.white, TextAnchor.MiddleCenter, false); sub.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -118), new Vector2(1200, 40)); sub.Stroke(2f);
+            // What to aim for: a wagon to build, else the next plans, else the next line.
+            var canBuild = s.Unbuilt; var plans = s.NextPlans;
+            string goal = canBuild.Count > 0 ? "  ·  <color=#B8FF9A>The " + canBuild[0].Name + " can be built: TRAIN</color>" : plans != null ? "  ·  " + plans.Name + " plans at mile " + plans.Mile : next;
+            var sub = Ui.Label("S", _face, (best > 0 ? "Furthest: mile " + best : def.Blurb) + goal, 28, Color.white, TextAnchor.MiddleCenter, false); sub.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -118), new Vector2(1200, 40)); sub.Stroke(2f);
             if (s.State.route > 0)
             {
                 var l = Ui.Button("Prev", _face, "◀", Ui.Blue, () => { S.ChooseRoute(S.State.route - 1); }, 36); ((RectTransform)l.transform).Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(-420, -18), new Vector2(86, 86));
