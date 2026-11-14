@@ -244,7 +244,7 @@ namespace Ironclad.Game
         public void OfferAway()
         {
             GameRoot.Instance.ClearAway();
-            if (S.Run == null && S.DepotSteel >= 1 && !ModalOpen) ShowDepotCard();
+            if (S.Run == null && S.DepotSteel >= 1 && S.DepotSeconds >= 300 && !ModalOpen) ShowDepotCard();
         }
 
         RectTransform _cloud;

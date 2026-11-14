@@ -90,7 +90,7 @@ namespace Ironclad.Game
             _homeSteel.text = Format.Money(s.State.steel);
             _homeGems.text = s.State.gems.ToString();
             double waiting = s.DepotSteel;
-            bool show = waiting >= 1;
+            bool show = waiting >= 1 && s.DepotSeconds >= 300;      // not worth a button until the patrols have been out a while
             if (_depotChip.gameObject.activeSelf != show) _depotChip.gameObject.SetActive(show);
             if (show) _depotText.text = "DEPOT  +" + Format.Money(waiting) + (s.DepotSeconds >= s.DepotCap ? "  (full)" : "");
             if (_awardDot != null) _awardDot.gameObject.SetActive(s.AchievementsReady > 0);
