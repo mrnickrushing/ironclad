@@ -12,6 +12,13 @@ PID=$(unity status 2>/dev/null | awk -v r="$ROOT" '$3 == r { print $5 }' | head 
 [ -n "$PID" ] && [ -r "/proc/$PID/fd/1" ] && LOG="/proc/$PID/fd/1"
 unity command --project-path "$ROOT" editor.playmode stop >/dev/null 2>&1 || true
 unity status --until-ready >/dev/null
+# The Editor must be on the iOS platform: the capability and advert steps that finish the Xcode project are only
+# compiled there (#if UNITY_IOS). Switching reloads the scripts, so it is its own step.
+unity command --project-path "$ROOT" script eval --timeout 600 --code \
+  'if (UnityEditor.EditorUserBuildSettings.activeBuildTarget != UnityEditor.BuildTarget.iOS) UnityEditor.EditorUserBuildSettings.SwitchActiveBuildTarget(UnityEditor.BuildTargetGroup.iOS, UnityEditor.BuildTarget.iOS); return 0;' >/dev/null 2>&1 || true
+sleep 5; unity status --until-ready --project-path "$ROOT" >/dev/null
+unity recompile --project-path "$ROOT" >/dev/null 2>&1 || true      # the editor scripts, now with UNITY_IOS
+unity status --until-ready --project-path "$ROOT" >/dev/null
 START=$(date +%s)
 # The eval's own timeout is short; the build carries on in the Editor, so wait for its result line in the log.
 unity command --project-path "$ROOT" script eval --timeout 3000 --code \
@@ -22,6 +29,9 @@ for i in $(seq 1 360); do
 done
 grep "\[Ironclad\] iOS build" "$LOG" | tail -1
 grep "\[Ironclad\] iOS build" "$LOG" | tail -1 | grep -q "Succeeded"
+# A project without these would crash at launch or be refused by the App Store: fail here instead.
+grep -q "GADApplicationIdentifier" "$ROOT/ios/Info.plist" || { echo "EXPORT INCOMPLETE: no AdMob app id in Info.plist"; exit 1; }
+grep -q "ubiquity-kvstore-identifier" "$ROOT/ios/Ironclad.entitlements" && grep -q "applesignin" "$ROOT/ios/Ironclad.entitlements" || { echo "EXPORT INCOMPLETE: entitlements are missing iCloud or Sign in with Apple"; exit 1; }
 # The build rewrites these; the project's own copies are the ones to keep.
 (cd "$ROOT" && git checkout -q Assets/Settings ProjectSettings/ProjectSettings.asset ProjectSettings/TimeManager.asset 2>/dev/null || true; rm -rf Assets/Resources/PerformanceTestRun*)
 [ "${1:-}" = "--local" ] && exit 0

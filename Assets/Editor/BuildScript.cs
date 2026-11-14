@@ -43,6 +43,12 @@ namespace Ironclad.EditorTools
 
         public static string BuildIos()
         {
+            if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.iOS || System.Type.GetType("Ironclad.EditorTools.IosCapabilities, Ironclad.Editor") == null)
+            {
+                const string no = "[Ironclad] iOS build Failed: switch the Editor to the iOS platform and recompile first (Tools/ios-export.sh does), or the Xcode project comes out without its capabilities and its AdMob id";
+                Debug.LogError(no);
+                return no;
+            }
             Time.timeScale = 1f;
             UrpSetup.Run();
             EnsureMaterials();
