@@ -224,7 +224,7 @@ namespace Ironclad.Game
                 v.Rends = v.Root.GetComponentsInChildren<Renderer>();
                 _cars.Add(v);
             }
-            if (CameraRig.Instance != null) CameraRig.Instance.Centre((float)Sim.CarX(types.Count - 1) * 0.5f);
+            if (CameraRig.Instance != null) CameraRig.Instance.Centre((float)Sim.CarX(types.Count - 1) * 0.5f, -(float)Sim.CarX(types.Count - 1) + 6);
         }
 
         Transform Gun(CarView v, string model, float length, float deck, float aimOffset, Color? tint = null, float hue = 0)

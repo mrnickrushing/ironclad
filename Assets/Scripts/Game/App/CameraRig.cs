@@ -37,7 +37,16 @@ namespace Ironclad.Game
         }
 
         /// <summary>Where the view rests: the middle of the train.</summary>
-        public void Centre(float x) { _wantFocus = new Vector3(x, 0, 0); }
+        public void Centre(float x, float length = 0)
+        {
+            _wantFocus = new Vector3(x, 0, 0);
+            // Far enough back that the whole train is in view with room at both ends (a tablet's screen is narrower).
+            float aspect = Screen.height > 0 ? (float)Screen.width / Screen.height : 1.78f;
+            float need = (length + 26) / (2 * Mathf.Tan(Cam.fieldOfView * 0.5f * Mathf.Deg2Rad) * aspect);
+            _base = Mathf.Clamp(86f * Mathf.Max(1f, 1.75f / aspect), 86f, 130f);
+            Distance = Mathf.Clamp(Mathf.Max(_base, need), MinDistance, MaxDistance);
+        }
+        float _base;
 
         /// <summary>Drag by screen pixels: the ground moves with the finger.</summary>
         public void Pan(Vector2 pixels)

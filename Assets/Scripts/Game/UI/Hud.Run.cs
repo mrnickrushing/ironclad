@@ -140,6 +140,8 @@ namespace Ironclad.Game
             _hullText.text = Format.Money(Math.Ceiling(r.hull)) + " / " + Format.Money(r.hullMax);
             _mileText.text = "MILE " + r.mile;
             _mileFill.rectTransform.anchorMax = new Vector2(Mathf.Clamp((float)(r.mileTime / Content.MileSeconds), 0.02f, 1), 1);
+            bool rollingFace = _shown == Face.Run;
+            if (_lineText.gameObject.activeSelf != rollingFace) { _lineText.gameObject.SetActive(rollingFace); _mileFill.transform.parent.gameObject.SetActive(rollingFace); }
             _lineText.text = s.Route.Name + (s.BossMile ? "  ·  <color=#FFB347>THE BARON'S CARRIAGE</color>" : "  ·  station at mile " + ((r.mile - 1) / Content.StationEvery + 1) * Content.StationEvery);
             _scripText.text = Format.Money(r.scrip);
             _steelText.text = Format.Money(r.steel);
