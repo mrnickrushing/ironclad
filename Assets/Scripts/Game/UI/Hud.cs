@@ -42,17 +42,19 @@ namespace Ironclad.Game
             _screenRoot = Ui.Rect("Screen", _root); _screenRoot.Fill();
             _modal = Ui.Rect("Modal", _root); _modal.Fill();
             _sim = S;
-            _sim.Changed += OnChanged; _sim.Plans += OnPlans;
+            _sim.Changed += OnChanged; _sim.Plans += OnPlans; _sim.FirstStation += OnFirstStation;
             if (GameRoot.Instance.PendingCloud != null) OfferCloud();
         }
 
         void OnDestroy()
         {
-            if (_sim != null) { _sim.Changed -= OnChanged; _sim.Plans -= OnPlans; }
+            if (_sim != null) { _sim.Changed -= OnChanged; _sim.Plans -= OnPlans; _sim.FirstStation -= OnFirstStation; }
             if (Instance == this) Instance = null;
         }
 
         void OnChanged() { _dirty = true; }
+
+        void OnFirstStation(int mile, int gems) { Toast("First time at the mile " + mile + " station: +" + gems + " gems"); Sfx.Play("claim", 0.7f); }
 
         void OnPlans(CarDef d) { Toast("Plans found: the " + d.Name + ". Build it in TRAIN after this run"); Sfx.Play("star", 0.8f); Haptics.Success(); }
 

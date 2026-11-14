@@ -131,6 +131,19 @@ namespace Ironclad.Tests
         }
 
         [Test]
+        public void TheFirstTimeAtAStationPaysGemsOnce()
+        {
+            var s = Strong(120);
+            s.StartRun();
+            Play(s, 22 * 11);
+            Assert.AreEqual(Sim.StationGems, s.State.gems);
+            s.Retire(); s.CloseRun();
+            s.StartRun();
+            Play(s, 22 * 11);
+            Assert.AreEqual(Sim.StationGems, s.State.gems, "not again for the same station");
+        }
+
+        [Test]
         public void AdvertsStopAtTheDaysLimitAndComeBackTheNextDay()
         {
             double now = 1_700_000_000;

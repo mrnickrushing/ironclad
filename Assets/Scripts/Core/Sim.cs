@@ -30,6 +30,8 @@ namespace Ironclad.Core
         public event Action<int, double> MileDone;
         /// <summary>The plans for a wagon have turned up (a best mile was reached).</summary>
         public event Action<CarDef> Plans;
+        /// <summary>A station on this line was reached for the first time: the mile and the gems it paid.</summary>
+        public event Action<int, int> FirstStation;
         /// <summary>The run is over.</summary>
         public event Action RunOver;
 

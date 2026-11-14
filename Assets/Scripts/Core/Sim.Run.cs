@@ -11,6 +11,8 @@ namespace Ironclad.Core
     /// </summary>
     public sealed partial class Sim
     {
+        public const int StationGems = 5;
+
         public RouteDef Route { get { return Content.Routes[State.run != null ? State.run.route : State.route]; } }
 
         /// <summary>Where a car's middle is along the track. The engine is at 0, wagons trail behind it.</summary>
@@ -350,7 +352,12 @@ namespace Ironclad.Core
             r.steel += steel;
             State.miles++;
             int before = BestMile;
-            if (r.mile > State.best[r.route]) State.best[r.route] = r.mile;
+            if (r.mile > State.best[r.route])
+            {
+                State.best[r.route] = r.mile;
+                // The first time a station on a line is reached, the town pays a few gems.
+                if (r.mile % Content.StationEvery == 0) { State.gems += StationGems; FirstStation?.Invoke(r.mile, StationGems); }
+            }
             if (BestMile > before) foreach (var d in Content.Cars) if (d.Mile > before && d.Mile <= BestMile && d.Id != "engine" && !Built(d.Id)) Plans?.Invoke(d);
             MileDone?.Invoke(r.mile, steel);
             if (BossMile) { EnterStation(); return; }
