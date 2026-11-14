@@ -49,3 +49,4 @@ __pycache__/
 /ProjectSettings/Packages/com.unity.pipeline/
 Tools/CoreTests/bin/
 Tools/CoreTests/obj/
+mono_crash.*
