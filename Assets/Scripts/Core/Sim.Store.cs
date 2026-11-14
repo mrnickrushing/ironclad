@@ -9,7 +9,7 @@ namespace Ironclad.Core
         public string Id, Name, Blurb, FallbackPrice;
         public int Gems;
         public bool Once;               // non-consumable: bought once, restored on a new phone
-        public bool Season;             // the premium track of the season running when it is bought
+        public double Steel;            // steel that comes with it (paid once, not on a restore)
     }
 
     /// <summary>A purchase this device started and hasn't been paid out for yet.</summary>
@@ -37,21 +37,20 @@ namespace Ironclad.Core
     {
         public static readonly List<ProductDef> Products = new List<ProductDef>
         {
-            new ProductDef { Id = "ironclad.gems.small", Name = "Handful of Gems", Blurb = "100 gems", Gems = 100, FallbackPrice = "$1.99" },
-            new ProductDef { Id = "ironclad.gems.medium", Name = "Bucket of Gems", Blurb = "300 gems", Gems = 300, FallbackPrice = "$4.99" },
-            new ProductDef { Id = "ironclad.gems.large", Name = "Crate of Gems", Blurb = "700 gems", Gems = 700, FallbackPrice = "$9.99" },
-            new ProductDef { Id = "ironclad.gems.huge", Name = "Hold Full of Gems", Blurb = "1,600 gems: the best value", Gems = 1600, FallbackPrice = "$19.99" },
-            new ProductDef { Id = "ironclad.starter", Name = "Deckhand's Pack", Blurb = "250 gems, plus an extra porter and an extra truck in every harbour, for good.", Gems = 250, Once = true, FallbackPrice = "$2.99" },
-            new ProductDef { Id = "ironclad.ledger", Name = "Captain's Ledger", Blurb = "All income doubled, for good, in every harbour.", Once = true, FallbackPrice = "$7.99" },
-            new ProductDef { Id = "ironclad.fleet", Name = "Second Boat Out", Blurb = "Send two voyages at once, for good.", Once = true, FallbackPrice = "$4.99" },
-            new ProductDef { Id = "ironclad.season", Name = "Season Pass", Blurb = "The premium reward on every tier of this season.", Season = true, FallbackPrice = "$7.99" },
-            new ProductDef { Id = "ironclad.nightcrew", Name = "Night Crew", Blurb = "The harbour earns for 4 more hours while you're away, for good.", Once = true, FallbackPrice = "$4.99" },
+            new ProductDef { Id = "ironclad.gems.small", Name = "Pouch of Gems", Blurb = "100 gems", Gems = 100, FallbackPrice = "$1.99" },
+            new ProductDef { Id = "ironclad.gems.medium", Name = "Strongbox of Gems", Blurb = "300 gems", Gems = 300, FallbackPrice = "$4.99" },
+            new ProductDef { Id = "ironclad.gems.large", Name = "Mail Sack of Gems", Blurb = "700 gems", Gems = 700, FallbackPrice = "$9.99" },
+            new ProductDef { Id = "ironclad.gems.huge", Name = "Boxcar of Gems", Blurb = "1,600 gems: the best value", Gems = 1600, FallbackPrice = "$19.99" },
+            new ProductDef { Id = "ironclad.starter", Name = "Fireman's Pack", Blurb = "250 gems and 1,500 steel to get the workshop going.", Gems = 250, Steel = 1500, Once = true, FallbackPrice = "$2.99" },
+            new ProductDef { Id = "ironclad.doubler", Name = "Rolling Mill", Blurb = "All steel doubled, for good: every mile, every boss, the depot.", Once = true, FallbackPrice = "$7.99" },
+            new ProductDef { Id = "ironclad.pass", Name = "Conductor's Pass", Blurb = "Every advert reward without watching the advert, for good.", Once = true, FallbackPrice = "$4.99" },
+            new ProductDef { Id = "ironclad.depot", Name = "Night Shift", Blurb = "The depot's patrols work 4 more hours while you're away, for good.", Once = true, FallbackPrice = "$3.99" },
         };
 
         public bool Owns(string product) { return State.owned.Contains(product); }
 
         /// <summary>Grants a purchase (idempotent per transaction). Returns false if this transaction was already granted.
-        /// A restore (<paramref name="restored"/>) brings back what is kept for good (the ledger, the night crew) but not a
+        /// A restore (<paramref name="restored"/>) brings back what is kept for good (the rolling mill, the pass, the night shift) but not a
         /// pack's gems: those were paid out with the purchase itself, so erasing the game and restoring can't mint more.</summary>
         public bool Grant(string product, string transaction, bool restored = false)
         {
@@ -59,9 +58,7 @@ namespace Ironclad.Core
             if (p == null) return false;
             if (!string.IsNullOrEmpty(transaction)) { if (State.transactions.Contains(transaction)) return false; State.transactions.Add(transaction); }
             if (p.Once) { if (State.owned.Contains(product)) return false; State.owned.Add(product); }
-            if (!restored) State.gems += p.Gems;
-            if (p.Season && !restored) { RollSeason(); State.seasonPremiumIndex = SeasonIndex; }
-            foreach (var h in State.harbours) FitCrew(h);
+            if (!restored) { State.gems += p.Gems; State.steel += p.Steel; State.lifetime += p.Steel; }
             EndPurchase(product);
             Changed?.Invoke();
             return true;
@@ -134,24 +131,24 @@ namespace Ironclad.Core
         // ---- what gems buy ----
 
         public sealed class WarpDef { public string Name; public double Hours; public int Gems; }
-        /// <summary>Time warps: the harbour's idle earnings for that long, at once.</summary>
+        /// <summary>Time warps: the depot's steel for that long, at once.</summary>
         public static readonly WarpDef[] Warps =
         {
-            new WarpDef { Name = "Fair Wind", Hours = 1, Gems = 20 },
-            new WarpDef { Name = "Spring Tide", Hours = 4, Gems = 60 },
-            new WarpDef { Name = "A Full Day's Catch", Hours = 24, Gems = 250 },
+            new WarpDef { Name = "Express Freight", Hours = 2, Gems = 20 },
+            new WarpDef { Name = "Night Train", Hours = 8, Gems = 60 },
+            new WarpDef { Name = "A Full Day's Haul", Hours = 24, Gems = 150 },
         };
 
-        public double WarpCash(WarpDef w) { return IdleRate(H) * w.Hours * 3600; }
+        public double WarpSteel(WarpDef w) { return Math.Floor(DepotRate * w.Hours); }
 
         public bool BuyWarp(int index)
         {
             if (index < 0 || index >= Warps.Length) return false;
             var w = Warps[index];
-            double cash = WarpCash(w);
-            if (State.gems < w.Gems || cash <= 0) return false;
+            double steel = WarpSteel(w);
+            if (State.gems < w.Gems || steel <= 0) return false;
             State.gems -= w.Gems;
-            Pay(H, cash);
+            State.steel += steel; State.lifetime += steel;
             Touch();
             return true;
         }

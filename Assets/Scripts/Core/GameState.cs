@@ -3,50 +3,63 @@ using System.Collections.Generic;
 
 namespace Ironclad.Core
 {
-    [Serializable]
-    public sealed class BerthState
-    {
-        public int level = 1;
-        public bool skipper;            // sails by itself
-        public bool sailing;            // out on a trip
-        public float trip;              // seconds left of it
-        public double crate;            // fish waiting on the quay for the haulers (units)
-        public int bait;                // index into Sim.Baits
-        public float wear;              // 0 fresh .. 1 worn out (Sim.Wear)
-    }
+    [Serializable] public sealed class Level { public string id; public int level; }
 
-    /// <summary>A hauler or a truck on its round.</summary>
+    /// <summary>A car of the train on a run. Index 0 is the engine.</summary>
     [Serializable]
-    public sealed class Carrier
+    public sealed class CarState
     {
-        public bool busy;
-        public float t;                 // seconds into the round
-        public double load, value;      // units carried and what they will sell for (trucks)
-        public bool turned;             // the round's halfway work is done
+        public string type;
+        public double plating, platingMax;  // the engine has none: blows on it go to the hull
+        public int field;                   // levels bought with scrip on this run
+        public double cooldown;
+        public bool down;                   // plating gone: it stops firing and raiders pass it by until a quarter is back
+        public bool Out { get { return down; } }
     }
 
     [Serializable]
-    public sealed class HarbourState
+    public sealed class EnemyState
     {
-        public string id;
-        public double cash;
-        public double earned;           // since the last renovation
-        public List<BerthState> berths = new List<BerthState>();
-        public int dock = 1, hall = 1, market = 1;
-        public bool dockSkipper, marketSkipper;
-        public List<Carrier> haulers = new List<Carrier>();
-        public List<Carrier> trucks = new List<Carrier>();
-        public double raw;              // fish on the hall floor, not yet worked
-        public double done, doneValue;  // worked fish waiting for a truck, and what they are worth
-        public int goods;               // which line the hall runs (index into Content.Goods)
-        public int goodsOwned = 1;      // bit per line bought
-        public int renovations;
-        public int stars;               // milestones reached here
-        public List<int> works = new List<int>();      // the level of each of Sim.Works
+        public int id;
+        public string kind;
+        public double x, z, hp, hpMax, damage, cooldown, stun;
+        public double facing;               // radians, for the picture
     }
 
     [Serializable]
-    public sealed class SpeciesEntry { public string id; public int count; public float best; }
+    public sealed class Shell { public int car; public double x, z, t, damage, splash; public bool crit; }
+
+    [Serializable]
+    public sealed class Pick { public string card; public int rarity; }
+
+    public enum Phase { Rolling, Station, Over }
+
+    /// <summary>A run in progress. It is part of the save, so closing the game mid-run loses nothing.</summary>
+    [Serializable]
+    public sealed class RunState
+    {
+        public int route;
+        public int mile = 1;                // the mile being rolled
+        public double mileTime;             // seconds into it
+        public int phase;                   // Phase
+        public double hull, hullMax;
+        public double scrip, steel;         // steel earned so far (paid out when the run ends)
+        public long kills;
+        public List<CarState> cars = new List<CarState>();
+        public List<EnemyState> enemies = new List<EnemyState>();
+        public List<Shell> shells = new List<Shell>();
+        public List<string> queue = new List<string>();     // this mile's raiders still to arrive
+        public double spawnIn, spawnGap;
+        public bool bossOut;                // this mile's boss has ridden in
+        public int nextId = 1;
+        public int mark;                    // the raider the player pointed out (0: none)
+        public double whistleIn;
+        public List<Pick> cards = new List<Pick>();         // taken
+        public List<Pick> offer = new List<Pick>();         // on the table at a station
+        public bool revived;
+        public bool doubled;                // the run's steel was doubled after it ended
+        public double time;                 // seconds rolled
+    }
 
     /// <summary>The save: plain fields and lists so JsonUtility can write it. Every class it holds is [Serializable].</summary>
     [Serializable]
@@ -54,46 +67,29 @@ namespace Ironclad.Core
     {
         public int version = 1;
         public uint seed = 2463534242;
-        public double savedAt;          // real time of the last save, seconds
-        public double played;           // seconds in the game
+        public double savedAt;              // real time of the last save, seconds
+        public double played;               // seconds in the game
         public string playerName = "";
         public int gems;
-        public double lifetime;         // everything ever earned, in lake money (each harbour's cash divided by its scale)
-        public int at;                  // the harbour on screen
-        public List<HarbourState> harbours = new List<HarbourState>();
-        public List<SpeciesEntry> species = new List<SpeciesEntry>();
-        public long trips, fish, taps, hauls, sales;
-        public List<string> achieved = new List<string>();
-        public int goalIndex;
-        public int tutorialStep;
-        public bool freeSkipperUsed;
-        public int renown, renownPaid, renovations;
-        public double boostUntil;       // real time the Tide Boost runs out
-        public List<double> boostUsedAt = new List<double>();
-        public long giftDay = -1; public int giftStreak;
-        /// <summary>Seconds added to the clock for day and night, so a new game starts in the morning.</summary>
-        public double dayShift;
-        public long taskDay = -1; public int taskClaimed; public List<double> taskBase = new List<double>();
-        public long levelsBought, voyagesDone;
-        public List<Voyage> voyages = new List<Voyage>();
-        public List<CrewState> crew = new List<CrewState>();
-        public List<string> duty = new List<string> { "", "", "", "" };     // who stands at each stage (Stage order)
-        public double chestAt;          // real time the free crew chest is ready
-        public int chestsOpened, chestsSinceEpic;
-        public List<string> trophies = new List<string>();
-        public int goalKind, goalBerth; public double goalTarget; public long goalFrom;
-        public double bonusIn, bonusLeft; public int bonusSeed; public long bonusTaken;
+        public double steel, lifetime;      // in hand, and ever earned
+        public int route;                   // the line chosen for the next run
+        public int speed;                   // index into Content.Speeds
+        public bool auto;                   // set off again by itself when a run ends
+        public List<string> train = new List<string>();      // the wagons coupled on, front to back (the engine isn't listed)
+        public List<Level> cars = new List<Level>();         // wagons built, and their workshop levels
+        public List<Level> upgrades = new List<Level>();
+        public List<int> best = new List<int>();             // best mile on each line
+        public RunState run;                // null between runs
+        public long runs, kills, miles, whistles, cardsTaken, bosses;
+        public double depotAt;              // real time the depot was last emptied
         public long doubleDay = -1;
-        public int wrenches = 3, repairs;      // Sim.Wear
-        public long adDay = -1; public int adCount;      // rewarded adverts watched on a day (Sim.Ads)
-        public bool starterOffered;
-        public long skillsUsed, worksBuilt, handCaught;
-        public int notes; public List<string> research = new List<string>();
-        public List<Order> orders = new List<Order>(); public double orderAt; public long ordersDone;
-        public long firstDay = -1;      // the day the game was first played
+        public long adDay = -1; public int adCount;
+        public int tutorialStep;
+        public int goalIndex;
+        public List<string> achieved = new List<string>();
         public List<string> seenFeatures = new List<string>();
-        public long seasonIndex = -1, seasonPoints, seasonPremiumIndex = -1; public int seasonFree, seasonPaid;
-        public long derbyIndex = -1, derbyScore, derbyLastIndex = -1, derbyLastScore, derbyPrizeFor = -1; public int derbyGoals, derbyBest;
+        public long firstDay = -1;
+        public long giftDay = -1; public int giftStreak;
 
         // The shop.
         public List<string> owned = new List<string>();
@@ -103,50 +99,45 @@ namespace Ironclad.Core
         public static GameState New()
         {
             var s = new GameState();
-            s.harbours.Add(NewHarbour(0));
+            s.Repair();
             return s;
         }
 
-        public static HarbourState NewHarbour(int index)
-        {
-            var def = Content.Harbours[index];
-            var h = new HarbourState { id = def.Id, cash = Content.StartCash * def.Scale };
-            h.berths.Add(new BerthState());
-            h.haulers.Add(new Carrier());
-            h.trucks.Add(new Carrier());
-            return h;
-        }
-
-        /// <summary>Makes an older or damaged save playable.</summary>
+        /// <summary>Makes a new, an older or a damaged save playable.</summary>
         public void Repair()
         {
-            if (harbours == null) harbours = new List<HarbourState>();
-            if (harbours.Count == 0) harbours.Add(NewHarbour(0));
-            if (species == null) species = new List<SpeciesEntry>();
+            if (train == null) train = new List<string>();
+            if (cars == null) cars = new List<Level>();
+            if (upgrades == null) upgrades = new List<Level>();
+            if (best == null) best = new List<int>();
             if (owned == null) owned = new List<string>();
             if (transactions == null) transactions = new List<string>();
             if (pending == null) pending = new List<PendingPurchase>();
-            if (playerName == null) playerName = "";
             if (achieved == null) achieved = new List<string>();
-            if (boostUsedAt == null) boostUsedAt = new List<double>();
-            if (taskBase == null) taskBase = new List<double>();
-            if (voyages == null) voyages = new List<Voyage>();
-            if (crew == null) crew = new List<CrewState>();
-            if (trophies == null) trophies = new List<string>();
             if (seenFeatures == null) seenFeatures = new List<string>();
-            if (duty == null) duty = new List<string>();
-            while (duty.Count < 4) duty.Add("");
+            if (playerName == null) playerName = "";
             if (seed == 0) seed = 2463534242;
-            at = Math.Max(0, Math.Min(at, harbours.Count - 1));
-            foreach (var h in harbours)
+            cars.RemoveAll(c => c == null || Content.Car(c.id) == null);
+            upgrades.RemoveAll(u => u == null || Content.Upgrade(u.id) == null);
+            if (!cars.Exists(c => c.id == "engine")) cars.Add(new Level { id = "engine", level = 1 });
+            if (!cars.Exists(c => c.id == "gatling")) cars.Add(new Level { id = "gatling", level = 1 });
+            foreach (var c in cars) c.level = Math.Max(1, c.level);
+            train.RemoveAll(id => id == "engine" || !cars.Exists(c => c.id == id));
+            if (train.Count == 0) train.Add("gatling");
+            while (best.Count < Content.Routes.Count) best.Add(0);
+            route = Math.Max(0, Math.Min(route, Content.Routes.Count - 1));
+            speed = Math.Max(0, Math.Min(speed, Content.Speeds.Length - 1));
+            // JsonUtility writes a null run as an empty one: a run with no engine was never started.
+            if (run != null && (run.cars == null || run.cars.Count == 0)) run = null;
+            if (run != null)
             {
-                if (h.berths == null) h.berths = new List<BerthState>();
-                if (h.berths.Count == 0) h.berths.Add(new BerthState());
-                if (h.haulers == null) h.haulers = new List<Carrier>();
-                if (h.trucks == null) h.trucks = new List<Carrier>();
-                h.dock = Math.Max(1, h.dock); h.hall = Math.Max(1, h.hall); h.market = Math.Max(1, h.market);
-                h.goodsOwned |= 1;
-                foreach (var b in h.berths) b.level = Math.Max(1, Math.Min(Content.MaxLevel, b.level));
+                if (run.enemies == null) run.enemies = new List<EnemyState>();
+                if (run.shells == null) run.shells = new List<Shell>();
+                if (run.queue == null) run.queue = new List<string>();
+                if (run.cards == null) run.cards = new List<Pick>();
+                if (run.offer == null) run.offer = new List<Pick>();
+                run.cars.RemoveAll(c => c == null || Content.Car(c.type) == null);
+                if (run.cars.Count == 0 || run.cars[0].type != "engine") run = null;
             }
         }
     }
