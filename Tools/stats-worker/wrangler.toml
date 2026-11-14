@@ -1,0 +1,12 @@
+name = "ironclad-stats"
+main = "worker.js"
+compatibility_date = "2026-11-01"
+workers_dev = true
+
+[triggers]
+crons = ["23 4 * * *"]   # daily: drop events older than a year
+
+[[d1_databases]]
+binding = "DB"
+database_name = "ironclad-stats"
+database_id = "e1c51d82-5c0d-41e1-8a35-b1002877b855"
