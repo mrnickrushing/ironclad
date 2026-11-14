@@ -90,6 +90,7 @@ namespace Ironclad.Core
         public List<string> seenFeatures = new List<string>();
         public long firstDay = -1;
         public long giftDay = -1; public int giftStreak;
+        public long taskDay = -1; public int taskClaimed; public List<double> taskBase = new List<double>();
 
         // The shop.
         public List<string> owned = new List<string>();
@@ -115,6 +116,7 @@ namespace Ironclad.Core
             if (pending == null) pending = new List<PendingPurchase>();
             if (achieved == null) achieved = new List<string>();
             if (seenFeatures == null) seenFeatures = new List<string>();
+            if (taskBase == null) taskBase = new List<double>();
             if (playerName == null) playerName = "";
             if (seed == 0) seed = 2463534242;
             cars.RemoveAll(c => c == null || Content.Car(c.id) == null);

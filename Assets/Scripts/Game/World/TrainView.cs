@@ -297,7 +297,7 @@ namespace Ironclad.Game
                     break;
                 case "gunwagon":
                     Models.Along("west_cart", body, 3.4f).localRotation = Quaternion.Euler(0, -90, 0);
-                    Models.Along("horse_e", body, 2.5f, false, HorseTint(e.id)).localPosition = new Vector3(0, 0, 2.9f); body.GetChild(1).localRotation = Quaternion.Euler(0, -90, 0);
+                    Models.Along("horse_f", body, 2.6f, false, HorseTint(e.id)).localPosition = new Vector3(0, 0, 2.9f); body.GetChild(1).localRotation = Quaternion.Euler(0, -90, 0);
                     Man(body, e.id, 1.5f, false, striders).localPosition = new Vector3(0, 1.0f, 0);
                     v.Height = 3.2f; v.Bob = 0.4f;
                     break;
@@ -309,7 +309,7 @@ namespace Ironclad.Game
                     break;
                 case "warwagon":
                     Models.Along("wagon_c", body, 4.6f, false, new Color(0.62f, 0.55f, 0.55f)).localRotation = Quaternion.Euler(0, -90, 0);
-                    Models.Along("horse_e", body, 2.6f, false, new Color(0.5f, 0.5f, 0.5f)).localPosition = new Vector3(0, 0, 3.8f); body.GetChild(1).localRotation = Quaternion.Euler(0, -90, 0);
+                    Models.Along("horse_f", body, 2.8f, false, new Color(0.55f, 0.5f, 0.5f)).localPosition = new Vector3(0, 0, 3.8f); body.GetChild(1).localRotation = Quaternion.Euler(0, -90, 0);
                     v.Height = 4.2f; v.Bob = 0.3f;
                     break;
                 default:    // the Baron's carriage
@@ -318,6 +318,8 @@ namespace Ironclad.Game
                     v.Height = 7.5f; v.Bob = 0.2f;
                     break;
             }
+            bool big = e.kind == "boss" || e.kind == "warwagon";
+            body.localScale = Vector3.one * (big ? 1.15f : 1.5f); v.Height *= big ? 1.15f : 1.5f;
             v.Striders = striders.ToArray();
             // The health bar: only drawn once the raider has been hurt.
             v.Bar = Fx.Quad(v.Root, new Color(0.12f, 0.07f, 0.05f, 0.85f), false); v.Bar.localScale = new Vector3(Content.Enemy(e.kind).Boss ? 5f : 1.9f, 0.3f, 1);
@@ -388,8 +390,8 @@ namespace Ironclad.Game
                 if (v.Hurt > 0) v.Root.localPosition += new Vector3(0, 0, Mathf.Sin(Time.time * 70) * 0.07f * v.Hurt);
             }
             // Smoke from the stack, streaming back with the speed.
-            if (_cars.Count > 0 && Random.value < dt * (rolling ? 26 : 5))
-                Fx.Smoke(_cars[0].Root.position + new Vector3(1.9f, 3.9f, 0), new Color(0.93f, 0.93f, 0.93f, 0.7f), rolling ? 1.5f : 1f, new Vector3(-_speed * 0.8f, 5.5f, Random.Range(-0.6f, 0.6f)));
+            if (_cars.Count > 0 && Random.value < dt * (rolling ? 55 : 6))
+                Fx.Smoke(_cars[0].Root.position + new Vector3(1.9f, 3.9f, 0), new Color(0.93f, 0.93f, 0.93f, 0.5f), Random.Range(0.9f, 1.5f), new Vector3(-_speed * Random.Range(0.7f, 0.9f), Random.Range(3.5f, 6f), Random.Range(-0.6f, 0.6f)));
 
             // Raiders.
             _gone.Clear();

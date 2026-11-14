@@ -9,7 +9,7 @@ namespace Ironclad.Game
     /// <summary>The screens that open over the depot: workshop, train, awards, shop, settings.</summary>
     public sealed partial class Hud
     {
-        enum Page { None, Workshop, Train, Awards, Shop, Settings }
+        enum Page { None, Workshop, Train, Awards, Shop, Settings, Today }
         Page _screen = Page.None;
         RectTransform _list; float _listY;
 
@@ -31,6 +31,7 @@ namespace Ironclad.Game
                 case Page.Awards: ShowAwards(); break;
                 case Page.Shop: ShowShop(); break;
                 case Page.Settings: ShowSettings(); break;
+                case Page.Today: ShowToday(); break;
             }
         }
 
@@ -38,6 +39,7 @@ namespace Ironclad.Game
         {
             { "WORKSHOP", "Steel buys these for good: every run after starts stronger." },
             { "THE TRAIN", "Build wagons, raise their levels, and choose the order they are coupled in." },
+            { "TODAY", "A gift every day and three tasks. A missed day loses nothing." },
             { "AWARDS", "Gems for what you've done on the line. Tap a green one to take it." },
             { "SHOP", "Gems speed things up. Everything here is optional: the whole game can be played free." },
             { "SETTINGS", "Sound, reminders, your account and help." },
@@ -62,7 +64,7 @@ namespace Ironclad.Game
             if (About.TryGetValue(key, out about))
             {
                 var ab = Ui.Label("About", p, about, 28, Ui.Dim, TextAnchor.MiddleCenter, false);
-                ab.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -listTop + 8), new Vector2(1380, 40));
+                ab.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(120, -listTop + 8), new Vector2(1100, 40));
                 listTop += 44;
             }
             var view = Ui.Rect("View", p); view.Fill(); view.offsetMin = new Vector2(34, 44); view.offsetMax = new Vector2(-34, -listTop);
@@ -152,7 +154,40 @@ namespace Ironclad.Game
                 string stats = d.Support ? d.Blurb : d.Blurb + "  " + Format.Money(d.Damage * Math.Pow(Content.CarPower, Math.Max(0, lv - 1)) * s.DamageMult) + " damage every " + d.Interval.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + " s";
                 if (!plans) y = Entry(y, Ui.Ic("lock"), Ui.Dim, d.Name, "The plans turn up at mile " + d.Mile + " on any line.", null, Ui.Off, null, "MILE " + d.Mile);
                 else y = Entry(y, Ui.Ic(d.Support ? "wrench" : "target"), Ui.Ink, d.Name + (built ? "  <size=24><color=#7A5A40>level " + lv + "</color></size>" : ""), stats,
-                    (built ? "" : "BUILD  ") + Format.Money(cost), built ? Ui.Green : Ui.Gold, can ? (Action)(() => { if (S.BuyCar(id)) { Sfx.Play("build", 0.7f); Haptics.Light(); } }) : null, null, !built);
+                    (built ? "" : "BUILD  ") + Format.Money(cost) + " steel", built ? Ui.Green : Ui.Gold, can ? (Action)(() => { if (S.BuyCar(id)) { Sfx.Play("build", 0.7f); Haptics.Light(); } }) : null, null, !built);
+            }
+            EndList(-y + 30);
+        }
+
+        // ---- today ----
+
+        void ShowToday()
+        {
+            var s = S;
+            Frame("TODAY");
+            float y = 0;
+            y = Heading(y, "THE WEEK'S GIFTS");
+            var row = Ui.Rect("Gifts", _list); row.Band(true, y, 170);
+            for (int i = 0; i < Sim.Gifts.Length; i++)
+            {
+                var g = Sim.Gifts[i]; bool taken = i < s.GiftIndex, next = i == s.GiftIndex;
+                var tile = Ui.ArtImg("G", row, "card", next && s.GiftReady ? new Color(0.76f, 0.93f, 0.72f) : taken ? new Color(0.84f, 0.8f, 0.72f) : Ui.Card, 26);
+                tile.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2((i - 3) * 196, 0), new Vector2(186, 160));
+                Ui.Label("D", tile.transform, "DAY " + (i + 1), 24, Ui.Dim).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -8), new Vector2(170, 30));
+                var ic = Ui.Img("I", tile.transform, taken ? new Color(1, 1, 1, 0.4f) : Color.white); ic.sprite = Ui.Art(g.Gems > 0 ? "gem" : "steel"); ic.preserveAspect = true;
+                ic.rectTransform.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 4), new Vector2(64, 64));
+                Ui.Label("V", tile.transform, taken ? "TAKEN" : g.Gems > 0 ? g.Gems + " gems" : Format.Money(s.GiftSteel(g)) + " steel", 24, Ui.Ink).rectTransform.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 12), new Vector2(176, 30));
+            }
+            y -= 180;
+            var take = Ui.Button("Take", _list, s.GiftReady ? "TAKE TODAY'S GIFT" : "COME BACK TOMORROW", s.GiftReady ? Ui.Green : Ui.Off, s.GiftReady ? (Action)(() => { if (S.ClaimGift()) { Sfx.Play("claim", 0.9f); Haptics.Success(); GameRoot.Instance.Save(); } }) : null, 36);
+            var tr = (RectTransform)take.transform; tr.anchorMin = tr.anchorMax = new Vector2(0.5f, 1); tr.pivot = new Vector2(0.5f, 1); tr.anchoredPosition = new Vector2(0, y); tr.sizeDelta = new Vector2(560, 96);
+            y -= 116;
+            y = Heading(y, "TODAY'S TASKS");
+            for (int i = 0; i < Sim.Tasks.Count; i++)
+            {
+                var t = Sim.Tasks[i]; int k = i; bool done = s.TaskDone(i), claimed = s.TaskClaimed(i);
+                y = Entry(y, Ui.Ic("tasks"), Ui.Ink, string.Format(t.Text, Format.Money(t.Goal)), Format.Money(s.TaskProgress(i)) + " of " + Format.Money(t.Goal) + " today",
+                    claimed ? null : "+" + t.Gems + " gems", Ui.Green, done && !claimed ? (Action)(() => { if (S.ClaimTask(k)) { Sfx.Play("claim", 0.8f); Haptics.Success(); GameRoot.Instance.Save(); } }) : null, claimed ? "DONE" : null, done && !claimed);
             }
             EndList(-y + 30);
         }

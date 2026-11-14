@@ -165,7 +165,7 @@ namespace Ironclad.Game
         {
             var s = S; var r = s.Run;
             var panel = Ui.ArtImg("Station", _face, "panel", Color.white, 60); panel.raycastTarget = true;
-            panel.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -170), new Vector2(1500, 560));
+            panel.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -196), new Vector2(1500, 540));
             var p = panel.rectTransform;
             var ribbon = Ui.Ribbon("R", p, Ui.Gold); ribbon.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 0.5f), new Vector2(0, -6), new Vector2(760, 110));
             var t = Ui.Label("T", ribbon.transform, "STATION  ·  MILE " + r.mile, 46, Color.white); t.rectTransform.Fill(); t.rectTransform.offsetMin = new Vector2(40, 24); t.rectTransform.offsetMax = new Vector2(-40, 0); t.Stroke(2.5f);
@@ -177,7 +177,7 @@ namespace Ironclad.Game
                 {
                     int k = i; var pick = r.offer[i]; var def = Content.Card(pick.card);
                     var card = Ui.ArtImg("Card", p, "card", Color.white, 26); card.raycastTarget = true;
-                    card.rectTransform.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2((i - 1) * 440, -40), new Vector2(410, 380));
+                    card.rectTransform.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2((i - 1) * 440, -36), new Vector2(410, 370));
                     var band = Ui.Img("Band", card.transform, RarityColors[pick.rarity], true); band.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -14), new Vector2(370, 50));
                     Ui.Label("R", band.transform, RarityNames[pick.rarity], 28, Color.white).rectTransform.Fill();
                     var nm = Ui.Label("N", card.transform, def.Name, 40, Ui.Ink); nm.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -76), new Vector2(380, 90));
@@ -252,7 +252,7 @@ namespace Ironclad.Game
             var s = S; var r = s.Run;
             var dim = Ui.Img("Dim", _face, new Color(0.14f, 0.07f, 0.04f, 0.5f)); dim.raycastTarget = true; dim.rectTransform.Fill();
             var panel = Ui.ArtImg("Over", _face, "panel", Color.white, 60); panel.raycastTarget = true;
-            var p = panel.rectTransform; p.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -10), new Vector2(1040, 700));
+            var p = panel.rectTransform; p.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -10), new Vector2(1040, 780));
             var ribbon = Ui.Ribbon("R", p, Ui.Coral); ribbon.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 0.5f), new Vector2(0, -8), new Vector2(700, 116));
             var t = Ui.Label("T", ribbon.transform, "END OF THE LINE", 50, Color.white); t.rectTransform.Fill(); t.rectTransform.offsetMin = new Vector2(40, 24); t.rectTransform.offsetMax = new Vector2(-40, 0); t.Stroke(2.5f);
             bool best = r.mile - 1 >= s.State.best[r.route] && r.mile > 1;

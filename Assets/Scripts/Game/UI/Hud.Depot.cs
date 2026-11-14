@@ -8,7 +8,7 @@ namespace Ironclad.Game
     /// <summary>Between runs: the line to cross, DEPART, what the depot's patrols brought, and the way into every screen.</summary>
     public sealed partial class Hud
     {
-        Text _homeSteel, _homeGems, _depotText; RectTransform _depotChip; RectTransform _awardDot;
+        Text _homeSteel, _homeGems, _depotText; RectTransform _depotChip; RectTransform _awardDot, _todayDot;
 
         void BuildDepot()
         {
@@ -32,6 +32,13 @@ namespace Ironclad.Game
             {
                 var rr = Ui.Button("Next", _face, "▶", Ui.Blue, () => { S.ChooseRoute(S.State.route + 1); }, 36); ((RectTransform)rr.transform).Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(420, -18), new Vector2(86, 86));
             }
+
+            // Today's gift and tasks.
+            var today = Ui.Button("Today", _face, null, Ui.Gold, () => Open(Page.Today), 30); var td = (RectTransform)today.transform;
+            td.Place(new Vector2(1, 1), new Vector2(1, 1), new Vector2(-24, -110), new Vector2(240, 84));
+            var tic = Ui.Img("I", td, Color.white); tic.sprite = Ui.Ic("gift"); tic.preserveAspect = true; tic.rectTransform.Place(new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(18, 6), new Vector2(48, 48));
+            var tl = Ui.Label("L", td, "TODAY", 30, Color.white); tl.rectTransform.Fill(); tl.rectTransform.offsetMin = new Vector2(66, 14); tl.rectTransform.offsetMax = new Vector2(-10, 0); tl.Stroke(2f);
+            var tdot = Ui.Img("Dot", td, Ui.Coral); tdot.sprite = Ui.Circle; _todayDot = tdot.rectTransform; _todayDot.Place(new Vector2(1, 1), new Vector2(0.5f, 0.5f), new Vector2(-8, -6), new Vector2(34, 34));
 
             // What the patrols brought.
             var chip = Ui.Button("Depot", _face, "", Ui.Gold, ShowDepotCard, 28); _depotChip = (RectTransform)chip.transform;
@@ -85,6 +92,7 @@ namespace Ironclad.Game
             if (_depotChip.gameObject.activeSelf != show) _depotChip.gameObject.SetActive(show);
             if (show) _depotText.text = "DEPOT  +" + Format.Money(waiting) + (s.DepotSeconds >= s.DepotCap ? "  (full)" : "");
             if (_awardDot != null) _awardDot.gameObject.SetActive(s.AchievementsReady > 0);
+            if (_todayDot != null) _todayDot.gameObject.SetActive(s.TodayReady > 0);
         }
 
         /// <summary>The patrols' steel: collect it, or twice over (free once a day, then for an advert).</summary>

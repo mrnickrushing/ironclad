@@ -238,6 +238,30 @@ namespace Ironclad.Tests
         }
 
         [Test]
+        public void TheDailyGiftAndTasksPayOnceADay()
+        {
+            double now = 1_700_000_000;
+            var s = new Sim(GameState.New());
+            s.RealNow = () => now;
+            Assert.IsTrue(s.ClaimGift());
+            Assert.AreEqual(5, s.State.gems);
+            Assert.IsFalse(s.ClaimGift());
+            now += 3 * 86400;       // days missed lose nothing: the week just waits
+            Assert.AreEqual(1, s.GiftIndex);
+            Assert.IsTrue(s.ClaimGift());
+            Assert.Greater(s.State.steel, 0);
+
+            Assert.IsFalse(s.ClaimTask(0));
+            s.Tick(0.1);
+            s.State.kills += 250;
+            Assert.IsTrue(s.ClaimTask(0));
+            Assert.IsFalse(s.ClaimTask(0));
+            Assert.AreEqual(10, s.State.gems);
+            now += 86400;
+            Assert.AreEqual(0, s.TaskProgress(0), "a new day starts the count again");
+        }
+
+        [Test]
         public void TheSaveSurvivesBeingWrittenWithAnEmptyRun()
         {
             var st = GameState.New();

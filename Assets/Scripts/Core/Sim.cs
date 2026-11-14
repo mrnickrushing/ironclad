@@ -58,6 +58,7 @@ namespace Ironclad.Core
         {
             if (dt <= 0) return;
             if (State.firstDay < 0) State.firstDay = Today;
+            RollTasks();
             State.played += dt;
             if (!Running) { _carry = 0; return; }
             _carry += Math.Min(dt, 1) * Speed;
