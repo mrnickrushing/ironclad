@@ -52,7 +52,7 @@ namespace Ironclad.Game
 
         sealed class FoeView
         {
-            public Transform Root, Bar, Fill; public Vector3 At; public float Bob, Seen; public EnemyState E; public float Height; public Strider[] Striders;
+            public Transform Root, Bar, Fill, Body; public Vector3 At; public float Bob, Seen, Punch, Size = 1; public EnemyState E; public float Height; public Strider[] Striders;
         }
         readonly Dictionary<int, FoeView> _foeViews = new Dictionary<int, FoeView>();
         readonly List<int> _gone = new List<int>();
@@ -327,7 +327,7 @@ namespace Ironclad.Game
                 foreach (var mr in body.GetComponentsInChildren<MeshRenderer>()) { var m = mr.sharedMaterial; var baseTint = m.HasProperty("_Tint") ? m.GetColor("_Tint") : Color.white; mr.sharedMaterial = Materials.KitTint(baseTint * wear, m.HasProperty("_HueShift") ? m.GetFloat("_HueShift") : 0); }
             }
             bool big = e.kind == "boss" || e.kind == "warwagon";
-            body.localScale = Vector3.one * (big ? 1.15f : 1.5f); v.Height *= big ? 1.15f : 1.5f;
+            body.localScale = Vector3.one * (big ? 1.15f : 1.5f); v.Height *= big ? 1.15f : 1.5f; v.Body = body; v.Size = big ? 1.15f : 1.5f;
             v.Striders = striders.ToArray();
             // The health bar: only drawn once the raider has been hurt.
             v.Bar = Fx.Quad(v.Root, new Color(0.12f, 0.07f, 0.05f, 0.85f), false); v.Bar.localScale = new Vector3(Content.Enemy(e.kind).Boss ? 5f : 1.9f, 0.3f, 1);
@@ -396,6 +396,8 @@ namespace Ironclad.Game
                     v.Gun.localRotation = Quaternion.Slerp(v.Gun.localRotation, Quaternion.Euler(tilt, v.GunYaw + v.AimOffset, 0), 1 - Mathf.Exp(-18 * dt));
                 }
                 if (isOut && Random.value < dt * 9) Fx.Smoke(v.Root.position + new Vector3(Random.Range(-1.5f, 1.5f), 1.8f, 0), new Color(0.12f, 0.1f, 0.1f, 0.75f), 1.6f, new Vector3(-_speed * 0.5f, 4, 0));
+                v.Flash = Mathf.MoveTowards(v.Flash, 0, dt * 9);
+                if (v.Gun != null) v.Gun.localScale = Vector3.one * (1 + 0.14f * v.Flash);      // the gun jumps as it fires
                 v.Hurt = Mathf.MoveTowards(v.Hurt, 0, dt * 5);
                 if (v.Hurt > 0) v.Root.localPosition += new Vector3(0, 0, Mathf.Sin(Time.time * 70) * 0.07f * v.Hurt);
             }
@@ -421,6 +423,8 @@ namespace Ironclad.Game
                     float yaw = (float)e.facing * Mathf.Rad2Deg + (e.stun > 0 ? Mathf.Sin(Time.time * 40) * 14 : 0);
                     v.Root.localRotation = Quaternion.Slerp(v.Root.localRotation, Quaternion.Euler(moving ? -bob * 14 : 0, yaw, 0), 1 - Mathf.Exp(-10 * dt));
                     foreach (var st in v.Striders) st.Moving = moving && e.stun <= 0;
+                    v.Punch = Mathf.MoveTowards(v.Punch, 0, dt * 8);
+                    if (v.Body != null) v.Body.localScale = new Vector3(1 + 0.16f * v.Punch, 1 - 0.12f * v.Punch, 1 + 0.16f * v.Punch) * v.Size;      // a hit squashes it for a moment
                     bool hurt = e.hp < e.hpMax;
                     if (v.Bar.gameObject.activeSelf != hurt) v.Bar.gameObject.SetActive(hurt);
                     if (hurt)
@@ -450,6 +454,7 @@ namespace Ironclad.Game
             var def = Content.Car(r.cars[car].type);
             var from = v.Root.position + v.Muzzle;
             var to = new Vector3((float)x, 1.1f, (float)z);
+            v.Flash = 1;
             v.GunYaw = Mathf.Atan2(to.x - v.Root.position.x, to.z) * Mathf.Rad2Deg - 90;
             if (def.Aim == Aim.Around)
             {
@@ -478,6 +483,7 @@ namespace Ironclad.Game
             FoeView v;
             if (!_foeViews.TryGetValue(e.id, out v)) return;
             Fx.Spark(v.At + Vector3.up * (v.Height * 0.5f));
+            v.Punch = 1;
             if (crit && Hud.Instance != null) Hud.Instance.Pop(v.At + Vector3.up * v.Height, Format.Money(damage) + "!", new Color(1f, 0.78f, 0.25f), 34);
         }
 

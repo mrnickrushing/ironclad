@@ -229,6 +229,20 @@ namespace Ironclad.Game
         }
     }
 
+    /// <summary>A panel arriving: it grows the last little way with a small overshoot.</summary>
+    public sealed class PopIn : MonoBehaviour
+    {
+        float _t;
+        void OnEnable() { _t = 0; transform.localScale = Vector3.one * 0.86f; }
+        void Update()
+        {
+            if (_t >= 1) return;
+            _t = Mathf.Min(1, _t + Time.unscaledDeltaTime / 0.2f);
+            float k = 1 - Mathf.Pow(1 - _t, 3);
+            transform.localScale = Vector3.one * (0.86f + 0.14f * k + 0.05f * Mathf.Sin(k * Mathf.PI));
+        }
+    }
+
     /// <summary>The empty part of the screen: drag pans the camera, two fingers (or the wheel) zoom.</summary>
     public sealed class DragPad : MonoBehaviour, IDragHandler, IPointerDownHandler, IPointerUpHandler, IScrollHandler
     {

@@ -114,8 +114,9 @@ namespace Ironclad.Game
             GameCenter.Sync(Sim);
             if (Sim.State.runs >= 1) Ads.Start();      // no advert SDK until the first run is over
             Ads.Tick();
-            Sfx.TickMusic(0, Time.unscaledDeltaTime);
-            Sfx.TickAmbience(0, Time.unscaledDeltaTime);
+            bool rolling = Sim.Running;
+            Sfx.TickMusic(rolling ? 0 : 1, Time.unscaledDeltaTime);
+            Sfx.TickAmbience(rolling ? 1 : 0, Time.unscaledDeltaTime, (float)Sim.Speed);
             if ((_saveIn -= Time.unscaledDeltaTime) <= 0) { _saveIn = 10f; Save(); }
             KeepAwake();
         }

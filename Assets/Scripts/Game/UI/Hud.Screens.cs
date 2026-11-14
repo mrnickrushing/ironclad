@@ -18,6 +18,7 @@ namespace Ironclad.Game
             _screen = s; _listY = 0; _list = null; _shuntFrom = -1;
             Sfx.Play("open", 0.5f);
             RefreshScreen();
+            if (_screenRoot.childCount > 1) _screenRoot.GetChild(_screenRoot.childCount - 1).gameObject.AddComponent<PopIn>();
         }
 
         void CloseScreen() { _screen = Page.None; _list = null; Ui.Clear(_screenRoot); Sfx.Play("close", 0.4f); }

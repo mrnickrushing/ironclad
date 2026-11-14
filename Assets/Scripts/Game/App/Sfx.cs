@@ -13,7 +13,7 @@ namespace Ironclad.Game
         static AudioSource[] _pool;
         static AudioSource _bed;
         static int _next;
-        static AudioSource _day, _night;
+        static AudioSource _day, _night, _chuff;
         const float MusicLevel = 0.32f;
 
         /// <summary>Music on or off (its own switch: plenty of people want the sounds without it).</summary>
@@ -24,7 +24,8 @@ namespace Ironclad.Game
         }
 
         /// <summary>
-        /// Keeps the music with the clock: the day loop while the sun is up, the quieter night one after dark, a slow
+        /// Keeps the music with the game: the driving "day" loop while the train rolls (night 0), the quiet "night" one
+        /// at the depot and in stations (night 1), a slow
         /// cross-fade between them, and both down while the title screen or a card wants quiet (<paramref name="duck"/>).
         /// </summary>
         public static void TickMusic(float night, float dt, float duck = 1f)
@@ -44,11 +45,40 @@ namespace Ironclad.Game
             }
         }
 
-        /// <summary>The harbour's bed of sound: wind and water, a little quieter at night.</summary>
-        public static void TickAmbience(float night, float dt)
+        /// <summary>The bed of sound: wind over open country, and the engine's chuff, louder and quicker with its speed
+        /// (<paramref name="rolling"/> 0 standing .. 1 at full speed; <paramref name="pace"/> the running speed).</summary>
+        public static void TickAmbience(float rolling, float dt, float pace = 1f)
         {
             if (_bed == null) return;
-            _bed.volume = Mathf.MoveTowards(_bed.volume, Mathf.Lerp(0.06f, 0.035f, night), dt * 0.06f);
+            _bed.volume = Mathf.MoveTowards(_bed.volume, Mathf.Lerp(0.035f, 0.06f, rolling), dt * 0.06f);
+            if (_chuff == null) return;
+            _chuff.volume = Mathf.MoveTowards(_chuff.volume, rolling * 0.16f, dt * 0.25f);
+            _chuff.pitch = Mathf.Lerp(0.6f, 1f, rolling) * Mathf.Lerp(1f, 1.25f, Mathf.Clamp01((pace - 1f) / 2f));
+            if (_chuff.volume > 0.001f && !_chuff.isPlaying) _chuff.Play();
+            else if (_chuff.volume <= 0.001f && _chuff.isPlaying) _chuff.Stop();
+        }
+
+        /// <summary>The engine at work: four chuffs to the turn of the wheels, the first the strongest, in a loop.</summary>
+        static AudioClip Chuff()
+        {
+            const int rate = 22050; const float seconds = 0.56f;
+            int n = (int)(seconds * rate);
+            var data = new float[n];
+            var rng = new System.Random(4);
+            float lp = 0, lp2 = 0;
+            for (int i = 0; i < n; i++)
+            {
+                float t = i / (float)rate;
+                float beat = seconds / 4f, into = t % beat; int which = (int)(t / beat);
+                float env = Mathf.Exp(-into * 26f) * Mathf.Min(1, into / 0.004f) * (which == 0 ? 1f : which == 2 ? 0.8f : 0.6f);
+                lp += 0.22f * ((float)rng.NextDouble() * 2 - 1 - lp);
+                lp2 += 0.05f * (lp - lp2);
+                data[i] = (lp * 1.4f + lp2 * 2.2f) * env;
+            }
+            for (int i = 0; i < 200; i++) { float k = i / 200f; data[n - 200 + i] *= 1 - k; }      // no click at the seam
+            var clip = AudioClip.Create("Chuff", n, 1, rate, false);
+            clip.SetData(data, 0);
+            return clip;
         }
 
         static AudioSource MusicSource(Transform parent, string name)
@@ -81,6 +111,9 @@ namespace Ironclad.Game
             _bed.transform.SetParent(go.transform, false);
             _bed.clip = Roar("Wind", 6f, 260f, 0f, loop: true); _bed.loop = true; _bed.volume = 0.05f; _bed.spatialBlend = 0;
             _bed.Play();
+            _chuff = new GameObject("Chuff").AddComponent<AudioSource>();
+            _chuff.transform.SetParent(go.transform, false);
+            _chuff.clip = Chuff(); _chuff.loop = true; _chuff.volume = 0; _chuff.spatialBlend = 0; _chuff.playOnAwake = false;
             _day = MusicSource(go.transform, "day"); _night = MusicSource(go.transform, "night");
             AudioListener.volume = Muted ? 0 : 1;
         }

@@ -174,13 +174,14 @@ namespace Ironclad.Game
 
         // ---- the station ----
 
-        int _shuntFrom = -1; float _stationIdle;
+        int _shuntFrom = -1, _stationShownFor = -1; float _stationIdle; double _overShownFor = -1;
 
         void BuildStation()
         {
             var s = S; var r = s.Run;
             var panel = Ui.ArtImg("Station", _face, "panel", Color.white, 60); panel.raycastTarget = true;
             panel.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -196), new Vector2(1500, 540));
+            if (_stationShownFor != r.mile * 2 + (r.offer.Count > 0 ? 1 : 0)) { _stationShownFor = r.mile * 2 + (r.offer.Count > 0 ? 1 : 0); panel.gameObject.AddComponent<PopIn>(); }
             var p = panel.rectTransform;
             var ribbon = Ui.Ribbon("R", p, Ui.Gold); ribbon.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 0.5f), new Vector2(0, -6), new Vector2(760, 110));
             var t = Ui.Label("T", ribbon.transform, "STATION  ·  MILE " + r.mile, 46, Color.white); t.rectTransform.Fill(); t.rectTransform.offsetMin = new Vector2(40, 24); t.rectTransform.offsetMax = new Vector2(-40, 0); t.Stroke(2.5f);
@@ -271,6 +272,7 @@ namespace Ironclad.Game
             var dim = Ui.Img("Dim", _face, new Color(0.14f, 0.07f, 0.04f, 0.5f)); dim.raycastTarget = true; dim.rectTransform.Fill();
             var panel = Ui.ArtImg("Over", _face, "panel", Color.white, 60); panel.raycastTarget = true;
             var p = panel.rectTransform; p.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -10), new Vector2(1040, 820));
+            if (_overShownFor != r.time) { _overShownFor = r.time; panel.gameObject.AddComponent<PopIn>(); }
             var ribbon = Ui.Ribbon("R", p, Ui.Coral); ribbon.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 0.5f), new Vector2(0, -8), new Vector2(700, 116));
             var t = Ui.Label("T", ribbon.transform, "END OF THE LINE", 50, Color.white); t.rectTransform.Fill(); t.rectTransform.offsetMin = new Vector2(40, 24); t.rectTransform.offsetMax = new Vector2(-40, 0); t.Stroke(2.5f);
             bool best = r.mile - 1 >= s.State.best[r.route] && r.mile > 1;

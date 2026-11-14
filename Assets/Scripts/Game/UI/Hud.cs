@@ -206,6 +206,7 @@ namespace Ironclad.Game
             var card = Ui.ArtImg("Card", _modal, "panel", Color.white, 60);
             card.raycastTarget = true;
             card.rectTransform.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(width, height));
+            card.gameObject.AddComponent<PopIn>();
             var ribbon = Ui.Ribbon("Ribbon", card.transform, Ui.Coral);
             ribbon.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 0.5f), new Vector2(0, -8), new Vector2(Mathf.Min(width + 40, 700), 116));
             var t = Ui.Label("Title", ribbon.transform, title, 50, Color.white); t.rectTransform.Fill(); t.rectTransform.offsetMin = new Vector2(40, 24); t.rectTransform.offsetMax = new Vector2(-40, 0); t.Stroke(2.5f);
