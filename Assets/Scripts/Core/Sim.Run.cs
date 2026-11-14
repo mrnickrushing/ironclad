@@ -146,7 +146,8 @@ namespace Ironclad.Core
                     double dist = Reach(e.x, e.z, c);
                     if (dist < best) { best = dist; target = c; }
                 }
-                if (best > d.Range + Body)
+                e.striking = best <= d.Range + Body;
+                if (!e.striking)
                 {
                     double tx = Math.Max(CarX(target) - 2.5, Math.Min(CarX(target) + 2.5, e.x));
                     double dx = tx - e.x, dz = -e.z, len = Math.Sqrt(dx * dx + dz * dz);
@@ -291,7 +292,9 @@ namespace Ironclad.Core
                 double dist = Math.Sqrt(Sq(e.x - cx, e.z));
                 if (dist > range || dist < def.MinRange) continue;
                 if (e.id == r.mark) { target = e; break; }
-                double s = def.Aim == Aim.Strongest ? e.hp : def.Aim == Aim.Farthest ? dist : -dist;
+                // Guns that fire at the nearest deal first with whoever is already hitting the train, weakest first (one
+                // fewer striking soonest): a gun wagon standing off and shooting is not left alone for a closer rider.
+                double s = def.Aim == Aim.Strongest ? e.hp : def.Aim == Aim.Farthest ? dist : e.striking ? 1e6 - e.hp : -dist;
                 if (target == null || s > score) { target = e; score = s; }
             }
             if (target == null) return false;

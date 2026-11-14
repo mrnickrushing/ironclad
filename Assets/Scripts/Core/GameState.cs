@@ -24,6 +24,7 @@ namespace Ironclad.Core
         public string kind;
         public double x, z, hp, hpMax, damage, cooldown, stun;
         public double facing;               // radians, for the picture
+        public bool striking;               // close enough to hit the train: the guns deal with these first
     }
 
     [Serializable]

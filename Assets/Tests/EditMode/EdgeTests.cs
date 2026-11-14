@@ -90,6 +90,21 @@ namespace Ironclad.Tests
         }
 
         [Test]
+        public void AGunWagonStandingOffIsShotBeforeARiderStillComing()
+        {
+            var s = TestGame.New();
+            s.StartRun();
+            s.Run.queue.Clear();
+            var far = new EnemyState { id = 900, kind = "gunwagon", x = -6, z = 8.5, hp = 400, hpMax = 400, damage = 1, cooldown = 9 };
+            var near = new EnemyState { id = 901, kind = "sledge", x = -6, z = 6, hp = 400, hpMax = 400, damage = 1 };
+            s.Run.enemies.Add(far); s.Run.enemies.Add(near);
+            s.Tick(1);
+            Assert.IsTrue(far.striking);
+            Assert.Less(far.hp, 400, "the one already shooting at the train is fired on");
+            Assert.AreEqual(400, near.hp, "before the one still walking in");
+        }
+
+        [Test]
         public void AdvertsStopAtTheDaysLimitAndComeBackTheNextDay()
         {
             double now = 1_700_000_000;
