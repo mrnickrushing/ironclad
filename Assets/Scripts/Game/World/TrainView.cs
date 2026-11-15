@@ -665,7 +665,7 @@ namespace Ironclad.Game
                     v.Height = 4.2f; v.Bob = 0.3f;
                     break;
                 case "convoy":      // the Baron's convoy: his carriage in black iron, riding inside its escort
-                    Models.Along("carriage", body, 8f, false, new Color(0.42f, 0.42f, 0.5f)).localRotation = Quaternion.Euler(0, -90, 0);
+                    Models.Along("carriage", body, 8f, false, new Color(0.62f, 0.64f, 0.8f)).localRotation = Quaternion.Euler(0, -90, 0);
                     Models.Tall("flag", body, 5f, new Color(0.5f, 0.6f, 1.3f)).localPosition = new Vector3(0, 3.6f, -1.5f);
                     Man(body, e.id, 1.6f, "drive", striders).localPosition = new Vector3(0, 2.0f - Hip * 1.6f, -0.6f);
                     v.Height = 7.5f; v.Bob = 0.2f;

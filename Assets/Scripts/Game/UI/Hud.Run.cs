@@ -139,8 +139,9 @@ namespace Ironclad.Game
                     string gt = GiftText(gifts[i - 1]);
                     if (gt.Length > 0)
                     {
-                        var tag = Ui.ArtImg("Gift", chip.Back.transform, "plate", new Color(1, 1, 1, 0.92f), 20); tag.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 0), new Vector2(0, 2), new Vector2(w - 8, 36));
-                        var tl = Ui.Label("T", tag.transform, gt, 20, Ui.Ink); tl.rectTransform.Fill(2); tl.resizeTextForBestFit = true; tl.resizeTextMinSize = 12; tl.resizeTextMaxSize = 20;
+                        var tag = Ui.ArtImg("Gift", chip.Back.transform, "plate", new Color(1, 1, 1, 0.92f), 20); tag.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 0), new Vector2(0, 60), new Vector2(w - 8, 46));      // above the wagon's picture, not over it
+                        var tl = Ui.Label("T", tag.transform, gt, 22, Ui.Ink); tl.rectTransform.Fill(); tl.rectTransform.offsetMin = new Vector2(10, 9); tl.rectTransform.offsetMax = new Vector2(-10, -5);      // clear of the bubble's lip
+                        tl.resizeTextForBestFit = true; tl.resizeTextMinSize = 12; tl.resizeTextMaxSize = 22; tl.verticalOverflow = VerticalWrapMode.Truncate;
                     }
                 }
                 _chips.Add(chip);
@@ -159,8 +160,9 @@ namespace Ironclad.Game
 
             // One line of help while the game is new.
             var hint = Ui.ArtImg("Hint", _face, "plate", Ui.Ink, 36); _hint = hint.rectTransform;
-            _hint.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-110, 262), new Vector2(980, 66));
+            _hint.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-110, 334), new Vector2(980, 66));      // above the wagons' gift tags
             _hintText = Ui.Label("T", _hint, "", 30, Color.white, TextAnchor.MiddleCenter, false); _hintText.rectTransform.Fill(8); _hintText.rectTransform.offsetMin = new Vector2(8, 12);
+            _hintText.resizeTextForBestFit = true; _hintText.resizeTextMinSize = 18; _hintText.resizeTextMaxSize = 30;      // one line inside the plate, never spilling out
             UpdateRun();
         }
 
@@ -217,7 +219,14 @@ namespace Ironclad.Game
             var s = S; var r = s.Run;
             if (r == null || r.phase == (int)Phase.Station) return null;
             // A boss says how to beat it, until the player has beaten a few.
-            if (s.State.bosses < 12) foreach (var e in r.enemies) if (e.hp > 0 && Content.Enemy(e.kind).Boss && Content.Enemy(e.kind).Hint != null) return Content.Enemy(e.kind).Name + ": " + Content.Enemy(e.kind).Hint;
+            if (s.State.bosses < 12)
+            {
+                // The boss of this leg first; any other boss still riding after it.
+                EnemyState pick = null;
+                foreach (var e in r.enemies)
+                    if (e.hp > 0 && Content.Enemy(e.kind).Boss && Content.Enemy(e.kind).Hint != null && (pick == null || e.kind == r.bossKind)) pick = e;
+                if (pick != null) return Content.Enemy(pick.kind).Name + ": " + Content.Enemy(pick.kind).Hint;
+            }
             if (s.State.runs >= 3) { if (s.State.runs < 12) for (int i = 1; i < r.cars.Count; i++) if (r.cars[i].Out) return r.scrip >= s.FieldCost(i) ? "A wagon is out of action: tap FIX to put its plating back" : "A wagon with no plating stops firing until it is fixed or you reach a station"; return null; }
             bool canBuy = false; for (int i = 0; i < r.cars.Count; i++) if (r.scrip >= s.FieldCost(i)) canBuy = true;
             for (int i = 1; i < r.cars.Count; i++) if (r.cars[i].Out) return r.scrip >= s.FieldCost(i) ? "A wagon is out of action: tap FIX to put its plating back" : "A wagon with no plating stops firing until it is fixed or you reach a station";
