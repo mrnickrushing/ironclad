@@ -63,6 +63,15 @@ namespace Ironclad.Core
 
     public enum Rarity { Common, Rare, Epic }
 
+    /// <summary>A livery for the engine: its model and paint. Nothing else changes.</summary>
+    public sealed class SkinDef
+    {
+        public string Id, Name, Blurb, Model;
+        public double R = 1, G = 1, B = 1;      // the tint over the model's own colours
+        public int Gems;                        // 0: not sold (the first one, or a gift)
+        public int Engines;                     // given with this many new engines (0: never)
+    }
+
     /// <summary>A card offered at a station: it lasts for the run.</summary>
     public sealed class CardDef
     {
@@ -98,6 +107,9 @@ namespace Ironclad.Core
         public static readonly double[] RarityMult = { 1, 1.75, 3 };
         public static readonly double[] RarityOdds = { 0.72, 0.23, 0.05 };
         public static readonly double[] Speeds = { 1, 1.5, 2, 3 };
+        // A new engine: charters for the steel this engine has earned (the first at CharterSteel, then by its square root),
+        // each worth CharterBonus more steel and damage, for good.
+        public const double CharterSteel = 100000, CharterBonus = 0.10;
 
         public static readonly List<CarDef> Cars = new List<CarDef>
         {
@@ -163,6 +175,16 @@ namespace Ironclad.Core
         public const double SpareSeconds = 26, SpareLess = 6;      // a knocked-out wagon's wait, and what each level of Spare Plating takes off
 
         public static PerkDef Perk(string id) { return Perks.Find(p => p.Id == id); }
+
+        public static readonly List<SkinDef> Skins = new List<SkinDef>
+        {
+            new SkinDef { Id = "", Name = "Iron Horse", Blurb = "The engine the line gave you: plain iron and a lot of rivets.", Model = "loco_b", R = 0.92, G = 0.86, B = 0.86 },
+            new SkinDef { Id = "charter", Name = "Charter Green", Blurb = "Painted for the line's new charter. Given with your first new engine.", Model = "loco_b", R = 0.62, G = 1.05, B = 0.66, Engines = 1 },
+            new SkinDef { Id = "belle", Name = "Prairie Belle", Blurb = "An older engine with a tall stack, kept bright by her crew.", Model = "loco", R = 1, G = 1, B = 1, Gems = 120 },
+            new SkinDef { Id = "brass", Name = "Brass Baron", Blurb = "Polished brass from the buffers to the bell. Taken from the Baron himself.", Model = "loco_b", R = 1.3, G = 1.02, B = 0.5, Gems = 200 },
+            new SkinDef { Id = "black", Name = "Black Diamond", Blurb = "A heavy coal hauler, black as the night line.", Model = "loco_c", R = 0.55, G = 0.55, B = 0.62, Gems = 300 },
+        };
+        public static SkinDef Skin(string id) { return Skins.Find(k => k.Id == (id ?? "")); }
 
         public static readonly List<CardDef> Cards = new List<CardDef>
         {

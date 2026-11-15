@@ -14,6 +14,7 @@ running it again is safe; an item that fails is reported and the rest still run.
 (the v1 ones are deprecated). The items go live with the app version they are submitted with; they work in TestFlight
 builds as soon as they exist.
 """
+import datetime
 import json
 import os
 import sys
@@ -125,9 +126,19 @@ def main():
                 failed.append(item["id"])
 
     boards = {b["attributes"]["vendorIdentifier"]: b for b in pages("/v1/gameCenterDetails/%s/gameCenterLeaderboardsV2?limit=200" % detail)}
-    each("Leaderboard", G["leaderboards"], boards,
-         lambda b: {"referenceName": b["name"], "vendorIdentifier": b["id"], "defaultFormatter": "INTEGER",
-                    "scoreSortType": "DESC", "submissionType": "BEST_SCORE"},
+
+    def board(b):
+        attrs = {"referenceName": b["name"], "vendorIdentifier": b["id"], "defaultFormatter": "INTEGER",
+                 "scoreSortType": "DESC", "submissionType": "BEST_SCORE"}
+        if b.get("recurrence") == "weekly":
+            # A board that starts again every Monday at 00:00 UTC, from the next Monday after it is made.
+            now = datetime.datetime.now(datetime.timezone.utc)
+            monday = (now + datetime.timedelta(days=7 - now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
+            attrs.update(recurrenceStartDate=monday.strftime("%Y-%m-%dT%H:%M:%S.000Z"), recurrenceDuration="P7D",
+                         recurrenceRule="FREQ=WEEKLY;INTERVAL=1")
+        return attrs
+
+    each("Leaderboard", G["leaderboards"], boards, board,
          lambda b: {"name": b["name"], "description": b["description"], "formatterSuffix": b["suffix"],
                     "formatterSuffixSingular": b["singular"]})
     achievements = {a["attributes"]["vendorIdentifier"]: a for a in pages("/v1/gameCenterDetails/%s/gameCenterAchievementsV2?limit=200" % detail)}

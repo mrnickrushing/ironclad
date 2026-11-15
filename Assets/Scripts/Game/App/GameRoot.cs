@@ -110,12 +110,13 @@ namespace Ironclad.Game
         {
             AppleAccount.Update();
             if (!_ready) return;
+            SlowMo.Tick(Time.unscaledDeltaTime, Sim.Running);
             Sim.Tick(Time.deltaTime * Speed);
             GameCenter.Sync(Sim);
-            if (Sim.State.runs >= 1) Ads.Start();      // no advert SDK until the first run is over
+            if (Sim.State.runs >= 1) Ads.Start();      // no ad SDK until the first run is over
             Ads.Tick();
             bool rolling = Sim.Running;
-            Sfx.TickMusic(rolling ? 0 : 1, Time.unscaledDeltaTime);
+            Sfx.TickMusic(rolling ? 0 : 1, Time.unscaledDeltaTime, 1f, rolling ? Look.Danger : 0);
             Sfx.TickAmbience(rolling ? 1 : 0, Time.unscaledDeltaTime, (float)Sim.Speed);
             if ((_saveIn -= Time.unscaledDeltaTime) <= 0) { _saveIn = 10f; Save(); }
             KeepAwake();
@@ -153,7 +154,7 @@ namespace Ironclad.Game
 
         void OnApplicationPause(bool paused)
         {
-            if (paused) { Save(true); Reminders.Schedule(); }
+            if (paused) { SlowMo.Clear(); Save(true); Reminders.Schedule(); }
             else Reminders.Clear();
             if (!paused)
                 if (Sim != null && Sim.State.savedAt > 0) { AwaySeconds = System.Math.Max(0, SaveSystem.Now - Sim.State.savedAt); if (Hud.Instance != null) Hud.Instance.OfferAway(); }

@@ -67,6 +67,10 @@ namespace Ironclad.Game
 
         public void Shake(float amount) { _shake = Mathf.Max(_shake, amount); }
 
+        /// <summary>A quick push in toward the fight (0.1 = a tenth closer) that settles back by itself.</summary>
+        public void Punch(float amount) { _punch = Mathf.Clamp(Mathf.Max(_punch, amount), 0, 0.3f); }
+        float _punch;
+
         void LateUpdate()
         {
             float dt = Time.unscaledDeltaTime;
@@ -78,6 +82,7 @@ namespace Ironclad.Game
             if (_held && (_heldFor -= dt) <= 0) _held = false;
             if (!_held) Focus = Vector3.Lerp(Focus, _wantFocus, 1 - Mathf.Exp(-2.5f * dt));
             _shake = Mathf.MoveTowards(_shake, 0, dt * 2.5f);
+            _punch = Mathf.MoveTowards(_punch, 0, dt * 0.35f);
             Place();
         }
 
@@ -86,7 +91,7 @@ namespace Ironclad.Game
             var rot = Quaternion.Euler(Pitch, Yaw, 0);
             transform.rotation = rot;
             var jolt = _shake > 0 ? new Vector3(Mathf.PerlinNoise(Time.unscaledTime * 31, 0.5f) - 0.5f, Mathf.PerlinNoise(0.5f, Time.unscaledTime * 29) - 0.5f, 0) * _shake * 2.4f : Vector3.zero;
-            transform.position = Focus - rot * Vector3.forward * _shown + rot * jolt;
+            transform.position = Focus - rot * Vector3.forward * (_shown * (1 - _punch)) + rot * jolt;
         }
     }
 }

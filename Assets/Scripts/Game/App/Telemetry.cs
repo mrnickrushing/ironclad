@@ -64,7 +64,7 @@ namespace Ironclad.Game
         float _sendIn = 10f, _sampleIn = SampleEvery, _frameSum, _sittingStart;
         int _frames;
         Sim _sim;
-        int _stars = -1, _wagons = -1, _route = -1; long _runs = -1;
+        int _stars = -1, _wagons = -1, _route = -1, _engines = -1; long _runs = -1;
 
         void Awake()
         {
@@ -86,11 +86,12 @@ namespace Ironclad.Game
         {
             var s = GameRoot.Sim;
             if (s == null) return;
-            if (s != _sim) { _sim = s; _stars = s.BestMile / 10; _runs = s.State.runs; _wagons = s.State.cars.Count; _route = OpenRoutes(s); }
+            if (s != _sim) { _sim = s; _stars = s.BestMile / 10; _runs = s.State.runs; _wagons = s.State.cars.Count; _route = OpenRoutes(s); _engines = s.State.engines; }
             if (!_started) { _started = true; Send("Session.started", ("Session.firstLaunch", _firstLaunch ? "true" : "false")); }
             if (s.BestMile / 10 != _stars) { if (s.BestMile / 10 > _stars) Send("Progress.station"); _stars = s.BestMile / 10; }
             if (s.State.runs != _runs) { _runs = s.State.runs; Send("Run.ended"); }
-            if (s.State.cars.Count != _wagons) { _wagons = s.State.cars.Count; Send("Wagon.built"); }
+            if (s.State.cars.Count != _wagons) { if (s.State.cars.Count > _wagons) Send("Wagon.built"); _wagons = s.State.cars.Count; }      // a new engine takes them away: not a build
+            if (s.State.engines != _engines) { _engines = s.State.engines; Send("Engine.renewed", s.State.charters); }
             if (OpenRoutes(s) != _route) { _route = OpenRoutes(s); Send("Line.opened"); }
 
             _frameSum += Time.unscaledDeltaTime; _frames++;
@@ -224,7 +225,7 @@ namespace Ironclad.Game
             }
         }
 
-/// <summary>A debug or TestFlight build: its statistics are marked test, and it shows test adverts only.</summary>
+/// <summary>A debug or TestFlight build: its statistics are marked test, and it shows test ads only.</summary>
         public static bool TestBuild { get { return Debug.isDebugBuild || IsTestFlight(); } }
 
 #if UNITY_IOS && !UNITY_EDITOR

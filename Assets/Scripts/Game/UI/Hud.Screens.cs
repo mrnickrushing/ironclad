@@ -138,7 +138,57 @@ namespace Ironclad.Game
                 y = Entry(y, Ui.Ic("medal"), Ui.Ink, d.Name + "  <size=24><color=#7A5A40>level " + s.PerkLevel(id) + " of " + d.Max + "</color></size>", d.Blurb + ".",
                     max ? null : cost + (cost == 1 ? " seal" : " seals"), Ui.Grape, max || !can ? null : (Action)(() => { if (S.BuyPerk(id)) { Sfx.Play("star", 0.7f); Haptics.Success(); GameRoot.Instance.Save(); } }), max ? "MAX" : null);
             }
+            if (s.RenewShown) y = NewEngineRows(y);
             EndList(-y + 30);
+        }
+
+        // ---- a new engine ----
+
+        float NewEngineRows(float y)
+        {
+            var s = S;
+            int n = s.ChartersOnRenew, have = s.State.charters;
+            y = Heading(y, "A NEW ENGINE: charters held " + have + (have > 0 ? " (+" + Mathf.RoundToInt(have * (float)Content.CharterBonus * 100) + "% steel and damage)" : ""));
+            string body = n > 0
+                ? "Start the workshop and the wagons again for " + n + (n == 1 ? " charter" : " charters") + ": +" + Mathf.RoundToInt(n * (float)Content.CharterBonus * 100) + "% more steel and damage, for good. " + Format.Money(s.SteelToNextCharter) + " more steel on this engine for " + (n + 1) + "."
+                : "Every charter makes steel and damage " + Mathf.RoundToInt((float)Content.CharterBonus * 100) + "% stronger, for good. This engine has earned " + Format.Money(s.EngineSteel) + " steel: " + Format.Money(s.SteelToNextCharter) + " more for the first charter.";
+            string why = s.State.run != null ? "FINISH THE RUN" : null;
+            y = Entry(y, TrainView.Instance != null ? TrainView.Instance.Icon("engine@charter") : Ui.Art("star"), Color.white, "Build a new engine" + (s.State.engines > 0 ? "  <size=24><color=#7A5A40>engine no. " + (s.State.engines + 1) + "</color></size>" : ""), body,
+                n > 0 && why == null ? "NEW ENGINE" : null, Ui.Gold, n > 0 && s.CanRenew ? (Action)AskRenew : null, n > 0 ? why : "NOT YET", n > 0 && s.CanRenew);
+            return y;
+        }
+
+        void AskRenew()
+        {
+            var s = S; int n = s.ChartersOnRenew;
+            Confirm("A NEW ENGINE?", "You get " + n + (n == 1 ? " charter" : " charters") + ": +" + Mathf.RoundToInt(n * (float)Content.CharterBonus * 100) + "% steel and damage for good.\n\nYour steel, workshop and wagons start again from a Gatling Car. You keep gems, seals and perks, the lines and plans you have found, awards, liveries and purchases.",
+                "BUILD IT", Ui.Gold, () =>
+                {
+                    int got = S.Renew();
+                    if (got <= 0) return;
+                    Sfx.Play("star", 0.9f); Haptics.Success(); GameRoot.Instance.Save(true);
+                    Toast("Engine no. " + (S.State.engines + 1) + " is on the rails: +" + got + (got == 1 ? " charter" : " charters"));
+                    if (_screen == Page.Workshop) ShowWorkshop();
+                }, "NOT YET");
+        }
+
+        // ---- liveries ----
+
+        float LiveryRows(float y)
+        {
+            var s = S;
+            y = Heading(y, "LIVERIES: the engine's paint. Looks only, nothing else changes.");
+            foreach (var k in Content.Skins)
+            {
+                var id = k.Id; bool own = s.SkinOwned(id), on = s.State.skin == id;
+                string button = on ? null : own ? "USE" : k.Gems > 0 ? k.Gems + " GEMS" : null;
+                Action tap = null;
+                if (!on && own) tap = () => { if (S.UseSkin(id)) { Sfx.Play("build", 0.6f); GameRoot.Instance.Save(); } };
+                else if (!own && k.Gems > 0 && s.State.gems >= k.Gems) tap = () => { if (S.BuySkin(id)) { Sfx.Play("star", 0.8f); Haptics.Success(); GameRoot.Instance.Save(true); Toast(k.Name + " is on the engine"); } };
+                y = Entry(y, TrainView.Instance != null ? TrainView.Instance.Icon("engine@" + id) : null, Color.white, k.Name, k.Blurb, button, own ? Ui.Blue : Ui.Grape, tap,
+                    on ? "IN USE" : !own && k.Gems <= 0 ? (k.Engines > 0 ? "ENGINE NO. " + (k.Engines + 1) : null) : null, on);
+            }
+            return y;
         }
 
         // ---- the train ----
@@ -164,6 +214,7 @@ namespace Ironclad.Game
                 else y = Entry(y, TrainView.Instance != null ? TrainView.Instance.Icon(id) : null, Color.white, d.Name + (built ? "  <size=24><color=#7A5A40>level " + lv + "</color></size>" : ""), stats,
                     (built ? "" : "BUILD  ") + Format.Money(cost) + " steel", built ? Ui.Green : Ui.Gold, can ? (Action)(() => { if (S.BuyCar(id)) { Sfx.Play("build", 0.7f); Haptics.Light(); } }) : null, null, !built);
             }
+            y = LiveryRows(y);
             EndList(-y + 30);
         }
 
@@ -209,6 +260,8 @@ namespace Ironclad.Game
             var s = S;
             Frame("AWARDS");
             float y = 0;
+            y = Entry(y, Ui.Ic("trophy"), Ui.Ink, "This week's furthest run", "Every run counts toward this week's board on Game Center. It starts again every Monday.", "SEE", Ui.Blue,
+                GameCenter.Blocked == null ? (Action)GameCenter.ShowWeekly : () => Toast(GameCenter.Blocked));
             var list = new List<AchievementDef>(Sim.Achievements);
             list.Sort((a, b) => Rank(s, a).CompareTo(Rank(s, b)));
             foreach (var a in list)
@@ -252,7 +305,7 @@ namespace Ironclad.Game
                     () => Store.Buy(pr, (ok, msg) => { Toast(msg); if (ok) Sfx.Play("confirm"); if (_screen == Page.Shop) ShowShop(); }));
             }
             y = Entry(y, Ui.Ic("cart"), Ui.Ink, "Restore purchases", "Bring back what this Apple Account has bought once.", "RESTORE", Ui.Blue, () => Store.Restore(msg => { Toast(msg); if (_screen == Page.Shop) ShowShop(); }));
-            var note = Ui.Label("Note", _list, "Adverts are only ever shown when you ask for one. Everything in the game can be earned by playing.", 26, Ui.Dim, TextAnchor.MiddleCenter, false); note.rectTransform.Band(true, y, 60);
+            var note = Ui.Label("Note", _list, "Ads are only ever shown when you ask for one. Everything in the game can be earned by playing.", 26, Ui.Dim, TextAnchor.MiddleCenter, false); note.rectTransform.Band(true, y, 60);
             EndList(-y + 70);
         }
 
@@ -283,6 +336,7 @@ namespace Ironclad.Game
             y = Entry(y, Ui.Ic("user"), Ui.Ink, "Conductor: " + (string.IsNullOrEmpty(s.State.playerName) ? "(no name yet)" : s.State.playerName), "The name on your train.", "RENAME", Ui.Blue, AskName);
             y = Entry(y, Ui.Ic("globe"), Ui.Ink, "iCloud save", CloudSave.Available ? "On: your progress is kept in your own iCloud and follows you to a new phone." : "Off: sign in to iCloud in the Settings app to keep your progress safe.", null, Ui.Off, null, CloudSave.Available ? "ON" : "OFF");
             y = Entry(y, Ui.Ic("trophy"), Ui.Ink, "Leaderboards", "Furthest mile, miles rolled and raiders turned back, under your Game Center name.", "OPEN", Ui.Blue, GameCenter.Blocked == null ? (Action)GameCenter.ShowBoards : () => Toast(GameCenter.Blocked));
+            y = Entry(y, Ui.Ic("clock"), Ui.Ink, "This week's furthest run", "The best single run anyone has made since Monday. The board starts again every week.", "OPEN", Ui.Blue, GameCenter.Blocked == null ? (Action)GameCenter.ShowWeekly : () => Toast(GameCenter.Blocked));
             y = Entry(y, Ui.Ic("medal"), Ui.Ink, "Game Center achievements", "Every award you earn here is kept on your Game Center profile.", "OPEN", Ui.Blue, GameCenter.Blocked == null ? (Action)GameCenter.ShowAchievements : () => Toast(GameCenter.Blocked));
 
             y = Heading(y, "MORE");

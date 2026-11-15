@@ -43,7 +43,7 @@ namespace Ironclad.Core
             new ProductDef { Id = "ironclad.gems.huge", Name = "Boxcar of Gems", Blurb = "1,600 gems: the best value", Gems = 1600, FallbackPrice = "$19.99" },
             new ProductDef { Id = "ironclad.starter", Name = "Fireman's Pack", Blurb = "250 gems and 1,500 steel (or four hours of the depot, if that is more).", Gems = 250, Steel = 1500, Once = true, FallbackPrice = "$2.99" },
             new ProductDef { Id = "ironclad.doubler", Name = "Rolling Mill", Blurb = "All steel doubled, for good: every mile, every boss, the depot.", Once = true, FallbackPrice = "$7.99" },
-            new ProductDef { Id = "ironclad.pass", Name = "Conductor's Pass", Blurb = "Every advert reward without watching the advert, for good.", Once = true, FallbackPrice = "$4.99" },
+            new ProductDef { Id = "ironclad.pass", Name = "Conductor's Pass", Blurb = "Every ad reward without watching the ad, for good.", Once = true, FallbackPrice = "$4.99" },
             new ProductDef { Id = "ironclad.depot", Name = "Night Shift", Blurb = "The depot's patrols work 4 more hours while you're away, for good.", Once = true, FallbackPrice = "$3.99" },
         };
 

@@ -38,6 +38,24 @@ namespace Ironclad.Game
             }
         }
 
+        Text _marker;
+
+        /// <summary>A sign held over a place in the world (the BEST post), or none (null).</summary>
+        public void Marker(Vector3? world, string text)
+        {
+            if (world == null || text == null) { if (_marker != null && _marker.gameObject.activeSelf) _marker.gameObject.SetActive(false); return; }
+            if (_marker == null)
+            {
+                _marker = Ui.Label("Marker", _fxLayer, "", 34, new Color(1f, 0.86f, 0.4f), TextAnchor.LowerCenter, false); _marker.Stroke(2.5f);
+                _marker.rectTransform.sizeDelta = new Vector2(320, 100); _marker.rectTransform.pivot = new Vector2(0.5f, 0);
+            }
+            Vector2 at;
+            bool on = Project(world.Value, out at);
+            if (_marker.gameObject.activeSelf != on) _marker.gameObject.SetActive(on);
+            _marker.rectTransform.anchoredPosition = at;
+            if (_marker.text != text) _marker.text = text;
+        }
+
         RectTransform _toast; float _toastAge;
         string _toastHeld, _toastText;
 

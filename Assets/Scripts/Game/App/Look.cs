@@ -15,6 +15,11 @@ namespace Ironclad.Game
         public static float Flash;
         ColorAdjustments _grade;
         Bloom _bloom;
+        Vignette _vig;
+        /// <summary>How much trouble the engine is in, 0..1 (TrainView sets it: the hull under 30%). The edges of the
+        /// picture pulse red and the danger music comes in with <see cref="Danger"/>, which follows it smoothly.</summary>
+        public static float DangerWant;
+        public static float Danger { get; private set; }
         Light _sun;
         float _gloom;
 
@@ -38,7 +43,7 @@ namespace Ironclad.Game
             var bloom = p.Add<Bloom>(); look._bloom = bloom; bloom.intensity.Override(0.18f); bloom.threshold.Override(1.5f); bloom.scatter.Override(0.6f);
             look._grade = p.Add<ColorAdjustments>();
             look._grade.postExposure.Override(0.1f); look._grade.contrast.Override(12f); look._grade.saturation.Override(12f);      // rich, not neon
-            var vig = p.Add<Vignette>(); vig.intensity.Override(0.2f); vig.smoothness.Override(0.5f);
+            var vig = p.Add<Vignette>(); vig.intensity.Override(0.2f); vig.smoothness.Override(0.5f); vig.color.Override(Color.black); look._vig = vig;
             return look;
         }
 
@@ -88,6 +93,11 @@ namespace Ironclad.Game
             Shader.SetGlobalFloat("_CloudShade", 0.26f * (1 - Night));      // clouds' shadows drift over the country by day
             Shader.SetGlobalFloat("_NightGlow", Mathf.Clamp01(Night * 1.4f - 0.2f));      // lamps and lit windows come up after dusk
             _grade.postExposure.Override(Mathf.Lerp(0.1f, 0.25f, Night));      // the night is blue, not black: everything stays readable
+            // Low hull: the edges go red and beat like a pulse, faster as it gets worse.
+            Danger = Mathf.MoveTowards(Danger, Mathf.Clamp01(DangerWant), Time.unscaledDeltaTime * (DangerWant > Danger ? 1.5f : 0.6f));
+            float beat = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * Mathf.Lerp(5f, 9f, Danger));
+            _vig.color.Override(Color.Lerp(Color.black, new Color(0.62f, 0.02f, 0.02f), Mathf.Clamp01(Danger * 1.6f)));
+            _vig.intensity.Override(0.2f + Danger * (0.18f + 0.12f * beat));
         }
     }
 }

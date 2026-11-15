@@ -179,13 +179,13 @@ namespace Ironclad.Core
             return v;
         }
 
-        public double DamageMult { get { return (1 + Content.Upgrade("power").Step * UpgradeLevel("power")) * (1 + CardSum("damage")); } }
+        public double DamageMult { get { return (1 + Content.Upgrade("power").Step * UpgradeLevel("power")) * (1 + CardSum("damage")) * CharterMult; } }
         public double RateMult { get { return (1 + Content.Upgrade("rate").Step * UpgradeLevel("rate")) * (1 + CardSum("rate")); } }
         public double RangeMult { get { return 1 + CardSum("range"); } }
         public double CritChance { get { return Content.CritBase + Content.Upgrade("crit").Step * UpgradeLevel("crit") + CardSum("crit"); } }
         public double CritDamage { get { return Content.CritDamageBase + Content.Upgrade("critdmg").Step * UpgradeLevel("critdmg"); } }
         public double ScripMult { get { return (1 + Content.Upgrade("scrip").Step * UpgradeLevel("scrip")) * (1 + CardSum("scrip")); } }
-        public double SteelMult { get { return (1 + Content.Upgrade("steel").Step * UpgradeLevel("steel")) * (1 + CardSum("steel")) * (Owns("ironclad.doubler") ? 2 : 1); } }
+        public double SteelMult { get { return (1 + Content.Upgrade("steel").Step * UpgradeLevel("steel")) * (1 + CardSum("steel")) * (Owns("ironclad.doubler") ? 2 : 1) * CharterMult; } }
         public double HullMax { get { return Content.HullBase * (1 + Content.Upgrade("hull").Step * UpgradeLevel("hull")) * (1 + CardSum("hull")); } }
         public double PlateMax(string type) { return Content.PlateBase * Content.Car(type).Plating * (1 + Content.Upgrade("plate").Step * UpgradeLevel("plate")) * (1 + CardSum("plate")); }
         public double HullMend { get { return Content.Upgrade("mend").Step * UpgradeLevel("mend"); } }

@@ -13,7 +13,7 @@ namespace Ironclad.Game
         static AudioSource[] _pool;
         static AudioSource _bed;
         static int _next;
-        static AudioSource _day, _night, _chuff;
+        static AudioSource _day, _night, _chuff, _danger;
         const float MusicLevel = 0.32f;
 
         /// <summary>Music on or off (its own switch: plenty of people want the sounds without it).</summary>
@@ -28,11 +28,20 @@ namespace Ironclad.Game
         /// at the depot and in stations (night 1), a slow
         /// cross-fade between them, and both down while the title screen or a card wants quiet (<paramref name="duck"/>).
         /// </summary>
-        public static void TickMusic(float night, float dt, float duck = 1f)
+        /// <param name="danger">0..1: the hull is low. A heartbeat and a low drone come in over the music and the
+        /// driving loop steps back.</param>
+        public static void TickMusic(float night, float dt, float duck = 1f, float danger = 0f)
         {
             if (_day == null) return;
             float on = Music ? MusicLevel * duck : 0;
-            float wantDay = on * (1 - night), wantNight = on * night * 1.1f;
+            float wantDay = on * (1 - night) * (1 - 0.45f * danger), wantNight = on * night * 1.1f;
+            if (_danger != null)
+            {
+                float want = on * danger * 1.5f;
+                _danger.volume = Mathf.MoveTowards(_danger.volume, want, dt * (want > _danger.volume ? 0.5f : 0.25f));
+                if (_danger.volume > 0.001f && !_danger.isPlaying) _danger.Play();
+                else if (_danger.volume <= 0.001f && _danger.isPlaying) _danger.Stop();
+            }
             _day.volume = Mathf.MoveTowards(_day.volume, wantDay, dt * 0.12f);
             _night.volume = Mathf.MoveTowards(_night.volume, wantNight, dt * 0.12f);
             // A silent track is stopped (nothing decoding for nothing) and starts again from the top when wanted.
@@ -81,6 +90,38 @@ namespace Ironclad.Game
             return clip;
         }
 
+        /// <summary>The danger layer: a heartbeat (two low thumps) at 100 beats a minute over a dark drone that swells
+        /// and falls with it, four beats to the loop.</summary>
+        static AudioClip Tension()
+        {
+            const int rate = 22050; const float beat = 0.6f; const int beats = 4;
+            int n = (int)(beat * beats * rate);
+            var data = new float[n];
+            var rng = new System.Random(11);
+            float lp = 0;
+            for (int i = 0; i < n; i++)
+            {
+                float t = i / (float)rate, into = t % beat;
+                float thump = 0;
+                foreach (float at in new[] { 0f, 0.17f })
+                {
+                    float u = into - at;
+                    if (u < 0 || u > 0.25f) continue;
+                    float env = Mathf.Exp(-u * 22f) * Mathf.Min(1, u / 0.003f) * (at == 0 ? 1f : 0.7f);
+                    // The body of the beat is below what a phone's speaker plays: its overtones carry it there.
+                    thump += (Mathf.Sin(2 * Mathf.PI * (52f - 30f * u) * u) + 0.55f * Mathf.Sin(2 * Mathf.PI * (130f - 60f * u) * u) + 0.25f * Mathf.Sin(2 * Mathf.PI * 230f * u)) * env;
+                }
+                lp += 0.02f * ((float)rng.NextDouble() * 2 - 1 - lp);
+                float swell = 0.55f + 0.45f * Mathf.Sin(2 * Mathf.PI * t / (beat * beats));
+                float drone = (Mathf.Sin(2 * Mathf.PI * 110f * t) * 0.45f + Mathf.Sin(2 * Mathf.PI * 116.5f * t) * 0.3f + Mathf.Sin(2 * Mathf.PI * 220f * t) * 0.15f + Mathf.Sin(2 * Mathf.PI * 233f * t) * 0.1f) * 0.2f * swell;
+                data[i] = Mathf.Clamp(thump * 0.7f + drone + lp * 0.6f, -1, 1);
+            }
+            for (int i = 0; i < 300; i++) { float k = i / 300f; data[n - 300 + i] *= 1 - k; data[i] *= k; }      // no click at the seam
+            var clip = AudioClip.Create("Tension", n, 1, rate, false);
+            clip.SetData(data, 0);
+            return clip;
+        }
+
         static AudioSource MusicSource(Transform parent, string name)
         {
             var s = new GameObject("Music " + name).AddComponent<AudioSource>();
@@ -115,6 +156,9 @@ namespace Ironclad.Game
             _chuff.transform.SetParent(go.transform, false);
             _chuff.clip = Chuff(); _chuff.loop = true; _chuff.volume = 0; _chuff.spatialBlend = 0; _chuff.playOnAwake = false;
             _day = MusicSource(go.transform, "day"); _night = MusicSource(go.transform, "night");
+            _danger = new GameObject("Music danger").AddComponent<AudioSource>();
+            _danger.transform.SetParent(go.transform, false);
+            _danger.clip = Tension(); _danger.loop = true; _danger.volume = 0; _danger.spatialBlend = 0; _danger.playOnAwake = false; _danger.priority = 0;
             AudioListener.volume = Muted ? 0 : 1;
         }
 

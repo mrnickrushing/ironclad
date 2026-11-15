@@ -211,7 +211,7 @@ namespace Ironclad.Tests
         }
 
         [Test]
-        public void AdvertsPayTheirRewardOnceAndAreCountedByTheDay()
+        public void AdsPayTheirRewardOnceAndAreCountedByTheDay()
         {
             var s = TestGame.New();
             Assert.IsFalse(s.GrantAd(AdReward.Revive));

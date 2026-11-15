@@ -62,6 +62,11 @@ namespace Ironclad.Core
         public bool doubled;                // the run's steel was doubled after it ended
         public int seals;                   // seals won on this run (already in the save's count)
         public double time;                 // seconds rolled
+        public int startBest;               // the best mile on this line when the run set off (the BEST post stands there)
+        public bool rerolled;               // this station's free deal of other cards has been used
+        public bool retired;                // the player ended it (no "so close" on the last card)
+        public int left;                    // raiders still riding or still to come when the hull went
+        public double bossLeft = -1;        // the Baron's carriage's share of health left then (-1: not on the field)
     }
 
     /// <summary>The save: plain fields and lists so JsonUtility can write it. Every class it holds is [Serializable].</summary>
@@ -97,6 +102,12 @@ namespace Ironclad.Core
         public long firstDay = -1;
         public long giftDay = -1; public int giftStreak;
         public bool starterOffered;         // the Fireman's Pack has been shown once
+        // A new engine: the workshop starts again and every charter earned makes steel and damage stronger for good.
+        public int charters, engines;
+        public double lifetimeAtRenew;      // lifetime steel when this engine was built
+        // Liveries for the engine (paint and model only).
+        public string skin = "";
+        public List<string> skins = new List<string>();
         public long taskDay = -1; public int taskClaimed; public List<double> taskBase = new List<double>();
 
         // The shop.
@@ -126,6 +137,9 @@ namespace Ironclad.Core
             if (achieved == null) achieved = new List<string>();
             if (seenFeatures == null) seenFeatures = new List<string>();
             if (taskBase == null) taskBase = new List<double>();
+            if (skins == null) skins = new List<string>();
+            if (skin == null || (skin.Length > 0 && Content.Skin(skin) == null)) skin = "";
+            if (lifetimeAtRenew > lifetime) lifetimeAtRenew = lifetime;
             if (playerName == null) playerName = "";
             if (seed == 0) seed = 2463534242;
             cars.RemoveAll(c => c == null || Content.Car(c.id) == null);
