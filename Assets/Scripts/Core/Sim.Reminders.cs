@@ -20,7 +20,7 @@ namespace Ironclad.Core
                 all.Add(new Reminder { In = Math.Max(600, DepotCap - DepotSeconds), Title = "The depot is full", Body = "Your patrols have brought home all the steel the yard can hold. Come and collect." });
             if (State.run != null && !RunEnded)
                 all.Add(new Reminder { In = 4 * 3600, Title = "The train is waiting", Body = "Mile " + State.run.mile + " on " + Route.Name + ": steam is up and the crews are at their guns." });
-            all.Add(new Reminder { In = 24 * 3600, Title = "The line needs holding", Body = "Today's gift and a free double are waiting at the depot." });
+            all.Add(new Reminder { In = 24 * 3600, Title = "The line needs holding", Body = "Today's gift is waiting, and the patrols' steel at the depot." });
 
             // Two at most, never two within ten minutes, and none in the night: one due between 22:00 and 08:00 waits
             // for the morning.

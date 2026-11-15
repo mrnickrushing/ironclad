@@ -204,10 +204,14 @@ namespace Ironclad.Tests
             Assert.Greater(hour, 0);
             now += 100 * 3600;
             Assert.AreEqual(System.Math.Floor(s.DepotRate * 8), s.DepotSteel);
-            double got = s.CollectDepot(true);
-            Assert.AreEqual(System.Math.Floor(s.DepotRate * 8) * 2, got);
-            Assert.IsFalse(s.DoubleFree);
+            double got = s.CollectDepot();
+            Assert.AreEqual(System.Math.Floor(s.DepotRate * 8), got, "no free double: collecting pays it once");
             Assert.AreEqual(0, s.DepotSteel);
+            now += 3600;
+            double before = s.State.steel, owed = s.DepotSteel;
+            Assert.IsTrue(s.AdOffered(AdReward.DoubleDepot), "doubling is for an ad, on the first collect of the day too");
+            Assert.IsTrue(s.GrantAd(AdReward.DoubleDepot));
+            Assert.AreEqual(owed * 2, s.State.steel - before);
         }
 
         [Test]

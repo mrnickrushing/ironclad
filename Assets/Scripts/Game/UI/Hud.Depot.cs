@@ -221,7 +221,7 @@ namespace Ironclad.Game
             var ok = Ui.Button("Ok", card, "ON WE GO", Ui.Green, CloseCard, 42); ((RectTransform)ok.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 40), new Vector2(420, 116));
         }
 
-        /// <summary>The patrols' steel: collect it, or twice over (free once a day, then for an ad).</summary>
+        /// <summary>The patrols' steel: collect it, or twice over for an ad.</summary>
         void ShowDepotCard()
         {
             var s = S;
@@ -232,15 +232,10 @@ namespace Ironclad.Game
             Ui.Label("S", card, "+" + Format.Money(steel) + " steel", 76, Ui.Ink).rectTransform.Band(true, -190, 100, 40);
             Ui.Label("R", card, Format.Money(s.DepotRate) + " an hour, for up to " + Math.Round(s.DepotCap / 3600) + " hours", 26, Ui.Dim, TextAnchor.UpperCenter, false).rectTransform.Band(true, -296, 40, 40);
             Action done = () => { CloseCard(); Sfx.Play("coin", 0.9f); Haptics.Success(); GameRoot.Instance.Save(); _dirty = true; };
-            bool free = s.DoubleFree, ad = !free && AdReady(AdReward.DoubleDepot);
-            var c = Ui.Button("Collect", card, "COLLECT", free || ad ? Ui.Off : Ui.Green, () => { S.CollectDepot(); done(); }, 40);
-            ((RectTransform)c.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(free || ad ? -210 : 0, 44), new Vector2(390, 124));
-            if (free)
-            {
-                var d = Ui.Button("Double", card, "DOUBLE IT\n<size=24>free today</size>", Ui.Green, () => { S.CollectDepot(true); done(); }, 38);
-                ((RectTransform)d.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(210, 44), new Vector2(390, 124));
-            }
-            else if (ad)
+            bool ad = AdReady(AdReward.DoubleDepot);
+            var c = Ui.Button("Collect", card, "COLLECT", ad ? Ui.Off : Ui.Green, () => { S.CollectDepot(); done(); }, 40);
+            ((RectTransform)c.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(ad ? -210 : 0, 44), new Vector2(390, 124));
+            if (ad)
             {
                 var d = Ui.Button("Double", card, AdLabel("DOUBLE IT"), Ui.Gold, () => WatchAd(AdReward.DoubleDepot, done), 38);
                 ((RectTransform)d.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(210, 44), new Vector2(390, 124));
