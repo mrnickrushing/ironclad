@@ -305,7 +305,7 @@ namespace Ironclad.Game
                     () => Store.Buy(pr, (ok, msg) => { Toast(msg); if (ok) Sfx.Play("confirm"); if (_screen == Page.Shop) ShowShop(); }));
             }
             y = Entry(y, Ui.Ic("cart"), Ui.Ink, "Restore purchases", "Bring back what this Apple Account has bought once.", "RESTORE", Ui.Blue, () => Store.Restore(msg => { Toast(msg); if (_screen == Page.Shop) ShowShop(); }));
-            var note = Ui.Label("Note", _list, "Adverts are only ever shown when you ask for one. Everything in the game can be earned by playing.", 26, Ui.Dim, TextAnchor.MiddleCenter, false); note.rectTransform.Band(true, y, 60);
+            var note = Ui.Label("Note", _list, "Ads are only ever shown when you ask for one. Everything in the game can be earned by playing.", 26, Ui.Dim, TextAnchor.MiddleCenter, false); note.rectTransform.Band(true, y, 60);
             EndList(-y + 70);
         }
 

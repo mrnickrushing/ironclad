@@ -105,8 +105,8 @@ namespace Ironclad.Game
             }
             if (_shown == Face.Over && r != null)
             {
-                if (AdReady(AdReward.Revive) && rnd.Next(2) == 0) { Advert(AdReward.Revive, () => { }); return; }
-                if (AdReady(AdReward.DoubleRun)) { Advert(AdReward.DoubleRun, () => { }); return; }
+                if (AdReady(AdReward.Revive) && rnd.Next(2) == 0) { WatchAd(AdReward.Revive, () => { }); return; }
+                if (AdReady(AdReward.DoubleRun)) { WatchAd(AdReward.DoubleRun, () => { }); return; }
                 PlayBot.Runs++;
                 if (PlayBot.Log.Count < 400) PlayBot.Log.Add("run " + PlayBot.Runs + " " + s.Route.Id + " mile " + r.mile + " kills " + r.kills + " steel " + Format.Money(s.RunSteel) + " cars " + r.cars.Count + " at " + Format.Time(s.State.played));
                 s.CloseRun();

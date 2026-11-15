@@ -7,14 +7,14 @@ using GoogleMobileAds.Api;
 namespace Ironclad.Game
 {
     /// <summary>
-    /// Rewarded adverts (Google AdMob): only ever shown because the player tapped a WATCH button, and paid out through
+    /// Rewarded ads (Google AdMob): only ever shown because the player tapped a WATCH button, and paid out through
     /// <c>Sim.Ads</c>. Requests are non-personalised ("npa"), so nothing is tracked and iOS never asks
-    /// for tracking permission. In the Editor an advert is "watched" at once so the rewards can be tried.
+    /// for tracking permission. In the Editor an ad is "watched" at once so the rewards can be tried.
     /// </summary>
     public static class Ads
     {
         // The rewarded unit from the AdMob account, and Google's public test unit, which only ever serves test
-        // adverts: debug and TestFlight builds use that one, so nobody testing taps a real advert (Google closes
+        // ads: debug and TestFlight builds use that one, so nobody testing taps a real ad (Google closes
         // accounts for that).
         const string LiveUnit = "ca-app-pub-2509790196257770/2358884575", TestUnit = "ca-app-pub-3940256099942544/1712485313";
         static string RewardedUnit { get { return Telemetry.TestBuild ? TestUnit : LiveUnit; } }
@@ -25,7 +25,7 @@ namespace Ironclad.Game
         static RewardedAd _ad;
 #endif
 
-        /// <summary>An advert is loaded and can be shown this moment.</summary>
+        /// <summary>An ad is loaded and can be shown this moment.</summary>
         public static bool Ready
         {
             get
@@ -40,7 +40,7 @@ namespace Ironclad.Game
             }
         }
 
-        /// <summary>Starts the SDK and loads the first advert. Called once the game is running, never at launch.</summary>
+        /// <summary>Starts the SDK and loads the first ad. Called once the game is running, never at launch.</summary>
         public static void Start()
         {
             if (_started) return;
@@ -48,12 +48,12 @@ namespace Ironclad.Game
 #if UNITY_IOS && !UNITY_EDITOR
             MobileAds.RaiseAdEventsOnUnityMainThread = true;
             MobileAds.SetiOSAppPauseOnBackground(true);
-            MobileAds.SetRequestConfiguration(new RequestConfiguration { MaxAdContentRating = MaxAdContentRating.G });      // family-safe adverts only
+            MobileAds.SetRequestConfiguration(new RequestConfiguration { MaxAdContentRating = MaxAdContentRating.G });      // family-safe ads only
             MobileAds.Initialize(_ => Load());
 #endif
         }
 
-        /// <summary>Keeps an advert waiting: tries again a while after a failed load.</summary>
+        /// <summary>Keeps an ad waiting: tries again a while after a failed load.</summary>
         public static void Tick()
         {
 #if UNITY_IOS && !UNITY_EDITOR
@@ -77,7 +77,7 @@ namespace Ironclad.Game
         }
 #endif
 
-        /// <summary>Shows an advert; <paramref name="done"/> hears true only if it was watched to the reward.</summary>
+        /// <summary>Shows an ad; <paramref name="done"/> hears true only if it was watched to the reward.</summary>
         public static void Show(Action<bool> done)
         {
 #if UNITY_EDITOR

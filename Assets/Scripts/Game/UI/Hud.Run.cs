@@ -335,7 +335,7 @@ namespace Ironclad.Game
                 bool ad = AdReady(AdReward.Revive), gems = s.State.gems >= Sim.ReviveGems;
                 if (ad)
                 {
-                    var b = Ui.Button("Revive", p, AdLabel("BACK ON THE RAILS"), Ui.Blue, () => Advert(AdReward.Revive, () => { Sfx.Play("star", 0.8f); Haptics.Success(); }), 32);
+                    var b = Ui.Button("Revive", p, AdLabel("BACK ON THE RAILS"), Ui.Blue, () => WatchAd(AdReward.Revive, () => { Sfx.Play("star", 0.8f); Haptics.Success(); }), 32);
                     ((RectTransform)b.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-250, y), new Vector2(470, 120));
                 }
                 var g = Ui.Button("ReviveGems", p, "BACK ON THE RAILS\n<size=24>" + Sim.ReviveGems + " gems</size>", gems ? Ui.Grape : Ui.Off, gems ? (Action)(() => { if (S.Revive(true)) { Sfx.Play("star", 0.8f); GameRoot.Instance.Save(); } }) : null, 32);
@@ -343,7 +343,7 @@ namespace Ironclad.Game
             }
             if (AdReady(AdReward.DoubleRun))
             {
-                var d = Ui.Button("Double", p, AdLabel("DOUBLE THE STEEL"), Ui.Gold, () => Advert(AdReward.DoubleRun, () => { Sfx.Play("coin", 0.9f); Haptics.Success(); }), 32);
+                var d = Ui.Button("Double", p, AdLabel("DOUBLE THE STEEL"), Ui.Gold, () => WatchAd(AdReward.DoubleRun, () => { Sfx.Play("coin", 0.9f); Haptics.Success(); }), 32);
                 ((RectTransform)d.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-250, 44), new Vector2(470, 120));
             }
             var c = Ui.Button("Collect", p, "COLLECT", Ui.Green, () =>

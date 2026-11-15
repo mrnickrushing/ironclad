@@ -12,7 +12,7 @@ PID=$(unity status 2>/dev/null | awk -v r="$ROOT" '$3 == r { print $5 }' | head 
 [ -n "$PID" ] && [ -r "/proc/$PID/fd/1" ] && LOG="/proc/$PID/fd/1"
 unity command --project-path "$ROOT" editor.playmode stop >/dev/null 2>&1 || true
 unity status --until-ready >/dev/null
-# The Editor must be on the iOS platform: the capability and advert steps that finish the Xcode project are only
+# The Editor must be on the iOS platform: the capability and ad steps that finish the Xcode project are only
 # compiled there (#if UNITY_IOS). Switching reloads the scripts, so it is its own step.
 unity command --project-path "$ROOT" script eval --timeout 600 --code \
   'if (UnityEditor.EditorUserBuildSettings.activeBuildTarget != UnityEditor.BuildTarget.iOS) UnityEditor.EditorUserBuildSettings.SwitchActiveBuildTarget(UnityEditor.BuildTargetGroup.iOS, UnityEditor.BuildTarget.iOS); return 0;' >/dev/null 2>&1 || true

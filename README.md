@@ -18,7 +18,7 @@ Notes for coding agents: `CLAUDE.md`.
 
 | Role | What it can do |
 |---|---|
-| **Player (guest)** | Plays without an account: runs, the workshop, the train, daily gift and tasks, awards, the shop, opt-in rewarded adverts and Game Center. Restores one-time purchases through their Apple account. Can delete their progress (Settings, Delete account). The save is kept on the device and in the player's own iCloud. |
+| **Player (guest)** | Plays without an account: runs, the workshop, the train, daily gift and tasks, awards, the shop, opt-in rewarded ads and Game Center. Restores one-time purchases through their Apple account. Can delete their progress (Settings, Delete account). The save is kept on the device and in the player's own iCloud. |
 | **Player signed in with Apple** | All of the above. Purchases are also tied to the Apple ID in RevenueCat, so they follow the player to a new phone. Delete account also signs them out. |
 | **Operator (the studio)** | No in-game admin. Works through `Tools/`: App Store listing, purchases and Game Center (`Tools/appstore/*.py`, using an App Store Connect API key), the iOS export (`Tools/ios-export.sh`), and reading play statistics from the Cloudflare D1 database (`Tools/stats-worker`). |
 
@@ -30,10 +30,10 @@ of four **faces** (`Hud.cs`, `enum Face`); **screens** open over the depot (`Hud
 | Screen | Where | Purpose |
 |---|---|---|
 | Loading | `UI/LoadingScreen.cs` | Key art and the Rushing Technologies logo while the world is built. |
-| Depot (home) | `Face.Depot`, `Hud.Depot.cs` | Between runs. Pick the line, the speed, AUTO and Express (start part-way down the line), then set off. Shows the depot's steel earned while away (one free double a day, then an advert), the TODAY badge and the bottom bar: WORKSHOP, TRAIN, AWARDS, SHOP, MORE. |
+| Depot (home) | `Face.Depot`, `Hud.Depot.cs` | Between runs. Pick the line, the speed, AUTO and Express (start part-way down the line), then set off. Shows the depot's steel earned while away (one free double a day, then an ad), the TODAY badge and the bottom bar: WORKSHOP, TRAIN, AWARDS, SHOP, MORE. |
 | Run | `Face.Run`, `Hud.Run.cs` | The fight. Mile and hull bars; buy field levels with scrip under each car; the whistle; tap a raider to mark it; speed control. |
 | Station | `Face.Station` | Every tenth mile after the boss: choose one of three cards (Common/Rare/Epic; one free new deal, then gems) and recouple the wagons. |
-| Run over | `Face.Over` | Results: miles, raiders, steel, how close the run came and the next unlock. Revive once (an advert or gems) and double the steel (an advert). With AUTO on it collects after a countdown. |
+| Run over | `Face.Over` | Results: miles, raiders, steel, how close the run came and the next unlock. Revive once (an ad or gems) and double the steel (an ad). With AUTO on it collects after a countdown. |
 | Workshop | `Page.Workshop` | Steel upgrades kept for good. Below them, the seven perks bought with the Baron's seals, then A NEW ENGINE (start again for charters). |
 | Train | `Page.Train` | Build wagons from plans, level them, and choose their order (up to eight behind the engine). Liveries for the engine (gems). |
 | Today | `Page.Today` | Seven-day gift (a missed day loses nothing) and three daily tasks. |
@@ -85,7 +85,7 @@ Event types sent: `Session.started`, `Session.paused`, `Run.ended`, `Progress.st
 | Sign-in | Sign in with Apple (`com.lupidan.apple-signin-unity`) | `Game/Platform/AppleAccount.cs` |
 | Save sync | iCloud key-value store (native plugin, no server) | `Game/Platform/CloudSave.cs`, `Plugins/iOS/IroncladCloud.mm` |
 | Payments | App Store in-app purchases through RevenueCat (`com.revenuecat.purchases-unity`) | `Game/App/Store.cs`, products in `Core/Sim.Store.cs`, `Tools/appstore/iap.py` |
-| Adverts | Google AdMob, rewarded only and non-personalised (`com.google.ads.mobile`) | `Game/Platform/Ads.cs`, `Assets/GoogleMobileAds/Resources` |
+| Ads | Google AdMob, rewarded only and non-personalised (`com.google.ads.mobile`) | `Game/Platform/Ads.cs`, `Assets/GoogleMobileAds/Resources` |
 | Leaderboards and achievements | Apple Game Center (4 leaderboards, one weekly; 17 achievements) | `Game/Platform/GameCenter.cs`, `docs/appstore/gamecenter.json` |
 | Reminders | Local notifications (`com.unity.mobile.notifications`) | `Game/Platform/Reminders.cs` |
 | Statistics | Cloudflare Worker + D1 | `Game/App/Telemetry.cs`, `Tools/stats-worker` |

@@ -225,7 +225,7 @@ namespace Ironclad.Game
             }
         }
 
-/// <summary>A debug or TestFlight build: its statistics are marked test, and it shows test adverts only.</summary>
+/// <summary>A debug or TestFlight build: its statistics are marked test, and it shows test ads only.</summary>
         public static bool TestBuild { get { return Debug.isDebugBuild || IsTestFlight(); } }
 
 #if UNITY_IOS && !UNITY_EDITOR

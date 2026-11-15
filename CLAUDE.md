@@ -4,7 +4,7 @@ An idle tower defence for iPhone and iPad (landscape), Unity **6000.0.85f1**, UR
 an armoured train: it rolls across the frontier, each wagon is a weapon, raiders come in waves, and a run ends when the
 engine's hull is gone. Steel earned on runs buys upgrades that are kept. Design: `docs/DESIGN.md`.
 Original names and places only, nothing recreated from an existing game. Free models only (CC0 first; CC BY credited
-in `CREDITS.md` and in the game). Adverts are rewarded only, never shown unasked.
+in `CREDITS.md` and in the game). Ads are rewarded only, never shown unasked.
 
 The project was started from Reel Empire (`~/reelempire`): the platform code (`Game/Platform`, `App/Store`,
 `App/Telemetry`, `UI/Ui`, `UI/LoadingScreen`), the tools and the conventions are the same. The services are this game's own: App Store Connect app

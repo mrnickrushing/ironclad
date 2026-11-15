@@ -134,7 +134,7 @@ namespace Ironclad.Game
             ((RectTransform)no.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-205, 44), new Vector2(380, 116));
         }
 
-        /// <summary>The patrols' steel: collect it, or twice over (free once a day, then for an advert).</summary>
+        /// <summary>The patrols' steel: collect it, or twice over (free once a day, then for an ad).</summary>
         void ShowDepotCard()
         {
             var s = S;
@@ -155,7 +155,7 @@ namespace Ironclad.Game
             }
             else if (ad)
             {
-                var d = Ui.Button("Double", card, AdLabel("DOUBLE IT"), Ui.Gold, () => Advert(AdReward.DoubleDepot, done), 38);
+                var d = Ui.Button("Double", card, AdLabel("DOUBLE IT"), Ui.Gold, () => WatchAd(AdReward.DoubleDepot, done), 38);
                 ((RectTransform)d.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(210, 44), new Vector2(390, 124));
             }
         }

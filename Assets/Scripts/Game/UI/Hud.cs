@@ -228,22 +228,22 @@ namespace Ironclad.Game
             var n = Ui.Button("No", card, no, Ui.Off, CloseCard, 40); ((RectTransform)n.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-205, 44), new Vector2(380, 110));
         }
 
-        // ---- adverts: always the player's choice ----
+        // ---- ads: always the player's choice ----
 
-        /// <summary>Whether this reward can be had for an advert right now (or at once, with the Conductor's Pass).</summary>
-        bool AdReady(AdReward reward) { return S.AdOffered(reward) && (S.SkipsAdverts || Ads.Ready); }
+        /// <summary>Whether this reward can be had for an ad right now (or at once, with the Conductor's Pass).</summary>
+        bool AdReady(AdReward reward) { return S.AdOffered(reward) && (S.SkipsAds || Ads.Ready); }
 
-        void Advert(AdReward reward, Action done)
+        void WatchAd(AdReward reward, Action done)
         {
-            if (S.SkipsAdverts) { if (S.GrantAd(reward)) { GameRoot.Instance.Save(); done(); } return; }
+            if (S.SkipsAds) { if (S.GrantAd(reward)) { GameRoot.Instance.Save(); done(); } return; }
             Ads.Show(ok =>
             {
-                if (!ok) { Toast("The advert wasn't finished, so nothing was given."); return; }
+                if (!ok) { Toast("The ad wasn't finished, so nothing was given."); return; }
                 if (S.GrantAd(reward)) { GameRoot.Instance.Save(); done(); }
             });
         }
 
-        string AdLabel(string what) { return S.SkipsAdverts ? what : what + "\n<size=24>watch an advert</size>"; }
+        string AdLabel(string what) { return S.SkipsAds ? what : what + "\n<size=24>watch an ad</size>"; }
 
         // ---- the welcome back ----
 

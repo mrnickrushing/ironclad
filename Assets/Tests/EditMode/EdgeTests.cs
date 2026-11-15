@@ -215,7 +215,7 @@ namespace Ironclad.Tests
         }
 
         [Test]
-        public void AdvertsStopAtTheDaysLimitAndComeBackTheNextDay()
+        public void AdsStopAtTheDaysLimitAndComeBackTheNextDay()
         {
             double now = 1_700_000_000;
             var s = new Sim(GameState.New()); s.RealNow = () => now;
@@ -233,9 +233,9 @@ namespace Ironclad.Tests
         public void TheConductorsPassIsKnownToTheRules()
         {
             var s = TestGame.New();
-            Assert.IsFalse(s.SkipsAdverts);
+            Assert.IsFalse(s.SkipsAds);
             s.Grant("ironclad.pass", "t");
-            Assert.IsTrue(s.SkipsAdverts);
+            Assert.IsTrue(s.SkipsAds);
             s.Grant("ironclad.depot", "t2");
             Assert.AreEqual((Content.DepotHours + 4) * 3600, s.DepotCap);
         }

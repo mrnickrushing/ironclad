@@ -113,7 +113,7 @@ namespace Ironclad.Game
             SlowMo.Tick(Time.unscaledDeltaTime, Sim.Running);
             Sim.Tick(Time.deltaTime * Speed);
             GameCenter.Sync(Sim);
-            if (Sim.State.runs >= 1) Ads.Start();      // no advert SDK until the first run is over
+            if (Sim.State.runs >= 1) Ads.Start();      // no ad SDK until the first run is over
             Ads.Tick();
             bool rolling = Sim.Running;
             Sfx.TickMusic(rolling ? 0 : 1, Time.unscaledDeltaTime, 1f, rolling ? Look.Danger : 0);
