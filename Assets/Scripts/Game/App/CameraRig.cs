@@ -44,7 +44,7 @@ namespace Ironclad.Game
         {
             float aspect = Cam.aspect > 0.1f ? Cam.aspect : 1.78f;
             float need = (_length + 26) / (2 * Mathf.Tan(Cam.fieldOfView * 0.5f * Mathf.Deg2Rad) * aspect);
-            float rest = Mathf.Clamp(86f * Mathf.Max(1f, 1.75f / aspect), 86f, 130f);
+            float rest = Mathf.Clamp(74f * Mathf.Max(1f, 1.75f / aspect), 74f, 120f);      // close enough that the raiders read on a phone; they ride in from just off screen
             return Mathf.Clamp(Mathf.Max(rest, need), MinDistance, MaxDistance);
         }
 

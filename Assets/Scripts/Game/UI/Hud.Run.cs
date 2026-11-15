@@ -100,6 +100,13 @@ namespace Ironclad.Game
                 chip.Buy = Ui.Button("Buy", chip.Back.transform, "", Ui.Green, () => BuyField(car), 28);
                 ((RectTransform)chip.Buy.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 12), new Vector2(w - 24, 64));
                 chip.Cost = chip.Buy.GetComponentInChildren<Text>(); chip.BuyImg = chip.Buy.GetComponent<Image>();
+                {
+                    // The price is in scrip: its coin sits at the left of the button.
+                    var coin = Ui.Img("Coin", chip.Buy.transform, Color.white); coin.sprite = Ui.Art("coin"); coin.preserveAspect = true; coin.raycastTarget = false;
+                    coin.rectTransform.Place(new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(8, 0), new Vector2(36, 36));
+                    chip.Cost.rectTransform.offsetMin = new Vector2(chip.Cost.rectTransform.offsetMin.x + 34, chip.Cost.rectTransform.offsetMin.y);
+                    chip.Cost.resizeTextForBestFit = true; chip.Cost.resizeTextMinSize = 16; chip.Cost.resizeTextMaxSize = 28;
+                }
                 chip.Buy.gameObject.AddComponent<HoldRepeat>().Tap = () => BuyField(car);
                 _chips.Add(chip);
             }

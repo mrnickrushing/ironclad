@@ -87,7 +87,7 @@ namespace Ironclad.Core
         {
             var r = State.run;
             r.queue.Clear();
-            double budget = 5 + 1.5 * r.mile;
+            double budget = 5 + 1.5 * r.mile + Math.Max(0, Content.EarlyRiders - r.mile);      // the first miles are busy, not empty
             if (r.mile % Content.StationEvery == 0) budget *= 0.5;      // the Baron's carriage rides with a smaller escort
             var pool = Content.Enemies.FindAll(e => !e.Boss && e.Mile <= r.mile);
             while (budget >= 1 && r.queue.Count < 60)
@@ -112,7 +112,7 @@ namespace Ironclad.Core
 
         static double Weight(EnemyDef e) { return e.Threat == 1 ? 3 : e.Threat >= 10 ? 0.5 : 1; }
 
-        EnemyState Spawn(string kind)
+        EnemyState Spawn(string kind, EnemyState beside = null)
         {
             var r = State.run;
             var d = Content.Enemy(kind);
@@ -121,7 +121,12 @@ namespace Ironclad.Core
             e.hpMax = e.hp = d.Hp * MileHp(r.mile);
             e.damage = d.Damage * MileDamage(r.mile);
             e.cooldown = d.Interval * 0.5;
-            if (d.Rail)
+            if (beside != null && !d.Rail)
+            {
+                e.x = beside.x + (Roll() - 0.5) * 5;
+                e.z = beside.z + (Roll() + 0.6) * Math.Sign(beside.z) * 1.6;
+            }
+            else if (d.Rail)
             {
                 bool ahead = Roll() < 0.5;
                 e.x = ahead ? Content.SpawnRing : back - Content.SpawnRing;
@@ -158,7 +163,17 @@ namespace Ironclad.Core
             if (r.queue.Count > 0 && r.enemies.Count < Content.MaxRaiders)
             {
                 r.spawnIn -= dt;
-                if (r.spawnIn <= 0) { Spawn(r.queue[0]); r.queue.RemoveAt(0); r.spawnIn += r.spawnGap; }
+                if (r.spawnIn <= 0)
+                {
+                    // Outriders come in small packs, side by side: one alone never gets near the train.
+                    EnemyState lead = null; int pack = 0;
+                    do
+                    {
+                        lead = Spawn(r.queue[0], lead); r.queue.RemoveAt(0); pack++;
+                    }
+                    while (lead.kind == "outrider" && pack < Content.Pack && r.queue.Count > 0 && r.queue[0] == "outrider" && r.enemies.Count < Content.MaxRaiders);
+                    r.spawnIn += r.spawnGap * pack;
+                }
             }
             if (BossMile && !r.bossOut && r.mileTime >= 2)
             {

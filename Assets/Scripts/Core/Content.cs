@@ -87,6 +87,8 @@ namespace Ironclad.Core
         public const double CritBase = 0.05, CritDamageBase = 2;
         public const double WhistleCooldown = 60, WhistleRange = 13, WhistleStun = 3, WhistlePush = 7;
         public const int StartSlots = 2, MaxSlots = 8;
+        public const int EarlyRiders = 8;          // extra threat on mile 1, one less each mile after (gone by mile 8)
+        public const int Pack = 3;                  // outriders ride in together, up to this many
         public const int MaxRaiders = 120;         // on the field at once: more wait their turn (and the mile waits for them)
         public const double SpawnRing = 30;         // how far out raiders appear
         public const double ReviveHull = 0.5;
