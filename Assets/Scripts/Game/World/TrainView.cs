@@ -37,7 +37,7 @@ namespace Ironclad.Game
         const float Span = 170;         // the country is drawn this far either side of the engine
         const float Cruise = 13;        // metres a second at running speed 1
 
-        Transform _country, _rails, _train, _foes, _fx, _station, _ground; float _groundAt, _cloudAt; Light _lamp;
+        Transform _country, _rails, _train, _foes, _fx, _station, _ground; float _groundAt, _cloudAt;
         readonly List<Transform> _props = new List<Transform>();
         readonly List<Transform> _railBits = new List<Transform>();
         float _railLen = 6, _railAt, _speed, _stationX = float.NaN;
@@ -47,7 +47,7 @@ namespace Ironclad.Game
 
         sealed class CarView
         {
-            public Transform Root, Gun, Body; public Vector3 Muzzle; public float Flash, Hurt, GunYaw; public bool Out; public Renderer[] Rends; public float AimOffset;
+            public Transform Root, Gun, Body; public Vector3 Muzzle; public float Flash, Hurt, GunYaw; public bool Out; public Renderer[] Rends; public float AimOffset; public Light Lamp;
         }
         readonly List<CarView> _cars = new List<CarView>();
 
@@ -294,7 +294,7 @@ namespace Ironclad.Game
                     {
                         // The headlamp: lit at night, throwing a pool of warm light ahead and around the engine.
                         var lampGo = new GameObject("Headlamp"); lampGo.transform.SetParent(v.Root, false); lampGo.transform.localPosition = new Vector3(4.5f, 3.2f, 0);
-                        _lamp = lampGo.AddComponent<Light>(); _lamp.type = LightType.Point; _lamp.color = new Color(1f, 0.82f, 0.5f); _lamp.range = 26; _lamp.intensity = 0; _lamp.shadows = LightShadows.None; _lamp.enabled = false;
+                        var lamp = v.Lamp = lampGo.AddComponent<Light>(); lamp.type = LightType.Point; lamp.color = new Color(1f, 0.82f, 0.5f); lamp.range = 32; lamp.intensity = 0; lamp.shadows = LightShadows.None; lamp.enabled = false;      // its own: the icon renders build engines too
                     }
                     break;
                 case "gatling": v.Body = Models.Along("flatbed_wood", v.Root, L); Gun(v, "gatling", 2.6f, 1.05f, 0); break;
@@ -434,7 +434,8 @@ namespace Ironclad.Game
             // The day: forty miles from one morning to the next, so every fourth station is reached at night. Standing
             // at the depot it is always morning.
             Look.Day = r != null ? Mathf.Repeat(0.12f + (r.mile - 1 + Mathf.Clamp01((float)(r.mileTime / Content.MileSeconds))) / 40f, 1f) : 0.12f;
-            if (_lamp != null) { _lamp.intensity = Look.Night * 9f; _lamp.enabled = Look.Night > 0.05f; }
+            var headlamp = _cars.Count > 0 ? _cars[0].Lamp : null;
+            if (headlamp != null) { headlamp.intensity = Look.Night * 18f; headlamp.enabled = Look.Night > 0.05f; }
 
             // The train.
             float rock = Mathf.Clamp01(_speed / Cruise);
