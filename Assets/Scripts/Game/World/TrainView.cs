@@ -23,21 +23,22 @@ namespace Ironclad.Game
             public float Hue;               // turns the plants' colours
             public Color Rock = new Color(0.62f, 0.62f, 0.62f);      // the stones are pale: each line paints them its own colour
             public Color Plant = Color.white;                         // grass and bushes, warmed to sit in the line's own ground
+            public string Cover; public int CoverCount;               // ground cover drawn instanced: thick grass on the green lines
         }
 
         static readonly Theme[] Themes =
         {
-            new Theme { Ground = Palette.Hex(0x93A857), Patch = Palette.Hex(0xA7AE62), Bed = Palette.Hex(0x8C7B62), Fog = Palette.Hex(0xE3D6B4), Plant = new Color(1.35f, 1.0f, 0.5f), Near = new[] { "grass", "grass", "flowers", "rock_d", "bush" }, Far = new[] { "tree_oak", "tree_a", "rock_a", "bush", "windmill", "fence", "log_stack" } },
-            new Theme { Ground = Palette.Hex(0xC9774A), Patch = Palette.Hex(0xB5633C), Bed = Palette.Hex(0x7E5A48), Fog = Palette.Hex(0xE8B98C), Rock = new Color(0.78f, 0.42f, 0.3f), Near = new[] { "rock_d", "rock_b", "cactus_b", "stump" }, Far = new[] { "cactus_a", "cactus_a", "rock_c", "rock_e", "rock_c", "cactus_b" } },
-            new Theme { Ground = Palette.Hex(0xE9EEF2), Patch = Palette.Hex(0xD3DEE6), Bed = Palette.Hex(0x7A7F88), Fog = Palette.Hex(0xDCE6EE), Rock = new Color(0.8f, 0.86f, 0.95f), Near = new[] { "rock_d", "stump", "rock_b" }, Far = new[] { "tree_pine", "tree_pine_b", "tree_pine", "rock_c", "tree_pine_b", "log_stack" } },
-            new Theme { Ground = Palette.Hex(0xE6DCC6), Patch = Palette.Hex(0xD6C8AC), Bed = Palette.Hex(0x9A8C78), Fog = Palette.Hex(0xF0E8D8), Rock = new Color(0.86f, 0.8f, 0.68f), Near = new[] { "rock_d", "rock_b" }, Far = new[] { "rock_c", "rock_a", "cactus_a", "stump" } },
-            new Theme { Ground = Palette.Hex(0x6E5A5A), Patch = Palette.Hex(0x5C4A4C), Bed = Palette.Hex(0x4A4044), Fog = Palette.Hex(0x8A7478), Rock = new Color(0.36f, 0.3f, 0.33f), Near = new[] { "rock_d", "rock_b", "stump" }, Far = new[] { "rock_c", "rock_e", "rock_c", "rock_e", "rock_a" } },
+            new Theme { Ground = Palette.Hex(0x93A857), Patch = Palette.Hex(0xA7AE62), Bed = Palette.Hex(0x8C7B62), Fog = Palette.Hex(0xE3D6B4), Plant = new Color(1.35f, 1.0f, 0.5f), Cover = "grass", CoverCount = 1500, Near = new[] { "grass", "grass", "flowers", "rock_d", "bush" }, Far = new[] { "tree_oak", "tree_a", "rock_a", "bush", "windmill", "fence", "log_stack" } },
+            new Theme { Ground = Palette.Hex(0xC9774A), Patch = Palette.Hex(0xB5633C), Bed = Palette.Hex(0x7E5A48), Fog = Palette.Hex(0xE8B98C), Rock = new Color(0.78f, 0.42f, 0.3f), Cover = "rock_b", CoverCount = 1100, Near = new[] { "rock_d", "rock_b", "cactus_b", "stump" }, Far = new[] { "cactus_a", "cactus_a", "rock_c", "rock_e", "rock_c", "cactus_b", "cliff", "cliff" } },
+            new Theme { Ground = Palette.Hex(0xE9EEF2), Patch = Palette.Hex(0xD3DEE6), Bed = Palette.Hex(0x7A7F88), Fog = Palette.Hex(0xDCE6EE), Rock = new Color(0.8f, 0.86f, 0.95f), Cover = "rock_b", CoverCount = 700, Near = new[] { "rock_d", "stump", "rock_b" }, Far = new[] { "tree_pine", "tree_pine_b", "tree_pine", "rock_c", "tree_pine_b", "log_stack" } },
+            new Theme { Ground = Palette.Hex(0xE6DCC6), Patch = Palette.Hex(0xD6C8AC), Bed = Palette.Hex(0x9A8C78), Fog = Palette.Hex(0xF0E8D8), Rock = new Color(0.86f, 0.8f, 0.68f), Cover = "rock_b", CoverCount = 600, Near = new[] { "rock_d", "rock_b" }, Far = new[] { "rock_c", "rock_a", "cactus_a", "stump" } },
+            new Theme { Ground = Palette.Hex(0x6E5A5A), Patch = Palette.Hex(0x5C4A4C), Bed = Palette.Hex(0x4A4044), Fog = Palette.Hex(0x8A7478), Rock = new Color(0.36f, 0.3f, 0.33f), Cover = "rock_b", CoverCount = 1100, Near = new[] { "rock_d", "rock_b", "stump" }, Far = new[] { "rock_c", "rock_e", "rock_c", "rock_e", "rock_a", "cliff", "cliff" } },
         };
 
         const float Span = 170;         // the country is drawn this far either side of the engine
         const float Cruise = 13;        // metres a second at running speed 1
 
-        Transform _country, _rails, _train, _foes, _fx, _station, _ground; float _groundAt, _cloudAt;
+        Transform _country, _rails, _train, _foes, _fx, _station, _ground; float _groundAt, _cloudAt, _travel;
         readonly List<Transform> _props = new List<Transform>();
         readonly List<Transform> _railBits = new List<Transform>();
         float _railLen = 6, _railAt, _speed, _stationX = float.NaN;
@@ -149,6 +150,25 @@ namespace Ironclad.Game
                 p.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 Place(p.transform, R(-Span, Span), R(6, 120) * (rnd.Next(2) == 0 ? -1 : 1), R(0, 360));
             }
+            // Ground cover drawn instanced (one call per thousand), thickest near the line: grass tufts on the prairie, pebbles on the dry lines.
+            _cover.Clear(); _coverMesh = null;
+            if (!string.IsNullOrEmpty(t.Cover))
+            {
+                _coverMesh = Resources.Load<Mesh>("Models/" + t.Cover);
+                if (_coverMesh != null)
+                {
+                    bool stones = t.Cover.StartsWith("rock");
+                    _coverMat = Materials.KitTint(stones ? t.Rock : t.Plant);
+                    var b = _coverMesh.bounds;
+                    _coverPivot = Matrix4x4.Translate(new Vector3(-b.center.x, -b.min.y, -b.center.z));
+                    float unit = 1f / Mathf.Max(0.0001f, b.size.y);
+                    for (int i = 0; i < t.CoverCount; i++)
+                    {
+                        float z = (3.9f + 58f * Mathf.Pow(R(0, 1), 1.7f)) * (rnd.Next(2) == 0 ? -1 : 1);
+                        _cover.Add(new Tuft { X = R(-Span, Span), Z = z, Turn = Quaternion.Euler(0, R(0, 360), 0), Size = (stones ? R(0.12f, 0.4f) : R(0.45f, 1.05f)) * unit });      // pebbles on the dry lines
+                    }
+                }
+            }
             // The telegraph line beside the track: a pole every so often, two wires sagging between them.
             {
                 const int poles = 14; float gap = Span * 2 / poles, h = 6.6f;
@@ -188,11 +208,39 @@ namespace Ironclad.Game
             for (int i = 0; i < 70; i++)
             {
                 string id = t.Far[rnd.Next(t.Far.Length)];
-                float h = id.StartsWith("tree") ? R(7, 12) : id == "windmill" ? 13 : id == "rock_c" || id == "rock_e" ? R(5, 13) : id.StartsWith("cactus") ? R(4, 7) : R(2.5f, 6);
+                float h = id.StartsWith("tree") ? R(7, 12) : id == "windmill" ? 13 : id == "cliff" ? R(9, 17) : id == "rock_c" || id == "rock_e" ? R(5, 13) : id.StartsWith("cactus") ? R(4, 7) : R(2.5f, 6);
                 var p = id.StartsWith("rock") ? Models.Tall(id, _country, h, t.Rock) : Plantish(id) ? Models.Tall(id, _country, h, t.Plant) : Models.Tall(id, _country, h);
                 float z = rnd.Next(5) == 0 ? -R(40, 56) : R(24, 150);      // few on the camera's side, where they would hide the fight
                 Place(p, R(-Span, Span), z, R(0, 360));
             }
+        }
+
+        struct Tuft { public float X, Z, Size; public Quaternion Turn; }
+        readonly List<Tuft> _cover = new List<Tuft>();
+        Mesh _coverMesh; Material _coverMat; Matrix4x4 _coverPivot;
+        readonly Matrix4x4[] _coverBatch = new Matrix4x4[1023];
+
+        /// <summary>Draws the ground cover where the country has rolled to.</summary>
+        void DrawCover()
+        {
+            if (_coverMesh == null || _cover.Count == 0) return;
+            var world = transform.localToWorldMatrix;
+            bool station = _station != null && !float.IsNaN(_stationX);
+            int n = 0;
+            for (int i = 0; i < _cover.Count; i++)
+            {
+                var c = _cover[i];
+                float x = Mathf.Repeat(c.X - _travel + Span, Span * 2) - Span;
+                if (x < -80 || x > 70) continue;      // only what the camera can see (it looks a little behind the engine)
+                if (station && c.Z > 3.5f && c.Z < 22 && Mathf.Abs(x - _stationX) < 26) continue;      // not through the platform or the saloon
+                _coverBatch[n++] = world * Matrix4x4.TRS(new Vector3(x, 0, c.Z), c.Turn, Vector3.one * c.Size) * _coverPivot;
+                if (n == _coverBatch.Length)
+                {
+                    Graphics.DrawMeshInstanced(_coverMesh, 0, _coverMat, _coverBatch, n, null, UnityEngine.Rendering.ShadowCastingMode.Off, true, gameObject.layer);
+                    n = 0;
+                }
+            }
+            if (n > 0) Graphics.DrawMeshInstanced(_coverMesh, 0, _coverMat, _coverBatch, n, null, UnityEngine.Rendering.ShadowCastingMode.Off, true, gameObject.layer);
         }
 
         static bool Plantish(string id) { return id == "grass" || id == "bush" || id.StartsWith("tree"); }
@@ -226,6 +274,7 @@ namespace Ironclad.Game
                 p.localPosition = v;
             }
             _groundAt = Mathf.Repeat(_groundAt + metres, Span * 2);
+            _travel = Mathf.Repeat(_travel + metres, Span * 2);
             _cloudAt = Mathf.Repeat(_cloudAt + metres, 100000f); Shader.SetGlobalFloat("_CloudScroll", _cloudAt);
             if (_ground != null) _ground.localPosition = new Vector3(-_groundAt + Span, 0, 0);
             _railAt = Mathf.Repeat(_railAt + metres, _railLen);
@@ -410,6 +459,8 @@ namespace Ironclad.Game
             if (stopped && r != null && r.phase == (int)Phase.Over) { }      // a beaten train stands where it fell: no station
             else if (stopped && _station == null) BuildStation(first ? centre : centre + 95);
         }
+
+        void LateUpdate() { DrawCover(); }
 
         void Update()
         {
