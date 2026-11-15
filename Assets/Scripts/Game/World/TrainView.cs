@@ -433,7 +433,8 @@ namespace Ironclad.Game
                         if (def.Range > 3)
                         {
                             var muzzle = v.At + Vector3.up * (v.Height * 0.55f);
-                            Fx.Tracer(muzzle, aim, def.Boss ? 0.22f : 0.12f, new Color(1f, 0.35f, 0.25f));
+                            Fx.Tracer(muzzle, aim, def.Boss ? 0.34f : 0.24f, new Color(1f, 0.3f, 0.2f), 0.22f);      // slower to fade than the train's own: it is the one to notice
+                            Fx.Spark(aim);
                             Fx.Flash(muzzle, def.Boss ? 1.6f : 0.9f);
                             if (Random.value < 0.5f) Sfx.Play("rifle", 0.16f, Random.Range(0.7f, 0.85f));
                         }

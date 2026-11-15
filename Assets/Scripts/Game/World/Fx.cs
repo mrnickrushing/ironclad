@@ -141,10 +141,10 @@ namespace Ironclad.Game
             return line;
         }
 
-        public static void Tracer(Vector3 from, Vector3 to, float width, Color c)
+        public static void Tracer(Vector3 from, Vector3 to, float width, Color c, float life = 0.08f)
         {
             var l = NewLine(2); if (l == null) return;
-            l.L.gameObject.SetActive(true); l.L.SetPosition(0, from); l.L.SetPosition(1, to); l.L.widthMultiplier = width * 2.2f; l.Life = l.Max = 0.08f; l.C = c;
+            l.L.gameObject.SetActive(true); l.L.SetPosition(0, from); l.L.SetPosition(1, to); l.L.widthMultiplier = width * 2.2f; l.Life = l.Max = life; l.C = c;
         }
 
         /// <summary>A jagged arc between two points.</summary>
