@@ -79,7 +79,7 @@ namespace Ironclad.Core
         public const double SpawnSeconds = 15;      // the mile's raiders arrive over this long
         public const int StationEvery = 10;         // miles between stations (a boss rides on each of those miles)
         public const double HullBase = 150, PlateBase = 60;
-        public const double HpPerMile = 1.085, DamagePerMile = 1.05, BountyPerMile = 1.035, SteelPerMile = 1.055;
+        public const double HpPerMile = 1.09, DamagePerMile = 1.05, BountyPerMile = 1.035, SteelPerMile = 1.055;
         public const double SteelPerMileBase = 13, BossSteel = 6;
         public const double FieldCost = 10, FieldGrowth = 1.36, FieldPower = 1.22;
         public const double CarCost = 20, CarGrowth = 1.17, CarPower = 1.10;
@@ -124,10 +124,10 @@ namespace Ironclad.Core
         public static readonly List<RouteDef> Routes = new List<RouteDef>
         {
             new RouteDef { Id = "prairie", Name = "The Prairie Line", Blurb = "Open grass and a long way between towns.", Hp = 1, Damage = 1, Steel = 1 },
-            new RouteDef { Id = "badlands", Name = "Badlands Cut", Blurb = "Red rock, dry gulches, and more of them.", Hp = 12, Damage = 5, Steel = 6, Opens = 60 },
-            new RouteDef { Id = "pass", Name = "The High Pass", Blurb = "Snow on the sleepers and raiders in the pines.", Hp = 160, Damage = 28, Steel = 40, Opens = 70 },
-            new RouteDef { Id = "salt", Name = "Salt Flats Run", Blurb = "Nowhere to hide, for anybody.", Hp = 2400, Damage = 170, Steel = 280, Opens = 80 },
-            new RouteDef { Id = "canyon", Name = "Black Canyon", Blurb = "The Baron's own country.", Hp = 40000, Damage = 1100, Steel = 2000, Opens = 90 },
+            new RouteDef { Id = "badlands", Name = "Badlands Cut", Blurb = "Red rock, dry gulches, and more of them.", Hp = 12, Damage = 5, Steel = 6, Opens = 80 },
+            new RouteDef { Id = "pass", Name = "The High Pass", Blurb = "Snow on the sleepers and raiders in the pines.", Hp = 160, Damage = 28, Steel = 40, Opens = 100 },
+            new RouteDef { Id = "salt", Name = "Salt Flats Run", Blurb = "Nowhere to hide, for anybody.", Hp = 2400, Damage = 170, Steel = 280, Opens = 120 },
+            new RouteDef { Id = "canyon", Name = "Black Canyon", Blurb = "The Baron's own country.", Hp = 40000, Damage = 1100, Steel = 2000, Opens = 140 },
         };
 
         public static readonly List<UpgradeDef> Upgrades = new List<UpgradeDef>

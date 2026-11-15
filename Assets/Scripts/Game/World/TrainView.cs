@@ -52,7 +52,7 @@ namespace Ironclad.Game
 
         sealed class FoeView
         {
-            public Transform Root, Bar, Fill, Body; public Vector3 At; public float Bob, Seen, Punch, Size = 1; public EnemyState E; public float Height; public Strider[] Striders;
+            public Transform Root, Bar, Fill, Body; public Vector3 At; public float Bob, Seen, Punch, Size = 1, Lunge; public double LastCooldown; public EnemyState E; public float Height; public Strider[] Striders;
         }
         readonly Dictionary<int, FoeView> _foeViews = new Dictionary<int, FoeView>();
         readonly List<int> _gone = new List<int>();
@@ -419,9 +419,28 @@ namespace Ironclad.Game
                     bool moving = (to - v.At).sqrMagnitude > 0.0004f;
                     v.At = Vector3.Lerp(v.At, to, 1 - Mathf.Exp(-14 * dt * Mathf.Max(1, Pace)));
                     float bob = moving ? Mathf.Abs(Mathf.Sin(Time.time * 11 * Mathf.Sqrt(Pace) + e.id)) * 0.32f * v.Bob : 0;
-                    v.Root.localPosition = v.At + new Vector3(0, bob, 0);
+                    var toTrain = new Vector3(0, 0, -Mathf.Sign(v.At.z == 0 ? 1 : v.At.z));
+                    v.Root.localPosition = v.At + new Vector3(0, bob, 0) + toTrain * Mathf.Sin(v.Lunge * Mathf.PI) * 0.9f;
                     float yaw = (float)e.facing * Mathf.Rad2Deg + (e.stun > 0 ? Mathf.Sin(Time.time * 40) * 14 : 0);
                     v.Root.localRotation = Quaternion.Slerp(v.Root.localRotation, Quaternion.Euler(moving ? -bob * 14 : 0, yaw, 0), 1 - Mathf.Exp(-10 * dt));
+                    // A strike shows: its cooldown has just been wound back up. Shooters fire a red tracer at the car they
+                    // are aiming for; the rest lunge at it.
+                    if (e.striking && e.cooldown > v.LastCooldown + 0.05 && rolling)
+                    {
+                        var def = Content.Enemy(e.kind);
+                        float back = _cars.Count > 0 ? (float)Sim.CarX(_cars.Count - 1) - 2.5f : 0;
+                        var aim = new Vector3(Mathf.Clamp(v.At.x, back, 2.5f), 1.3f, 0);
+                        if (def.Range > 3)
+                        {
+                            var muzzle = v.At + Vector3.up * (v.Height * 0.55f);
+                            Fx.Tracer(muzzle, aim, def.Boss ? 0.22f : 0.12f, new Color(1f, 0.35f, 0.25f));
+                            Fx.Flash(muzzle, def.Boss ? 1.6f : 0.9f);
+                            if (Random.value < 0.5f) Sfx.Play("rifle", 0.16f, Random.Range(0.7f, 0.85f));
+                        }
+                        else v.Lunge = 1;
+                    }
+                    v.LastCooldown = e.cooldown;
+                    v.Lunge = Mathf.MoveTowards(v.Lunge, 0, dt * 6);
                     foreach (var st in v.Striders) st.Moving = moving && e.stun <= 0;
                     v.Punch = Mathf.MoveTowards(v.Punch, 0, dt * 8);
                     if (v.Body != null) v.Body.localScale = new Vector3(1 + 0.16f * v.Punch, 1 - 0.12f * v.Punch, 1 + 0.16f * v.Punch) * v.Size;      // a hit squashes it for a moment
