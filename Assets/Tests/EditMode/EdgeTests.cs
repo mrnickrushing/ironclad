@@ -220,12 +220,12 @@ namespace Ironclad.Tests
         {
             double now = 1_700_000_000;
             var s = new Sim(GameState.New()); s.RealNow = () => now;
-            s.State.best[0] = 30; s.State.depotAt = now - 3600; s.State.doubleDay = s.Today;
+            s.State.best[0] = 30; s.State.depotAt = now - 3600;
             int given = 0;
             for (int i = 0; i < 20; i++) { s.State.depotAt = now - 3600; if (s.GrantAd(AdReward.DoubleDepot)) given++; }
             Assert.AreEqual(Sim.AdsPerDay, given);
             Assert.AreEqual(0, s.AdsLeft);
-            now += 86400; s.State.doubleDay = s.Today; s.State.depotAt = now - 3600;
+            now += 86400; s.State.depotAt = now - 3600;
             Assert.AreEqual(Sim.AdsPerDay, s.AdsLeft);
             Assert.IsTrue(s.GrantAd(AdReward.DoubleDepot));
         }

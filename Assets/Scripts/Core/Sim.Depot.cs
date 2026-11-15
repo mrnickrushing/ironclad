@@ -32,20 +32,13 @@ namespace Ironclad.Core
         /// <summary>Seconds of patrols waiting to be collected.</summary>
         public double DepotSeconds { get { return State.depotAt <= 0 ? 0 : Math.Max(0, Math.Min(DepotCap, RealNow() - State.depotAt)); } }
         public double DepotSteel { get { return Math.Floor(DepotRate * DepotSeconds / 3600); } }
-        public bool DoubleFree { get { return State.doubleDay != Today; } }
+        /// <summary>Banks what the patrols brought. Twice over is only ever for a watched ad (AdReward.DoubleDepot).</summary>
+        public double CollectDepot() { return PayDepot(1); }
 
-        /// <summary>Banks what the patrols brought. <paramref name="doubled"/> uses the day's free double.</summary>
-        public double CollectDepot(bool doubled = false)
-        {
-            if (doubled && !DoubleFree) doubled = false;
-            return PayDepot(doubled ? 2 : 1, doubled);
-        }
-
-        double PayDepot(double mult, bool usesFree)
+        double PayDepot(double mult)
         {
             double steel = DepotSteel * mult;
             if (steel <= 0) return 0;
-            if (usesFree) State.doubleDay = Today;
             State.steel += steel; State.lifetime += steel;
             State.depotAt = RealNow();
             Touch();

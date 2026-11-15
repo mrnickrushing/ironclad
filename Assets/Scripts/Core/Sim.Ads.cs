@@ -7,7 +7,7 @@ namespace Ironclad.Core
 
     /// <summary>
     /// Rewarded ads: a free way to three things gems or patience buy (back on the rails once a run, the ended run's
-    /// steel twice over, the depot's steel twice over after the day's free double), a few times a day. The rules are
+    /// steel twice over, the depot's steel twice over), a few times a day. The rules are
     /// here; showing the ad is <c>Game/Platform/Ads</c>. Owners of the Conductor's Pass get the reward without one.
     /// </summary>
     public sealed partial class Sim
@@ -25,7 +25,7 @@ namespace Ironclad.Core
             {
                 case AdReward.Revive: return CanRevive;
                 case AdReward.DoubleRun: return RunEnded && !State.run.doubled && State.run.steel >= 1;
-                case AdReward.DoubleDepot: return !DoubleFree && DepotSteel >= 1;
+                case AdReward.DoubleDepot: return DepotSteel >= 1;
             }
             return false;
         }
@@ -45,7 +45,7 @@ namespace Ironclad.Core
             {
                 case AdReward.Revive: Revive(false); break;
                 case AdReward.DoubleRun: State.run.doubled = true; break;
-                case AdReward.DoubleDepot: PayDepot(2, false); break;
+                case AdReward.DoubleDepot: PayDepot(2); break;
             }
             CountAd();
             return true;

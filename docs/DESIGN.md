@@ -43,11 +43,10 @@ them, and raiders from behind reach the last wagon first, so order is a real dec
 - **Liveries:** the engine's paint and model (Prairie Belle, Brass Baron, Black Diamond), bought with gems. Paint only:
   no stat changes.
 - **Depot:** while the game is closed, patrols bring home a share of the steel the best line would pay, for eight hours.
-  One free double a day.
+  Doubling it is for a watched ad.
 
 ## Money
-Free. Rewarded ads only, never shown unasked: revive, double the ended run's steel, double the depot after the free
-one (eight a day). Purchases: four gem packs, Fireman's Pack, Rolling Mill (steel doubled), Conductor's Pass (ad
+Free. Rewarded ads only, never shown unasked: revive, double the ended run's steel, double the depot (eight a day). Purchases: four gem packs, Fireman's Pack, Rolling Mill (steel doubled), Conductor's Pass (ad
 rewards without the ad), Night Shift (depot +4 h). Nothing in the game needs a purchase.
 
 Not done on purpose: forced ads, energy, pay-only walls, punishing streaks, fake players.

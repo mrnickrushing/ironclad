@@ -75,7 +75,7 @@ namespace Ironclad.Game
                     CloseScreen();
                     return;
                 }
-                if (s.DepotSteel >= 1 && s.DepotSeconds >= 300) { ShowDepotCard(); s.CollectDepot(s.DoubleFree); return; }
+                if (s.DepotSteel >= 1 && s.DepotSeconds >= 300) { ShowDepotCard(); s.CollectDepot(); return; }
                 if (tick % 2 == 0 && rnd.Next(2) == 0) { Open(BotPages[rnd.Next(BotPages.Length)]); return; }
                 BotSpend(s);
                 for (int i = Content.Routes.Count - 1; i > 0; i--) if (s.RouteOpen(i) && s.State.best[i - 1] >= Content.Routes[i].Opens + 10) { s.ChooseRoute(i); break; }
