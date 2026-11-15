@@ -36,7 +36,7 @@ namespace Ironclad.Game
         const float Span = 170;         // the country is drawn this far either side of the engine
         const float Cruise = 13;        // metres a second at running speed 1
 
-        Transform _country, _rails, _train, _foes, _fx, _station, _ground; float _groundAt;
+        Transform _country, _rails, _train, _foes, _fx, _station, _ground; float _groundAt; Light _lamp;
         readonly List<Transform> _props = new List<Transform>();
         readonly List<Transform> _railBits = new List<Transform>();
         float _railLen = 6, _railAt, _speed, _stationX = float.NaN;
@@ -123,8 +123,7 @@ namespace Ironclad.Game
                 mb.Box(new Vector3(0, 0.1f, 0), new Vector3(1400, 0.2f, 4.6f), t.Bed);
             });
             bed.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            RenderSettings.fogColor = t.Fog;
-            if (CameraRig.Instance != null) CameraRig.Instance.Cam.backgroundColor = t.Fog;
+            Look.FogBase = t.Fog;
 
             var rnd = new System.Random(theme * 977 + 5);
             System.Func<float, float, float> R = (a, b) => a + (float)rnd.NextDouble() * (b - a);
@@ -245,6 +244,11 @@ namespace Ironclad.Game
                 case "engine":
                     v.Body = Models.Along("loco_b", v.Root, L + 0.3f, true, new Color(0.92f, 0.86f, 0.86f));
                     Gun(v, "ship_cannon", 1.9f, 2.15f, 0); v.Gun.localPosition = new Vector3(1.4f, 2.15f, 0); v.Muzzle = new Vector3(1.4f, 2.7f, 0);
+                    {
+                        // The headlamp: lit at night, throwing a pool of warm light ahead and around the engine.
+                        var lampGo = new GameObject("Headlamp"); lampGo.transform.SetParent(v.Root, false); lampGo.transform.localPosition = new Vector3(4.5f, 3.2f, 0);
+                        _lamp = lampGo.AddComponent<Light>(); _lamp.type = LightType.Point; _lamp.color = new Color(1f, 0.82f, 0.5f); _lamp.range = 26; _lamp.intensity = 0; _lamp.shadows = LightShadows.None; _lamp.enabled = false;
+                    }
                     break;
                 case "gatling": v.Body = Models.Along("flatbed_wood", v.Root, L); Gun(v, "gatling", 2.6f, 1.05f, 0); break;
                 case "cannon": v.Body = Models.Along("flatbed_wood", v.Root, L); Gun(v, "big_cannon", 3.3f, 1.05f, 0); break;
@@ -380,6 +384,11 @@ namespace Ironclad.Game
             if (!rolling && !over && _station != null && _stationX - move < centre) { move = Mathf.Max(0, _stationX - centre); _speed = 0; }
             Scroll(move);
 
+            // The day: forty miles from one morning to the next, so every fourth station is reached at night. Standing
+            // at the depot it is always morning.
+            Look.Day = r != null ? Mathf.Repeat(0.12f + (r.mile - 1 + Mathf.Clamp01((float)(r.mileTime / Content.MileSeconds))) / 40f, 1f) : 0.12f;
+            if (_lamp != null) { _lamp.intensity = Look.Night * 9f; _lamp.enabled = Look.Night > 0.05f; }
+
             // The train.
             float rock = Mathf.Clamp01(_speed / Cruise);
             for (int i = 0; i < _cars.Count; i++)
@@ -395,6 +404,7 @@ namespace Ironclad.Game
                     float tilt = isOut ? 24 : 0;
                     v.Gun.localRotation = Quaternion.Slerp(v.Gun.localRotation, Quaternion.Euler(tilt, v.GunYaw + v.AimOffset, 0), 1 - Mathf.Exp(-18 * dt));
                 }
+                if (!isOut && car != null && car.platingMax > 0 && car.plating < car.platingMax * 0.35 && Random.value < dt * 4) Fx.Smoke(v.Root.position + new Vector3(Random.Range(-1f, 1f), 1.6f, 0), new Color(0.3f, 0.28f, 0.28f, 0.5f), 1f, new Vector3(-_speed * 0.5f, 3, 0));      // nearly gone: it smokes
                 if (isOut && Random.value < dt * 9) Fx.Smoke(v.Root.position + new Vector3(Random.Range(-1.5f, 1.5f), 1.8f, 0), new Color(0.12f, 0.1f, 0.1f, 0.75f), 1.6f, new Vector3(-_speed * 0.5f, 4, 0));
                 v.Flash = Mathf.MoveTowards(v.Flash, 0, dt * 9);
                 if (v.Gun != null) v.Gun.localScale = Vector3.one * (1 + 0.14f * v.Flash);      // the gun jumps as it fires
