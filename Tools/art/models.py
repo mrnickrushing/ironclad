@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Converts the free kit models the game uses into Assets/Resources/Models/<id>.fbx (vertex-coloured, one unit on
 their longest side, or one unit tall): python3 Tools/art/models.py [id...]   (fetch kits with kenney.py first:
-watercraft-kit car-kit city-kit-industrial mini-characters pirate-kit survival-kit nature-kit)"""
+watercraft-kit car-kit city-kit-industrial city-kit-roads mini-characters pirate-kit survival-kit nature-kit)"""
 import os, subprocess, sys
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 F = os.path.join(ROOT, "art-src", "free")
@@ -21,6 +21,7 @@ MODELS = {  # id: (source, "size" | "height"[, pose, extra args...])
     "cactus_a": (NAT + "cactus_tall.glb", "height"), "cactus_b": (NAT + "cactus_short.glb", "height"),
     "bush": (NAT + "plant_bushLarge.glb", "size"), "grass": (NAT + "grass_large.glb", "size"), "flowers": (NAT + "flower_yellowA.glb", "size"),
     "rock_a": (NAT + "stone_largeA.glb", "size"), "rock_b": (NAT + "stone_largeC.glb", "size"), "rock_c": (NAT + "stone_tallB.glb", "size"), "rock_d": (NAT + "stone_largeB.glb", "size"), "rock_e": (NAT + "stone_tallA.glb", "size"),
+    "pole": ("city-kit-roads" + G + "electricity-pole-single.glb", "height"),
     "cliff": (NAT + "cliff_block_rock.glb", "size"), "fence": (NAT + "fence_simple.glb", "size"), "stump": (NAT + "stump_old.glb", "size"), "log_stack": (NAT + "log_stackLarge.glb", "size"),
 }
 # Raiders: kit people, each frozen in four strides and standing.

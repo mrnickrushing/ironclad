@@ -4,7 +4,7 @@ Ironclad is made by Rushing Technologies. Everything third-party in it is free t
 in the game (MORE, Credits).
 
 ## Models
-- **Kenney** (kenney.nl, CC0): Train Kit (locomotive, wagons, rails), Tower Defense Kit (turrets), Pirate Kit (cannon,
+- **Kenney** (kenney.nl, CC0): Train Kit (locomotive, wagons, rails), Tower Defense Kit (turrets), City Kit Roads (telegraph poles), Pirate Kit (cannon,
   barrels, crates, flag), Nature Kit (trees, rocks, cactus, tent), Survival Kit, Mini Characters (the raiders).
 - **Quaternius** (CC0, poly.pizza): Cannon, Cart, Horse.
 - **mastjie** (CC0, poly.pizza): Cowboy.

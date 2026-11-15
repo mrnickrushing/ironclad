@@ -321,7 +321,7 @@ namespace Ironclad.Game
 
         const string CreditsText =
             "Ironclad is made by Rushing Technologies.\n\n" +
-            "<b>Models</b>\nThe locomotive, wagons, rails, turrets, trees, rocks, props and people: Kenney (kenney.nl), CC0.\n" +
+            "<b>Models</b>\nThe locomotive, wagons, rails, turrets, poles, trees, rocks, props and people: Kenney (kenney.nl), CC0.\n" +
             "Cannon, cart and a horse: Quaternius, CC0. Cowboy: mastjie, CC0. Water tower: Kay Lousberg, CC0.\n" +
             "Galloping horse: jeremy, CC BY 3.0. Gatling gun: Zsky, CC BY 3.0. Carriage: Jie gu, CC BY 3.0. Dynamite: Neko, CC BY 3.0.\n" +
             "Minecart: Hunter Paramore, CC BY 3.0. Wild West Cart: Anonymous, CC BY 3.0. Saloon, wagon and windmill: Poly by Google, CC BY 3.0. (poly.pizza)\n\n" +

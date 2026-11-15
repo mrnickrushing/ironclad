@@ -37,7 +37,7 @@ namespace Ironclad.Game
             var tone = p.Add<Tonemapping>(); tone.mode.Override(TonemappingMode.ACES);
             var bloom = p.Add<Bloom>(); look._bloom = bloom; bloom.intensity.Override(0.18f); bloom.threshold.Override(1.5f); bloom.scatter.Override(0.6f);
             look._grade = p.Add<ColorAdjustments>();
-            look._grade.postExposure.Override(0.1f); look._grade.contrast.Override(8f); look._grade.saturation.Override(22f);
+            look._grade.postExposure.Override(0.1f); look._grade.contrast.Override(12f); look._grade.saturation.Override(12f);      // rich, not neon
             var vig = p.Add<Vignette>(); vig.intensity.Override(0.2f); vig.smoothness.Override(0.5f);
             return look;
         }
@@ -85,6 +85,8 @@ namespace Ironclad.Game
             if (RenderSettings.skybox != null) RenderSettings.skybox.SetFloat("_Exposure", Mathf.Lerp(1.05f, 0.3f, Night));
             _bloom.intensity.Override(Mathf.Lerp(0.18f, 0.7f, Night));
             _bloom.threshold.Override(Mathf.Lerp(1.5f, 1.0f, Night));
+            Shader.SetGlobalFloat("_CloudShade", 0.26f * (1 - Night));      // clouds' shadows drift over the country by day
+            Shader.SetGlobalFloat("_NightGlow", Mathf.Clamp01(Night * 1.4f - 0.2f));      // lamps and lit windows come up after dusk
             _grade.postExposure.Override(Mathf.Lerp(0.1f, 0.25f, Night));      // the night is blue, not black: everything stays readable
         }
     }

@@ -22,11 +22,12 @@ namespace Ironclad.Game
             public string[] Near, Far;      // small things in the fight, big things beyond it
             public float Hue;               // turns the plants' colours
             public Color Rock = new Color(0.62f, 0.62f, 0.62f);      // the stones are pale: each line paints them its own colour
+            public Color Plant = Color.white;                         // grass and bushes, warmed to sit in the line's own ground
         }
 
         static readonly Theme[] Themes =
         {
-            new Theme { Ground = Palette.Hex(0x93A857), Patch = Palette.Hex(0xA7AE62), Bed = Palette.Hex(0x8C7B62), Fog = Palette.Hex(0xE3D6B4), Near = new[] { "grass", "grass", "flowers", "rock_d", "bush" }, Far = new[] { "tree_oak", "tree_a", "rock_a", "bush", "windmill", "fence", "log_stack" } },
+            new Theme { Ground = Palette.Hex(0x93A857), Patch = Palette.Hex(0xA7AE62), Bed = Palette.Hex(0x8C7B62), Fog = Palette.Hex(0xE3D6B4), Plant = new Color(1.35f, 1.0f, 0.5f), Near = new[] { "grass", "grass", "flowers", "rock_d", "bush" }, Far = new[] { "tree_oak", "tree_a", "rock_a", "bush", "windmill", "fence", "log_stack" } },
             new Theme { Ground = Palette.Hex(0xC9774A), Patch = Palette.Hex(0xB5633C), Bed = Palette.Hex(0x7E5A48), Fog = Palette.Hex(0xE8B98C), Rock = new Color(0.78f, 0.42f, 0.3f), Near = new[] { "rock_d", "rock_b", "cactus_b", "stump" }, Far = new[] { "cactus_a", "cactus_a", "rock_c", "rock_e", "rock_c", "cactus_b" } },
             new Theme { Ground = Palette.Hex(0xE9EEF2), Patch = Palette.Hex(0xD3DEE6), Bed = Palette.Hex(0x7A7F88), Fog = Palette.Hex(0xDCE6EE), Rock = new Color(0.8f, 0.86f, 0.95f), Near = new[] { "rock_d", "stump", "rock_b" }, Far = new[] { "tree_pine", "tree_pine_b", "tree_pine", "rock_c", "tree_pine_b", "log_stack" } },
             new Theme { Ground = Palette.Hex(0xE6DCC6), Patch = Palette.Hex(0xD6C8AC), Bed = Palette.Hex(0x9A8C78), Fog = Palette.Hex(0xF0E8D8), Rock = new Color(0.86f, 0.8f, 0.68f), Near = new[] { "rock_d", "rock_b" }, Far = new[] { "rock_c", "rock_a", "cactus_a", "stump" } },
@@ -36,7 +37,7 @@ namespace Ironclad.Game
         const float Span = 170;         // the country is drawn this far either side of the engine
         const float Cruise = 13;        // metres a second at running speed 1
 
-        Transform _country, _rails, _train, _foes, _fx, _station, _ground; float _groundAt; Light _lamp;
+        Transform _country, _rails, _train, _foes, _fx, _station, _ground; float _groundAt, _cloudAt; Light _lamp;
         readonly List<Transform> _props = new List<Transform>();
         readonly List<Transform> _railBits = new List<Transform>();
         float _railLen = 6, _railAt, _speed, _stationX = float.NaN;
@@ -95,32 +96,44 @@ namespace Ironclad.Game
             if (_ground != null) Destroy(_ground.gameObject);
             _props.Clear();
             var t = Themes[theme];
-            // The ground: a wide sheet whose colour wanders, the same again every Span * 2 so it can roll past for ever.
+            // The ground: a wide sheet whose colour wanders smoothly (a colour at every corner, no squares), the same
+            // again every Span * 2 so it can roll past for ever. Along the line the grass gives way to a worn verge.
             float period = Span * 2;
+            var verge = Color.Lerp(t.Bed, t.Ground, 0.5f);
+            var deep = t.Ground * 0.84f; deep.a = 1;
+            System.Func<float, float, Color> tint = (x, z) =>
+            {
+                float u = x / period * Mathf.PI * 2;
+                float n = Mathf.Sin(u * 3 + z * 0.045f) * 0.5f + Mathf.Sin(u * 7 - z * 0.11f + 1.3f) * 0.3f + Mathf.Sin(u * 13 + z * 0.23f + 4f) * 0.2f;
+                float big = Mathf.Sin(u * 2 - z * 0.021f + 2.1f) * 0.6f + Mathf.Sin(u * 5 + z * 0.037f + 0.4f) * 0.4f;
+                var c = Color.Lerp(t.Ground, t.Patch, Mathf.Clamp01(0.5f + n * 0.75f));
+                c = Color.Lerp(c, deep, Mathf.Clamp01(big * 0.9f) * 0.8f);
+                float worn = Mathf.InverseLerp(6.5f, 3.4f, Mathf.Abs(z)) * (0.75f + 0.25f * Mathf.Sin(u * 23 + z * 0.9f));
+                return Color.Lerp(c, verge, Mathf.Clamp01(worn));
+            };
             _ground = Models.Built("Ground", transform, mb =>
             {
                 mb.Matte();
-                const float cell = 7f; int nx = Mathf.CeilToInt(period * 2 / cell), nz = 120;
-                System.Func<float, float, Color> tint = (x, z) =>
-                {
-                    float u = x / period * Mathf.PI * 2;
-                    float n = Mathf.Sin(u * 3 + z * 0.045f) * 0.5f + Mathf.Sin(u * 7 - z * 0.11f + 1.3f) * 0.3f + Mathf.Sin(u * 13 + z * 0.23f + 4f) * 0.2f;
-                    return Color.Lerp(t.Ground, t.Patch, Mathf.Clamp01(0.5f + n * 0.75f));
-                };
+                const float cell = 5f; int nx = Mathf.CeilToInt(period * 2 / cell), nz = 84;
                 for (int ix = 0; ix < nx; ix++)
                     for (int iz = 0; iz < nz; iz++)
                     {
-                        float x0 = -period + ix * cell, z0 = -260 + iz * cell;
-                        var c = tint(x0 + cell * 0.5f, z0 + cell * 0.5f);
-                        mb.Quad(new Vector3(x0, 0, z0), new Vector3(x0, 0, z0 + cell), new Vector3(x0 + cell, 0, z0 + cell), new Vector3(x0 + cell, 0, z0), c);
+                        float x0 = -period + ix * cell, z0 = -160 + iz * cell, x1 = x0 + cell, z1 = z0 + cell;
+                        mb.QuadSmooth(new Vector3(x0, 0, z0), new Vector3(x0, 0, z1), new Vector3(x1, 0, z1), new Vector3(x1, 0, z0),
+                            Vector3.up, Vector3.up, Vector3.up, Vector3.up, tint(x0, z0), tint(x0, z1), tint(x1, z1), tint(x1, z0));
                     }
             }).transform;
             _ground.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             _groundAt = 0;
+            // The ballast: a low bank of stone the sleepers sit on, sloping down to the verge.
             var bed = Models.Built("Bed", _country, mb =>
             {
                 mb.Matte();
-                mb.Box(new Vector3(0, 0.1f, 0), new Vector3(1400, 0.2f, 4.6f), t.Bed);
+                var top = t.Bed; var side = t.Bed * 0.82f; side.a = 1;
+                const float L = 700, hw = 2.4f, bw = 3.6f, h = 0.2f;
+                mb.Quad(new Vector3(-L, h, -hw), new Vector3(-L, h, hw), new Vector3(L, h, hw), new Vector3(L, h, -hw), top);
+                mb.Quad(new Vector3(-L, 0.01f, bw), new Vector3(L, 0.01f, bw), new Vector3(L, h, hw), new Vector3(-L, h, hw), side);
+                mb.Quad(new Vector3(-L, h, -hw), new Vector3(L, h, -hw), new Vector3(L, 0.01f, -bw), new Vector3(-L, 0.01f, -bw), side);
             });
             bed.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             Look.FogBase = t.Fog;
@@ -136,22 +149,55 @@ namespace Ironclad.Game
                 p.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 Place(p.transform, R(-Span, Span), R(6, 120) * (rnd.Next(2) == 0 ? -1 : 1), R(0, 360));
             }
+            // The telegraph line beside the track: a pole every so often, two wires sagging between them.
+            {
+                const int poles = 14; float gap = Span * 2 / poles, h = 6.6f;
+                var wire = new Color(0.16f, 0.14f, 0.13f);
+                for (int i = 0; i < poles; i++)
+                {
+                    var p = Models.Tall("pole", _country, h, new Color(0.62f, 0.48f, 0.36f));
+                    var w = Models.Built("Wires", p, mb =>
+                    {
+                        mb.Matte();
+                        foreach (float side in new[] { -PoleArm, PoleArm })
+                        {
+                            const int seg = 8;
+                            for (int k = 0; k < seg; k++)
+                            {
+                                float a = (float)k / seg, b = (float)(k + 1) / seg;
+                                float ya = h * PoleTop - 0.55f * 4 * a * (1 - a), yb = h * PoleTop - 0.55f * 4 * b * (1 - b);
+                                var pa = new Vector3(a * gap, ya, side); var pb = new Vector3(b * gap, yb, side);
+                                mb.Quad(pa + Vector3.down * 0.03f, pa + Vector3.up * 0.03f, pb + Vector3.up * 0.03f, pb + Vector3.down * 0.03f, wire);
+                                mb.Quad(pb + Vector3.down * 0.03f, pb + Vector3.up * 0.03f, pa + Vector3.up * 0.03f, pa + Vector3.down * 0.03f, wire);
+                            }
+                        }
+                    });
+                    w.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                    Place(p, -Span + i * gap, 6.8f, 0);
+                }
+            }
             // Small things where the fight is, big things beyond it.
-            for (int i = 0; i < 150; i++)
+            for (int i = 0; i < 300; i++)
             {
                 string id = t.Near[rnd.Next(t.Near.Length)];
-                var p = id.StartsWith("rock") ? Models.Tall(id, _country, R(0.5f, 1.3f), t.Rock) : Models.Tall(id, _country, R(0.5f, 1.3f));
-                Place(p, R(-Span, Span), R(5, 46) * (rnd.Next(2) == 0 ? -1 : 1), R(0, 360));
+                var p = id.StartsWith("rock") ? Models.Tall(id, _country, R(0.5f, 1.3f), t.Rock) : Plantish(id) ? Models.Tall(id, _country, R(0.5f, 1.3f), t.Plant) : Models.Tall(id, _country, R(0.5f, 1.3f));
+                // Thicker by the line, thinning out into the open.
+                float z = i % 3 == 0 ? R(4.2f, 12) : R(5, 46);
+                Place(p, R(-Span, Span), z * (rnd.Next(2) == 0 ? -1 : 1), R(0, 360));
             }
             for (int i = 0; i < 70; i++)
             {
                 string id = t.Far[rnd.Next(t.Far.Length)];
                 float h = id.StartsWith("tree") ? R(7, 12) : id == "windmill" ? 13 : id == "rock_c" || id == "rock_e" ? R(5, 13) : id.StartsWith("cactus") ? R(4, 7) : R(2.5f, 6);
-                var p = id.StartsWith("rock") ? Models.Tall(id, _country, h, t.Rock) : Models.Tall(id, _country, h);
+                var p = id.StartsWith("rock") ? Models.Tall(id, _country, h, t.Rock) : Plantish(id) ? Models.Tall(id, _country, h, t.Plant) : Models.Tall(id, _country, h);
                 float z = rnd.Next(5) == 0 ? -R(40, 56) : R(24, 150);      // few on the camera's side, where they would hide the fight
                 Place(p, R(-Span, Span), z, R(0, 360));
             }
         }
+
+        static bool Plantish(string id) { return id == "grass" || id == "bush" || id.StartsWith("tree"); }
+
+        public static float PoleTop = 0.93f, PoleArm = 0.7f;      // where the wires meet the pole (share of its height; metres either side)
 
         void Place(Transform p, float x, float z, float yaw)
         {
@@ -180,6 +226,7 @@ namespace Ironclad.Game
                 p.localPosition = v;
             }
             _groundAt = Mathf.Repeat(_groundAt + metres, Span * 2);
+            _cloudAt = Mathf.Repeat(_cloudAt + metres, 100000f); Shader.SetGlobalFloat("_CloudScroll", _cloudAt);
             if (_ground != null) _ground.localPosition = new Vector3(-_groundAt + Span, 0, 0);
             _railAt = Mathf.Repeat(_railAt + metres, _railLen);
             for (int i = 0; i < _railBits.Count; i++) _railBits[i].localPosition = new Vector3(-Span + i * _railLen - _railAt, 0.2f, 0);

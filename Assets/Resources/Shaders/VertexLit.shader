@@ -99,6 +99,7 @@ Shader "Ironclad/VertexLit"
 
             // Value noise for the things that give the ground life: patchy grass and the shadows of drifting clouds.
             float _CloudShade;     // global: how dark a cloud's shadow is (0 = none)
+            float _CloudScroll;    // global: metres the country has rolled past, so the shadows travel with the ground
             float lt_hash(float2 p) { return frac(sin(dot(p, float2(127.1, 311.7))) * 43758.5453); }
             float lt_noise(float2 p)
             {
@@ -107,9 +108,9 @@ Shader "Ironclad/VertexLit"
             }
             float lt_cloud(float2 xz)
             {
-                float2 q = xz * 0.011 + _Time.y * float2(0.016, 0.007);
+                float2 q = (xz + float2(_CloudScroll, 0)) * 0.028 + _Time.y * float2(0.03, 0.012);      // patches about 35 m across: several in view
                 float n = lt_noise(q) * 0.65 + lt_noise(q * 2.3 + 7.1) * 0.35;
-                return smoothstep(0.46, 0.62, n);
+                return smoothstep(0.47, 0.64, n);
             }
 
             half4 frag(Varyings i) : SV_Target
