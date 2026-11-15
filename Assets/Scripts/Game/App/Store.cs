@@ -87,6 +87,7 @@ namespace Ironclad.Game
                 {
                     case PurchaseOutcome.Paid:
                         ok = GameRoot.Sim.Grant(p.Id, txOrMessage);
+                        if (ok) Telemetry.Log("Purchase.completed", ("Purchase.product", p.Id));
                         msg = ok ? p.Name + (Testing ? " added (test purchase)" : " added. Thank you!") : "Already delivered";
                         if (!ok) GameRoot.Sim.EndPurchase(p.Id);
                         break;

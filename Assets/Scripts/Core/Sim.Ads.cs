@@ -33,7 +33,7 @@ namespace Ironclad.Core
         void CountAd()
         {
             if (State.adDay != Today) { State.adDay = Today; State.adCount = 0; }
-            State.adCount++;
+            State.adCount++; State.adsWatched++;
             Touch();
         }
 

@@ -24,9 +24,17 @@ namespace Ironclad.Game
             int best = s.State.best[s.State.route];
             string next = s.State.route + 1 < Content.Routes.Count && !s.RouteOpen(s.State.route + 1) ? "  ·  " + Content.Routes[s.State.route + 1].Name + " opens at mile " + Content.Routes[s.State.route + 1].Opens : "";
             // What to aim for: a wagon to build, else the next plans, else the next line.
-            var canBuild = s.Unbuilt; var plans = s.NextPlans;
-            string goal = canBuild.Count > 0 ? "  ·  <color=#B8FF9A>The " + canBuild[0].Name + " can be built: TRAIN</color>" : plans != null ? "  ·  " + plans.Name + " plans at mile " + plans.Mile : next;
-            var sub = Ui.Label("S", _face, (best > 0 ? "Furthest: mile " + best : def.Blurb) + goal, 28, Color.white, TextAnchor.MiddleCenter, false); sub.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -118), new Vector2(1200, 40)); sub.Stroke(2f);
+            var sub = Ui.Label("S", _face, best > 0 ? "Furthest: mile " + best + (s.State.runs > 0 ? "" : next) : def.Blurb, 28, Color.white, TextAnchor.MiddleCenter, false); sub.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -118), new Vector2(1200, 40)); sub.Stroke(2f);
+            // The next goal, and how far there is to go.
+            var g = s.NextGoal;
+            if (g != null && s.State.runs > 0)
+            {
+                var gl = Ui.Label("G", _face, "NEXT GOAL: " + g.Name + (g.Unit == "mile" ? " at mile " + g.Need + " " + g.Where : "  (" + g.Where + ")"), 26, new Color(1f, 0.9f, 0.6f), TextAnchor.MiddleCenter, false);
+                gl.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -160), new Vector2(900, 36)); gl.resizeTextForBestFit = true; gl.resizeTextMinSize = 18; gl.resizeTextMaxSize = 26; gl.Stroke(2f);
+                Image fill; var bar = Bar(_face, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -198), new Vector2(560, 36), Ui.Gold, out fill);
+                fill.rectTransform.anchorMax = new Vector2(Mathf.Clamp((float)(g.Have / Math.Max(1, g.Need)), 0.03f, 1), 1);
+                var bt = Ui.Label("T", bar.parent, g.Unit == "mile" ? "mile " + g.Have + " of " + g.Need : Format.Money(g.Have) + " of " + Format.Money(g.Need) + " steel", 24, Color.white); bt.rectTransform.Fill(); bt.Stroke(2f);
+            }
             if (s.State.route > 0)
             {
                 var l = Ui.Button("Prev", _face, "◀", Ui.Blue, () => { S.ChooseRoute(S.State.route - 1); }, 36); ((RectTransform)l.transform).Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(-420, -18), new Vector2(86, 86));
@@ -113,6 +121,7 @@ namespace Ironclad.Game
             if (show) _depotText.text = "DEPOT  +" + Format.Money(waiting) + (s.DepotSeconds >= s.DepotCap ? "  (full)" : "");
             if (_awardDot != null) _awardDot.gameObject.SetActive(s.AchievementsReady > 0);
             if (_todayDot != null) _todayDot.gameObject.SetActive(s.TodayReady > 0);
+            if (!ModalOpen && !ScreenOpen && s.Run == null && s.State.tutorialStep >= 1 && s.NewlyUnlocked.Count > 0) ShowUnlocked();
             if (s.StarterOfferDue && !ModalOpen && !ScreenOpen && Store.Available) OfferStarter();
             if (_trainDot != null) _trainDot.gameObject.SetActive(s.Unbuilt.Count > 0);
         }
@@ -122,6 +131,7 @@ namespace Ironclad.Game
         void OfferStarter()
         {
             S.StarterOffered(); GameRoot.Instance.Save();
+            Telemetry.Log("Offer.viewed", ("Offer.product", "ironclad.starter"), ("Offer.from", S.StarterVariant));
             var prod = Sim.Product("ironclad.starter");
             var card = Card(900, 560, "FIREMAN'S PACK");
             var gem = Ui.ArtImg("Gem", card, "gem", Color.white, 0); gem.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(-150, -100), new Vector2(120, 120));
@@ -132,6 +142,20 @@ namespace Ironclad.Game
             ((RectTransform)buy.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(205, 44), new Vector2(380, 116));
             var no = Ui.Button("No", card, "NOT NOW", Ui.Off, CloseCard, 38);
             ((RectTransform)no.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-205, 44), new Vector2(380, 116));
+        }
+
+        /// <summary>A celebration of what has just opened up, and the next thing to aim for.</summary>
+        void ShowUnlocked()
+        {
+            var got = S.NewlyUnlocked;
+            S.Celebrated(); GameRoot.Instance.Save();
+            var card = Card(980, 640, "UNLOCKED!");
+            var rays = Ui.ArtImg("Rays", card, "star", new Color(1f, 0.85f, 0.4f, 0.5f), 0); rays.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 0.5f), new Vector2(0, -190), new Vector2(200, 200)); rays.gameObject.AddComponent<Spinner>();
+            Ui.Label("B", card, string.Join("\n", got), 40, Ui.Ink, TextAnchor.MiddleCenter, false).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -320), new Vector2(880, 120));
+            var g = S.NextGoal;
+            if (g != null) Ui.Label("N", card, "Next: " + g.Name + (g.Unit == "mile" ? " at mile " + g.Need : ""), 30, Ui.Dim, TextAnchor.MiddleCenter, false).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -410), new Vector2(880, 44));
+            Sfx.Play("star", 0.9f); Haptics.Success();
+            var ok = Ui.Button("Ok", card, "ON WE GO", Ui.Green, CloseCard, 42); ((RectTransform)ok.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 40), new Vector2(420, 116));
         }
 
         /// <summary>The patrols' steel: collect it, or twice over (free once a day, then for an ad).</summary>

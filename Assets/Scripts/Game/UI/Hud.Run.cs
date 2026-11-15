@@ -10,6 +10,30 @@ namespace Ironclad.Game
     public sealed partial class Hud
     {
         sealed class Chip { public int Car; public Image Back, Plate; public Text Level, Cost; public Button Buy; public Image BuyImg; }
+
+        /// <summary>A wagon's gift in a few words: "+25% fire", "-33% hits", "gift wasted".</summary>
+        static string GiftText(Gift g)
+        {
+            var parts = new List<string>();
+            if (g.Haste > 1e-6) parts.Add("<color=#2E7D32>+" + Mathf.RoundToInt((float)g.Haste * 100) + "% fire</color>");
+            if (g.Shield > 1e-6) parts.Add("<color=#1F5F8B>-" + Mathf.RoundToInt((float)g.Shield * 100) + "% hits</color>");
+            if (g.Wasted) parts.Add("<color=#C8321E>gift wasted</color>");
+            return string.Join("  ", parts);
+        }
+
+        /// <summary>What a move would change, in a few words for the tag under a wagon.</summary>
+        static string ChangeText(List<GiftChange> changes)
+        {
+            if (changes.Count == 0) return "<color=#7A5A40>no change</color>";
+            var parts = new List<string>();
+            foreach (var c in changes)
+            {
+                if (Math.Abs(c.Haste) > 1e-6) parts.Add((c.Haste > 0 ? "<color=#2E7D32>" : "<color=#C8321E>") + Short(c.Type) + " " + (c.Haste > 0 ? "+" : "-") + Mathf.RoundToInt(Mathf.Abs((float)c.Haste) * 100) + "% fire</color>");
+                if (Math.Abs(c.Shield) > 1e-6) parts.Add((c.Shield > 0 ? "<color=#1F5F8B>" : "<color=#C8321E>") + Short(c.Type) + " " + (c.Shield > 0 ? "-" : "+") + Mathf.RoundToInt(Mathf.Abs((float)c.Shield) * 100) + "% hits</color>");
+            }
+            if (parts.Count > 2) parts = parts.GetRange(0, 2);
+            return string.Join("\n", parts);
+        }
         readonly List<Chip> _chips = new List<Chip>();
         Image _hullFill, _mileFill, _whistleFill; Text _hullText, _mileText, _scripText, _steelText, _gemText, _speedText, _hintText, _lineText;
         RectTransform _hullBar, _hint; Button _whistle;
@@ -85,6 +109,7 @@ namespace Ironclad.Game
 
             // A chip for every car, in the order they stand on screen: the engine on the right.
             int n = r.cars.Count; float w = Mathf.Min(196, 1700f / n), x0 = -(n - 1) * w / 2;
+            var gifts = S.TrainGifts();
             for (int i = 0; i < n; i++)
             {
                 int car = i; var c = r.cars[i];
@@ -108,6 +133,16 @@ namespace Ironclad.Game
                     chip.Cost.resizeTextForBestFit = true; chip.Cost.resizeTextMinSize = 16; chip.Cost.resizeTextMaxSize = 28;
                 }
                 chip.Buy.gameObject.AddComponent<HoldRepeat>().Tap = () => BuyField(car);
+                // What its neighbours give it, over the chip.
+                if (i > 0 && i - 1 < gifts.Length)
+                {
+                    string gt = GiftText(gifts[i - 1]);
+                    if (gt.Length > 0)
+                    {
+                        var tag = Ui.ArtImg("Gift", chip.Back.transform, "plate", new Color(1, 1, 1, 0.92f), 20); tag.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 0), new Vector2(0, 2), new Vector2(w - 8, 36));
+                        var tl = Ui.Label("T", tag.transform, gt, 20, Ui.Ink); tl.rectTransform.Fill(2); tl.resizeTextForBestFit = true; tl.resizeTextMinSize = 12; tl.resizeTextMaxSize = 20;
+                    }
+                }
                 _chips.Add(chip);
             }
 
@@ -211,7 +246,7 @@ namespace Ironclad.Game
         {
             var s = S; var r = s.Run;
             var panel = Ui.ArtImg("Station", _face, "panel", Color.white, 60); panel.raycastTarget = true;
-            panel.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -196), new Vector2(1500, 540));
+            panel.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -190), new Vector2(1500, r.offer.Count > 0 ? 540 : 600));
             if (_stationShownFor != r.mile * 2 + (r.offer.Count > 0 ? 1 : 0)) { _stationShownFor = r.mile * 2 + (r.offer.Count > 0 ? 1 : 0); panel.gameObject.AddComponent<PopIn>(); }
             var p = panel.rectTransform;
             var ribbon = Ui.Ribbon("R", p, Ui.Gold); ribbon.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 0.5f), new Vector2(0, -6), new Vector2(760, 110));
@@ -244,10 +279,11 @@ namespace Ironclad.Game
             }
 
             // The card is taken: recouple the wagons if wanted, then roll on.
-            var help = Ui.Label("S", p, "Tap a wagon, then another, to swap their places. Raiders from behind reach the last wagon first.", 28, Ui.Dim, TextAnchor.MiddleCenter, false);
+            var help = Ui.Label("S", p, _shuntFrom >= 0 ? "Now tap where it should go: under each wagon is what the move would change." : "Tap a wagon, then where it should go. Under each: what its neighbours give it. Raiders from behind reach the last wagon first.", 26, Ui.Dim, TextAnchor.MiddleCenter, false);
             help.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -66), new Vector2(1400, 40));
-            TrainRow(p, new Vector2(0, -150), true);
-            SpareRow(p, new Vector2(0, -300));
+            TrainRow(p, new Vector2(0, -110), true);
+            SpareRow(p, new Vector2(0, -352));
+            FormationButtons(p, new Vector2(-560, 44));
             var go = Ui.Button("Go", p, "DEPART", Ui.Green, () => { if (S.Depart()) { Sfx.Play("dispatch", 0.8f); Haptics.Medium(); } }, 48);
             ((RectTransform)go.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 26), new Vector2(460, 110));
         }
@@ -256,6 +292,7 @@ namespace Ironclad.Game
         void TrainRow(RectTransform p, Vector2 at, bool compact)
         {
             var s = S; int n = s.State.train.Count; float w = Mathf.Min(170, 1250f / (n + 1));
+            var gifts = s.TrainGifts();
             float x0 = -(n) * w / 2;
             var eng = Ui.ArtImg("Engine", p, "card", new Color(0.86f, 0.8f, 0.7f), 26); eng.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(x0 + n * w, at.y), new Vector2(w - 8, 110));
             var el = Ui.Label("N", eng.transform, "ENGINE", 20, Ui.Ink, TextAnchor.LowerCenter); el.rectTransform.Fill(6); el.rectTransform.offsetMin = new Vector2(6, 14);
@@ -272,11 +309,31 @@ namespace Ironclad.Game
                 ((RectTransform)b.transform).Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(x0 + (n - 1 - i) * w, at.y), new Vector2(w - 8, 110));
                 var bl = b.GetComponentInChildren<Text>(); bl.alignment = TextAnchor.LowerCenter; bl.fontSize = 20;
                 var bp = CarPicture(b.transform, s.State.train[i]); bp.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, 14), new Vector2(92, 92));
+                string tagText = _shuntFrom < 0 ? GiftText(gifts[i]) : picked ? "<color=#7A5A40>moving…</color>" : ChangeText(s.ShuntPreview(_shuntFrom, i));
+                if (tagText.Length > 0)
+                {
+                    var tg = Ui.Label("Tag", p, tagText, 24, Ui.Ink, TextAnchor.UpperCenter, true); tg.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(x0 + (n - 1 - i) * w, at.y - 112), new Vector2(w + 6, 70));
+                    tg.resizeTextForBestFit = true; tg.resizeTextMinSize = 12; tg.resizeTextMaxSize = 24; tg.verticalOverflow = VerticalWrapMode.Truncate; tg.lineSpacing = 0.85f;
+                }
                 if (n > 1 && picked)
                 {
                     var x = Ui.Button("X", b.transform, "✕", Ui.Coral, () => { _shuntFrom = -1; if (S.Uncouple(place)) Sfx.Play("close", 0.5f); _dirty = true; }, 24);
                     ((RectTransform)x.transform).Place(new Vector2(1, 1), new Vector2(0.5f, 0.5f), new Vector2(-8, -6), new Vector2(54, 54));
                 }
+            }
+        }
+
+        /// <summary>One tap to couple up a saved formation (saved on the TRAIN screen).</summary>
+        void FormationButtons(RectTransform p, Vector2 at)
+        {
+            var s = S; int k = 0;
+            for (int i = 0; i < Sim.Formations; i++)
+            {
+                if (s.State.formations[i].cars.Count == 0) continue;
+                int slot = i;
+                var b = Ui.Button("F", p, "USE " + (char)('A' + i), Ui.Blue, () => { if (S.UseFormation(slot)) { Sfx.Play("build", 0.6f); Telemetry.Log("Formation.used", ("Formation.slot", slot.ToString())); } _shuntFrom = -1; _dirty = true; }, 26);
+                ((RectTransform)b.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), at + new Vector2(k * 150, 0), new Vector2(140, 76));
+                k++;
             }
         }
 
@@ -305,7 +362,7 @@ namespace Ironclad.Game
             var s = S; var r = s.Run;
             var dim = Ui.Img("Dim", _face, new Color(0.14f, 0.07f, 0.04f, 0.5f)); dim.raycastTarget = true; dim.rectTransform.Fill();
             var panel = Ui.ArtImg("Over", _face, "panel", Color.white, 60); panel.raycastTarget = true;
-            var p = panel.rectTransform; p.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -10), new Vector2(1040, 820));
+            var p = panel.rectTransform; p.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -10), new Vector2(1040, 900));
             if (_overShownFor != r.time) { _overShownFor = r.time; panel.gameObject.AddComponent<PopIn>(); GameCenter.ReportRun(r.mile); }
             var ribbon = Ui.Ribbon("R", p, Ui.Coral); ribbon.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 0.5f), new Vector2(0, -8), new Vector2(700, 116));
             var t = Ui.Label("T", ribbon.transform, "END OF THE LINE", 50, Color.white); t.rectTransform.Fill(); t.rectTransform.offsetMin = new Vector2(40, 24); t.rectTransform.offsetMax = new Vector2(-40, 0); t.Stroke(2.5f);
@@ -327,6 +384,16 @@ namespace Ironclad.Game
                 Image fill; var bar = Bar(p, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -458), new Vector2(600, 42), Ui.Gold, out fill);
                 fill.rectTransform.anchorMax = new Vector2(Mathf.Clamp((float)next.Have / Mathf.Max(1, next.Mile), 0.03f, 1), 1);
                 var bt = Ui.Label("T", bar.parent, "mile " + next.Have + " of " + next.Mile, 30, Color.white); bt.rectTransform.Fill(); bt.Stroke(2f);
+            }
+
+            // One thing to try next time, and the whole story behind WHY?
+            var brief = s.Debrief;
+            if (brief != null && !r.retired)
+            {
+                var tip = Ui.Label("Tip", p, "<b>Try:</b> " + brief.Tip, 26, Ui.Ink, TextAnchor.MiddleCenter, false); tip.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -508), new Vector2(940, 70));
+                tip.resizeTextForBestFit = true; tip.resizeTextMinSize = 18; tip.resizeTextMaxSize = 26;
+                var why = Ui.Button("Why", p, "WHY?", Ui.Blue, () => ShowDebrief(), 30);
+                ((RectTransform)why.transform).Place(new Vector2(1, 1), new Vector2(1, 1), new Vector2(-36, -84), new Vector2(170, 80));
             }
 
             float y = 190;
@@ -353,6 +420,37 @@ namespace Ironclad.Game
             }, 44);
             ((RectTransform)c.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(AdReady(AdReward.DoubleRun) ? 250 : 0, 44), new Vector2(470, 120));
             _collectLabel = c.GetComponentInChildren<Text>(); _overAuto = AutoCollectAfter;
+        }
+    }
+
+    public sealed partial class Hud
+    {
+        /// <summary>The breakdown of the run: each gun's share, what went first, the worst raiders and the tip.</summary>
+        void ShowDebrief()
+        {
+            var d = S.Debrief; if (d == null) return;
+            Telemetry.Log("Debrief.opened", ("Debrief.tip", d.TipId));
+            var card = Card(1300, 920, "WHAT HAPPENED");
+            float y = -110;
+            Ui.Label("H", card, "WHO DID THE WORK", 28, Ui.Dim).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, y), new Vector2(1100, 36));
+            y -= 46;
+            int shown = 0;
+            foreach (var w in d.Weapons)
+            {
+                if (shown++ >= 6) break;
+                var pic = CarPicture(card, w.Type); pic.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(-500, y + 6), new Vector2(64, 64));
+                var nm = Ui.Label("N", card, Content.Car(w.Type).Name, 28, Ui.Ink, TextAnchor.MiddleLeft); nm.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(-300, y), new Vector2(330, 50));
+                Image fill; var bar = Bar(card, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(180, y - 6), new Vector2(560, 38), Ui.Gold, out fill);
+                fill.rectTransform.anchorMax = new Vector2(Mathf.Clamp((float)w.Part, 0.02f, 1), 1);
+                var bt = Ui.Label("T", bar.parent, Mathf.RoundToInt((float)w.Part * 100) + "%  ·  " + Format.Money(w.Damage), 24, Color.white); bt.rectTransform.Fill(); bt.Stroke(2f);
+                y -= 62;
+            }
+            y -= 10;
+            if (d.FirstOut != null) { Ui.Label("F", card, "First knocked out: " + d.FirstOut, 28, Ui.Ink, TextAnchor.MiddleCenter, false).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, y), new Vector2(1150, 40)); y -= 44; }
+            if (d.Danger != null) { Ui.Label("D", card, "Most dangerous: <b>" + d.Danger + "</b>, " + Mathf.RoundToInt((float)d.DangerPart * 100) + "% of the damage the train took", 28, Ui.Ink, TextAnchor.MiddleCenter, false).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, y), new Vector2(1150, 40)); y -= 50; }
+            var tipBox = Ui.ArtImg("TipBox", card, "well", Color.white, 30); tipBox.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, y), new Vector2(1150, 110));
+            var tl = Ui.Label("T", tipBox.transform, "<b>Try:</b> " + d.Tip, 28, Ui.Ink, TextAnchor.MiddleCenter, false); tl.rectTransform.Fill(14); tl.resizeTextForBestFit = true; tl.resizeTextMinSize = 18; tl.resizeTextMaxSize = 28;
+            var ok = Ui.Button("Ok", card, "GOT IT", Ui.Green, CloseCard, 40); ((RectTransform)ok.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 36), new Vector2(360, 104));
         }
     }
 

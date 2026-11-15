@@ -13,6 +13,23 @@ namespace Ironclad.Game
         Page _screen = Page.None;
         RectTransform _list; float _listY;
 
+        int _bulk;      // 0: one level at a time, 1: ten, 2: as many as the steel buys
+        int BulkN { get { return _bulk == 0 ? 1 : _bulk == 1 ? 10 : Sim.BuyMax; } }
+
+        /// <summary>The ×1 / ×10 / MAX switch at the top of the workshop and the train.</summary>
+        void BulkSwitch(RectTransform p)
+        {
+            string[] names = { "BUY ×1", "BUY ×10", "BUY MAX" };
+            var b = Ui.Button("Bulk", p, names[_bulk], _bulk == 0 ? Ui.Off : Ui.Grape, () => { _bulk = (_bulk + 1) % 3; Sfx.Play("click", 0.5f); RefreshScreen(); }, 28);
+            ((RectTransform)b.transform).Place(new Vector2(1, 1), new Vector2(1, 1), new Vector2(-96, -16), new Vector2(210, 76));
+            // The line under the title makes room for it.
+            var about = p.Find("About") as RectTransform;
+            if (about != null) { about.anchoredPosition = new Vector2(-20, about.anchoredPosition.y); about.sizeDelta = new Vector2(800, 40); var at = about.GetComponent<Text>(); at.resizeTextForBestFit = true; at.resizeTextMinSize = 18; at.resizeTextMaxSize = 28; }
+        }
+
+        /// <summary>A price with how many levels it buys.</summary>
+        static string Price(double cost, int levels) { return Format.Money(cost) + " steel" + (levels > 1 ? "\n<size=22>" + levels + " levels</size>" : ""); }
+
         void Open(Page s)
         {
             _screen = s; _listY = 0; _list = null; _shuntFrom = -1;
@@ -122,14 +139,14 @@ namespace Ironclad.Game
         void ShowWorkshop()
         {
             var s = S;
-            Frame("WORKSHOP");
+            var frame = Frame("WORKSHOP"); BulkSwitch(frame);
             float y = 0;
             foreach (var u in Content.Upgrades)
             {
-                var id = u.Id; bool max = s.UpgradeMaxed(id); double cost = s.UpgradeCost(id); bool can = s.State.steel >= cost;
+                var id = u.Id; bool max = s.UpgradeMaxed(id); int levels; double cost = s.UpgradeCostN(id, BulkN, out levels); bool can = s.State.steel >= cost;
                 y = Entry(y, Ui.Ic(id == "slots" ? "box" : id == "speed" ? "bolt" : id == "whistle" ? "bell" : id == "scrip" || id == "start" ? "coins" : id == "steel" ? "sack" : id == "hull" || id == "plate" || id == "mend" ? "wrench" : "target"), Ui.Ink,
                     u.Name + "  <size=24><color=#7A5A40>level " + s.UpgradeLevel(id) + "</color></size>", (u.Blurb + ".  " + UpgradeNow(s, u)).TrimEnd(),
-                    max ? null : Format.Money(cost) + " steel", Ui.Green, max || !can ? null : (Action)(() => { if (S.BuyUpgrade(id)) { Sfx.Play("build", 0.6f); Haptics.Light(); } }), max ? "MAX" : null);
+                    max ? null : Price(cost, levels), Ui.Green, max || !can ? null : (Action)(() => { if (S.BuyUpgrades(id, BulkN) > 0) { Sfx.Play("build", 0.6f); Haptics.Light(); } }), max ? "MAX" : null);
             }
             y = Heading(y, "THE BARON'S SEALS: you have " + s.State.seals + ". One from every carriage you bring down.");
             foreach (var d in Content.Perks)
@@ -196,26 +213,52 @@ namespace Ironclad.Game
         void ShowTrain()
         {
             var s = S;
-            var p = Frame("THE TRAIN");
+            var p = Frame("THE TRAIN"); BulkSwitch(p);
             float y = 0;
-            var head = Ui.Rect("Order", _list); head.Band(true, y, 250);
-            var help = Ui.Label("H", head, "Coupled now (the engine leads, on the right). Tap a wagon, then another, to swap them; tap ✕ to take one off.", 26, Ui.Dim, TextAnchor.MiddleCenter, false);
-            help.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, 0), new Vector2(1400, 40));
+            var head = Ui.Rect("Order", _list); head.Band(true, y, 320);
+            var help = Ui.Label("H", head, _shuntFrom >= 0 ? "Now tap where it should go: under each wagon is what the move would change." : "The engine leads, on the right. Tap a wagon, then where it should go (✕ takes it off). Under each: what its neighbours give it.", 26, Ui.Dim, TextAnchor.MiddleCenter, false);
+            help.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, 0), new Vector2(1400, 40)); help.resizeTextForBestFit = true; help.resizeTextMinSize = 18; help.resizeTextMaxSize = 26;
             TrainRow(head, new Vector2(0, -46), false);
-            SpareRow(head, new Vector2(0, -196));
-            y -= 270;
+            SpareRow(head, new Vector2(0, -266));
+            y -= 340;
+            y = FormationRows(y);
             y = Heading(y, "WAGONS");
             foreach (var d in Content.Cars)
             {
                 var id = d.Id; int lv = s.CarLevel(id); bool built = lv > 0; bool plans = built || s.PlansFound(id);
-                double cost = s.CarCost(id); bool can = s.State.steel >= cost;
+                int levels; double cost = s.CarCostN(id, built ? BulkN : 1, out levels); bool can = s.State.steel >= cost;
                 string stats = d.Support ? d.Blurb : d.Blurb + "  " + Format.Money(d.Damage * Math.Pow(Content.CarPower, Math.Max(0, lv - 1)) * s.DamageMult) + " damage every " + d.Interval.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + " s";
                 if (!plans) y = Entry(y, Ui.Ic("lock"), Ui.Dim, d.Name, "The plans turn up at mile " + d.Mile + " on any line.", null, Ui.Off, null, "MILE " + d.Mile);
                 else y = Entry(y, TrainView.Instance != null ? TrainView.Instance.Icon(id) : null, Color.white, d.Name + (built ? "  <size=24><color=#7A5A40>level " + lv + "</color></size>" : ""), stats,
-                    (built ? "" : "BUILD  ") + Format.Money(cost) + " steel", built ? Ui.Green : Ui.Gold, can ? (Action)(() => { if (S.BuyCar(id)) { Sfx.Play("build", 0.7f); Haptics.Light(); } }) : null, null, !built);
+                    built ? Price(cost, levels) : "BUILD  " + Format.Money(cost) + " steel", built ? Ui.Green : Ui.Gold, can ? (Action)(() => { if (S.BuyCars(id, S.Built(id) ? BulkN : 1) > 0) { Sfx.Play("build", 0.7f); Haptics.Light(); } }) : null, null, !built);
             }
             y = LiveryRows(y);
             EndList(-y + 30);
+        }
+
+        // ---- formations ----
+
+        float FormationRows(float y)
+        {
+            var s = S;
+            y = Heading(y, "FORMATIONS: save this order, couple it up again in one tap (here or at a station)");
+            for (int i = 0; i < Sim.Formations; i++)
+            {
+                int slot = i; var f = s.State.formations[i];
+                string what = f.cars.Count == 0 ? "Empty: SAVE keeps the order coupled now" : string.Join(" · ", f.cars.ConvertAll(c => Short(c)));
+                const float H = 112;
+                var row = Ui.ArtImg("Row", _list, "card", Ui.Card, 26); row.rectTransform.Band(true, y, H - 10);
+                var n = Ui.Label("N", row.transform, "Formation " + (char)('A' + i), 32, Ui.Ink, TextAnchor.UpperLeft); n.rectTransform.Fill(); n.rectTransform.offsetMin = new Vector2(30, 0); n.rectTransform.offsetMax = new Vector2(-560, -10);
+                var b = Ui.Label("B", row.transform, what, 24, Ui.Dim, TextAnchor.LowerLeft, false); b.rectTransform.Fill(); b.rectTransform.offsetMin = new Vector2(30, 10); b.rectTransform.offsetMax = new Vector2(-560, -50);
+                b.resizeTextForBestFit = true; b.resizeTextMinSize = 16; b.resizeTextMaxSize = 24;
+                var save = Ui.Button("Save", row.transform, "SAVE", Ui.Grape, () => { if (S.SaveFormation(slot)) { Sfx.Play("claim", 0.6f); Toast("Formation " + (char)('A' + slot) + " saved"); GameRoot.Instance.Save(); } }, 30);
+                ((RectTransform)save.transform).Place(new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-290, 0), new Vector2(240, 80));
+                bool can = f.cars.Count > 0 && s.CanCouple;
+                var use = Ui.Button("Use", row.transform, "USE", can ? Ui.Blue : Ui.Off, can ? (Action)(() => { if (S.UseFormation(slot)) { Sfx.Play("build", 0.6f); _shuntFrom = -1; Telemetry.Log("Formation.used", ("Formation.slot", slot.ToString())); GameRoot.Instance.Save(); } }) : null, 30);
+                ((RectTransform)use.transform).Place(new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-24, 0), new Vector2(240, 80));
+                y -= H;
+            }
+            return y;
         }
 
         // ---- today ----
@@ -294,7 +337,7 @@ namespace Ironclad.Game
                 if (!prod.Once) continue;
                 var pr = prod; bool owned = s.Owns(prod.Id);
                 y = Entry(y, Ui.Art("star"), Color.white, prod.Name, prod.Blurb, owned ? null : Store.Price(prod), Ui.Green,
-                    owned ? null : (Action)(() => Store.Buy(pr, (ok, msg) => { Toast(msg); if (ok) Sfx.Play("confirm"); if (_screen == Page.Shop) ShowShop(); })), owned ? "OWNED" : null, owned);
+                    owned ? null : (Action)(() => ShowPurchase(pr, "shop")), owned ? "OWNED" : null, owned);
             }
             y = Heading(y, "GEMS");
             foreach (var prod in Sim.Products)
@@ -307,6 +350,26 @@ namespace Ironclad.Game
             y = Entry(y, Ui.Ic("cart"), Ui.Ink, "Restore purchases", "Bring back what this Apple Account has bought once.", "RESTORE", Ui.Blue, () => Store.Restore(msg => { Toast(msg); if (_screen == Page.Shop) ShowShop(); }));
             var note = Ui.Label("Note", _list, "Ads are only ever shown when you ask for one. Everything in the game can be earned by playing.", 26, Ui.Dim, TextAnchor.MiddleCenter, false); note.rectTransform.Band(true, y, 60);
             EndList(-y + 70);
+        }
+
+        /// <summary>What a thing sold once would give this player, before and after, with the price and a plain way out.</summary>
+        void ShowPurchase(ProductDef prod, string from)
+        {
+            var lines = S.PurchasePreview(prod.Id);
+            if (lines == null) { Store.Buy(prod, (ok, msg) => { Toast(msg); if (ok) Sfx.Play("confirm"); if (_screen == Page.Shop) ShowShop(); }); return; }
+            Telemetry.Log("Offer.viewed", ("Offer.product", prod.Id), ("Offer.from", from));
+            var card = Card(1000, 640, prod.Name.ToUpperInvariant());
+            Ui.Label("B", card, prod.Blurb, 28, Ui.Dim, TextAnchor.UpperCenter, false).rectTransform.Band(true, -100, 80, 60);
+            float y = -190;
+            foreach (var l in lines)
+            {
+                var row = Ui.ArtImg("L", card, "well", Color.white, 24); row.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, y), new Vector2(860, 78));
+                var t = Ui.Label("T", row.transform, l, 28, Ui.Ink, TextAnchor.MiddleCenter, false); t.rectTransform.Fill(10); t.resizeTextForBestFit = true; t.resizeTextMinSize = 18; t.resizeTextMaxSize = 28;
+                y -= 88;
+            }
+            var buy = Ui.Button("Buy", card, Store.Price(prod), Ui.Green, () => Store.Buy(prod, (ok, msg) => { Toast(msg); if (ok) { Sfx.Play("confirm"); CloseCard(); } if (_screen == Page.Shop) ShowShop(); }), 42);
+            ((RectTransform)buy.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(205, 40), new Vector2(380, 110));
+            var no = Ui.Button("No", card, "NOT NOW", Ui.Off, CloseCard, 38); ((RectTransform)no.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-205, 40), new Vector2(380, 110));
         }
 
         // ---- settings ----
