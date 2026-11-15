@@ -13,6 +13,10 @@ namespace Ironclad.Game
         public static TrainView Instance { get; private set; }
         /// <summary>The running speed, for things that animate with the fight.</summary>
         public static float Pace = 1;
+        /// <summary>A theme being tried on at the depot (null: the one in use).</summary>
+        public static string PreviewSkin;
+        static string SkinNow { get { return PreviewSkin ?? (S != null ? S.State.skin : ""); } }
+        static SkinDef ThemeNow { get { return Content.Skin(SkinNow) ?? Content.Skins[0]; } }
 
         static Sim S { get { return GameRoot.Sim; } }
 
@@ -375,7 +379,33 @@ namespace Ironclad.Game
             var tent = Models.Tall("tent", _station, 3.2f); tent.localPosition = new Vector3(19, 0, 16); tent.localRotation = Quaternion.Euler(0, 200, 0);
             for (int i = 0; i < 5; i++) { var b = Models.Tall(i % 2 == 0 ? "barrel" : "crate", _station, 1.1f); b.localPosition = new Vector3(-9 + i * 1.5f, 0.9f, 6.2f + (i % 3) * 0.5f); }
             var flag = Models.Tall("flag", _station, 6); flag.localPosition = new Vector3(21, 0.9f, 6.5f);
+            _stationSkin = SkinNow;
+            if (S == null || S.Run != null) return;
+            // At the depot: bunting in the train's colours, and the depot as it has grown.
+            var th = ThemeNow; var banner = new Color((float)th.FR, (float)th.FG, (float)th.FB);
+            for (int i = 0; i < 5; i++) { var b = Models.Tall("flag", _station, 2.6f, banner); b.localPosition = new Vector3(-20 + i * 9, 0.9f, 5.1f); }
+            var look = S.Depot;
+            string[] old = { "loco_b", "loco", "loco_c", "loco_b" };
+            for (int k = 0; k < look.Sidings; k++)
+            {
+                float z = -8 - k * 4.2f;
+                for (float rx = -34; rx <= 16; rx += _railLen) { var rl = Models.Along("rail", _station, _railLen); rl.localPosition = new Vector3(rx, 0.05f, z); }
+                if (k < look.Parked)
+                {
+                    var eng = Models.Along(old[k % old.Length], _station, 5.8f, true, new Color(0.62f, 0.58f, 0.56f));
+                    eng.localPosition = new Vector3(-14 + k * 7, 0.2f, z);
+                }
+            }
+            for (int k = 0; k < look.Trophies; k++)
+            {
+                var t = Models.Tall("flag", _station, 4.2f, new Color(0.55f, 0.18f, 0.16f)); t.localPosition = new Vector3(9 + k * 2.4f, 0.9f, 11.2f);
+            }
+            for (int k = 0; k < look.Workers; k++)
+            {
+                var m = Figure("man_" + (k % 6) + "_idle", _station, 1.6f); m.localPosition = new Vector3(-7 + k * 3.4f, 0.9f, 7.4f + (k % 2) * 1.3f); m.localRotation = Quaternion.Euler(0, 160 + k * 37, 0);
+            }
         }
+        string _stationSkin;
 
         // ---- landmarks: something to pass on every leg ----
 
@@ -488,7 +518,7 @@ namespace Ironclad.Game
         void BuildCar(CarView v, string type)
         {
             const float L = 5.5f;
-            string skin = S != null ? S.State.skin : "";
+            string skin = SkinNow;
             int at = type.IndexOf('@');
             if (at >= 0) { skin = type.Substring(at + 1); type = type.Substring(0, at); }
             switch (type)
@@ -497,6 +527,8 @@ namespace Ironclad.Game
                     {
                         var k = Content.Skin(skin) ?? Content.Skins[0];
                         v.Body = Models.Along(k.Model, v.Root, L + 0.3f, true, new Color((float)k.R, (float)k.G, (float)k.B));
+                        // The theme's pennant flies from the cab.
+                        var pen = Models.Tall("flag", v.Root, 1.9f, new Color((float)k.FR, (float)k.FG, (float)k.FB)); pen.localPosition = new Vector3(-2.3f, 2.6f, 0.75f);
                     }
                     Gun(v, "ship_cannon", 1.9f, 2.15f, 0); v.Gun.localPosition = v.GunBase = new Vector3(1.4f, 2.15f, 0); v.Muzzle = new Vector3(1.4f, 2.7f, 0);
                     {
@@ -522,6 +554,18 @@ namespace Ironclad.Game
                 default: v.Body = Models.Along("boxcar", v.Root, L); break;
             }
             v.Type = type;
+            if (type != "engine" && v.Body != null)
+            {
+                // The whole train wears the theme: every wagon's body takes its tint.
+                var th = Content.Skin(skin) ?? Content.Skins[0];
+                var wear = new Color((float)th.WR, (float)th.WG, (float)th.WB);
+                if (wear != Color.white)
+                    foreach (var mr in v.Body.GetComponentsInChildren<MeshRenderer>())
+                    {
+                        var m = mr.sharedMaterial; var baseTint = m.HasProperty("_Tint") ? m.GetColor("_Tint") : Color.white;
+                        mr.sharedMaterial = Materials.KitTint(baseTint * wear, m.HasProperty("_HueShift") ? m.GetFloat("_HueShift") : 0);
+                    }
+            }
             int tier = type != "engine" && S != null ? S.CarTier(type) : 0;
             if (tier > 0) Heavier(v, tier);
         }
@@ -731,7 +775,7 @@ namespace Ironclad.Game
             var types = new List<string> { "engine" };
             if (r != null) { types.Clear(); foreach (var c in r.cars) types.Add(c.type); }
             else types.AddRange(s.State.train.GetRange(0, Mathf.Min(s.State.train.Count, s.Slots)));
-            string key = string.Join(",", types) + "|" + s.State.skin + "|";
+            string key = string.Join(",", types) + "|" + SkinNow + "|";
             foreach (var ty in types) key += s.CarTier(ty);
             if (key != _trainKey) { _trainKey = key; BuildTrain(types); }
 
@@ -739,9 +783,11 @@ namespace Ironclad.Game
             float centre = (float)Sim.CarX(types.Count - 1) * 0.5f;
             if (stopped && r != null && r.phase == (int)Phase.Over) { }      // a beaten train stands where it fell: no station
             else if (stopped && _station == null) BuildStation(first ? centre : centre + 95);
+            else if (r == null && _station != null && _stationSkin != SkinNow) BuildStation(_stationX);
         }
 
         void LateUpdate() { DrawCover(); }
+        static Color SmokeColour { get { var k = ThemeNow; return new Color((float)k.SR, (float)k.SG, (float)k.SB, 0.5f); } }
 
         void Update()
         {
@@ -862,7 +908,7 @@ namespace Ironclad.Game
             }
             // Smoke from the stack, streaming back with the speed.
             if (_cars.Count > 0 && Random.value < dt * (rolling ? 55 : 6))
-                Fx.Smoke(_cars[0].Root.position + new Vector3(1.9f, 3.9f, 0), new Color(0.93f, 0.93f, 0.93f, 0.5f), Random.Range(0.9f, 1.5f), new Vector3(-_speed * Random.Range(0.7f, 0.9f), Random.Range(3.5f, 6f), Random.Range(-0.6f, 0.6f)));
+                Fx.Smoke(_cars[0].Root.position + new Vector3(1.9f, 3.9f, 0), SmokeColour, Random.Range(0.9f, 1.5f), new Vector3(-_speed * Random.Range(0.7f, 0.9f), Random.Range(3.5f, 6f), Random.Range(-0.6f, 0.6f)));
 
             // Raiders.
             _gone.Clear();
@@ -1123,8 +1169,8 @@ namespace Ironclad.Game
         public Sprite Icon(string type)
         {
             Sprite sp;
-            if (type == "engine" && S != null) type = "engine@" + S.State.skin;      // the engine's picture wears its livery
-            string iconKey = type + "#" + (S != null && !type.StartsWith("engine") ? S.CarTier(type) : 0);      // and a heavier wagon its plates
+            if (type == "engine" && S != null) type = "engine@" + SkinNow;      // the engine's picture wears its livery
+            string iconKey = type + "#" + (S != null && !type.StartsWith("engine") ? S.CarTier(type) + "@" + SkinNow : "0");      // a wagon its plates and paint
             if (_icons.TryGetValue(iconKey, out sp)) return sp;
             var stage = new GameObject("IconStage").transform;
             stage.position = new Vector3(0, -900, 0);

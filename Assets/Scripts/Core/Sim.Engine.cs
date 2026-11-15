@@ -37,7 +37,7 @@ namespace Ironclad.Core
         public bool CanRenew { get { return State.run == null && ChartersOnRenew >= 1; } }
 
         /// <summary>Steel and damage, for the charters held.</summary>
-        public double CharterMult { get { return 1 + Content.CharterBonus * State.charters; } }
+        public double CharterMult { get { return Trial ? 1 : 1 + Content.CharterBonus * State.charters; } }
 
         /// <summary>Builds a new engine. Returns the charters it brought (0: not now).</summary>
         public int Renew()

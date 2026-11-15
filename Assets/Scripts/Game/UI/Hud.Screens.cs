@@ -57,7 +57,7 @@ namespace Ironclad.Game
         {
             { "WORKSHOP", "Steel buys these for good. Seals, further down, buy rarer things." },
             { "THE TRAIN", "Build wagons, raise their levels, and choose the order they are coupled in." },
-            { "TODAY", "A gift every day and three tasks. A missed day loses nothing." },
+            { "TODAY", "A gift every day, three tasks and the expedition. A missed day loses nothing." },
             { "AWARDS", "Gems for what you've done on the line. Tap a green one to take it." },
             { "SHOP", "Gems speed things up. Everything here is optional: the whole game can be played free." },
             { "SETTINGS", "Sound, reminders, your account and help." },
@@ -194,18 +194,44 @@ namespace Ironclad.Game
         float LiveryRows(float y)
         {
             var s = S;
-            y = Heading(y, "LIVERIES: the engine's paint. Looks only, nothing else changes.");
+            y = Heading(y, "THEMES: paint for the whole train, its smoke and its flags. Looks only. SEE IT to try one on.");
             foreach (var k in Content.Skins)
             {
                 var id = k.Id; bool own = s.SkinOwned(id), on = s.State.skin == id;
                 string button = on ? null : own ? "USE" : k.Gems > 0 ? k.Gems + " GEMS" : null;
                 Action tap = null;
                 if (!on && own) tap = () => { if (S.UseSkin(id)) { Sfx.Play("build", 0.6f); GameRoot.Instance.Save(); } };
-                else if (!own && k.Gems > 0 && s.State.gems >= k.Gems) tap = () => { if (S.BuySkin(id)) { Sfx.Play("star", 0.8f); Haptics.Success(); GameRoot.Instance.Save(true); Toast(k.Name + " is on the engine"); } };
-                y = Entry(y, TrainView.Instance != null ? TrainView.Instance.Icon("engine@" + id) : null, Color.white, k.Name, k.Blurb, button, own ? Ui.Blue : Ui.Grape, tap,
-                    on ? "IN USE" : !own && k.Gems <= 0 ? (k.Engines > 0 ? "ENGINE NO. " + (k.Engines + 1) : null) : null, on);
+                else if (!own && k.Gems > 0 && s.State.gems >= k.Gems) tap = () => BuyTheme(k);
+                string status = on ? "IN USE" : !own && k.Gems <= 0 ? (k.Engines > 0 ? "ENGINE NO. " + (k.Engines + 1) : k.From) : null;
+                y = Entry(y, TrainView.Instance != null ? TrainView.Instance.Icon("engine@" + id) : null, Color.white, k.Name, k.Blurb, button, own ? Ui.Blue : Ui.Grape, tap, status, on);
+                // SEE IT: try it on at the depot.
+                if (!on && s.Run == null)
+                {
+                    var row = _list.GetChild(_list.childCount - 1);
+                    foreach (var t in row.GetComponentsInChildren<Text>()) if (t.transform.parent == row) t.rectTransform.offsetMax = new Vector2(Mathf.Min(t.rectTransform.offsetMax.x, -500), t.rectTransform.offsetMax.y);
+                    var see = Ui.Button("See", row, "SEE IT", Ui.Blue, () => PreviewTheme(id), 28);
+                    ((RectTransform)see.transform).Place(new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(button != null ? -324 : status != null ? -210 : -14, 2), new Vector2(160, 88));
+                }
             }
             return y;
+        }
+
+        void BuyTheme(SkinDef k)
+        {
+            if (!S.BuySkin(k.Id)) return;
+            TrainView.PreviewSkin = null;
+            Sfx.Play("star", 0.8f); Haptics.Success(); GameRoot.Instance.Save(true); Toast(k.Name + " is on the train");
+            Telemetry.Log("Theme.bought", ("Theme.id", k.Id));
+            _dirty = true;
+        }
+
+        /// <summary>Closes the screens and shows the train at the depot in another theme, with a way to take it or go back.</summary>
+        void PreviewTheme(string id)
+        {
+            TrainView.PreviewSkin = id;
+            Telemetry.Log("Theme.previewed", ("Theme.id", id));
+            _screen = Page.None; _list = null; Ui.Clear(_screenRoot);
+            Sfx.Play("open", 0.5f); _dirty = true;
         }
 
         // ---- the train ----
@@ -222,6 +248,7 @@ namespace Ironclad.Game
             SpareRow(head, new Vector2(0, -266));
             y -= 340;
             y = FormationRows(y);
+            y = BuildRows(y);
             y = Heading(y, "WAGONS");
             foreach (var d in Content.Cars)
             {
@@ -245,6 +272,27 @@ namespace Ironclad.Game
             int t = S.CarTier(id);
             string now = t > 0 ? "  <color=#B8860B>" + TierNames[t] + "</color>" : "";
             return t < Content.TierLevels.Length ? now + "  <color=#9A8A78>new look at " + Content.TierLevels[t] + "</color>" : now;
+        }
+
+        // ---- builds that work ----
+
+        float BuildRows(float y)
+        {
+            var s = S;
+            y = Heading(y, "BUILDS THAT WORK: tried and tested orders, coupled up in one tap");
+            for (int i = 0; i < Sim.Builds.Count; i++)
+            {
+                var b = Sim.Builds[i]; int k = i;
+                var miss = s.BuildMissing(b);
+                string order = string.Join(" · ", Array.ConvertAll(b.Cars, c => Short(c)));
+                string blurb = b.Why + "\n<color=#7A5A40>" + order + "</color>";
+                if (miss.Count > 0) blurb = b.Why + "\n<color=#C8321E>Needs: " + string.Join(", ", miss.ConvertAll(c => Content.Car(c).Name)) + "</color>";
+                bool can = miss.Count == 0 && s.CanCouple;
+                y = Entry(y, TrainView.Instance != null ? TrainView.Instance.Icon(b.Cars[0]) : null, Color.white, b.Name, blurb,
+                    miss.Count == 0 ? "COUPLE UP" : null, Ui.Blue, can ? (Action)(() => { if (S.UseBuild(k)) { Sfx.Play("build", 0.7f); Haptics.Light(); Telemetry.Log("Build.used", ("Build.name", b.Name)); GameRoot.Instance.Save(); } }) : null,
+                    miss.Count > 0 ? "NOT YET" : null);
+            }
+            return y;
         }
 
         // ---- formations ----
@@ -302,7 +350,38 @@ namespace Ironclad.Game
                 y = Entry(y, Ui.Ic("tasks"), Ui.Ink, string.Format(t.Text, Format.Money(t.Goal)), Format.Money(s.TaskProgress(i)) + " of " + Format.Money(t.Goal) + " today",
                     claimed ? null : "+" + t.Gems + " gems", Ui.Green, done && !claimed ? (Action)(() => { if (S.ClaimTask(k)) { Sfx.Play("claim", 0.8f); Haptics.Success(); GameRoot.Instance.Save(); } }) : null, claimed ? "DONE" : null, done && !claimed);
             }
+            y = ExpeditionRows(y);
             EndList(-y + 30);
+        }
+
+        /// <summary>The expedition track: miles rolled move it along; every step gives something, free.</summary>
+        float ExpeditionRows(float y)
+        {
+            var s = S;
+            int tier = s.ExpTier; double pts = s.ExpPoints;
+            y = Heading(y, "THE EXPEDITION: " + s.SeasonDaysLeft + (s.SeasonDaysLeft == 1 ? " day" : " days") + " left. Every mile rolled moves you on; a boss counts five.");
+            {
+                Image fill; var bar = Bar(_list, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, y - 6), new Vector2(1100, 46), Ui.Gold, out fill);
+                double into = tier >= Sim.Tiers ? 1 : (pts - tier * Sim.PerTier) / Sim.PerTier;
+                fill.rectTransform.anchorMax = new Vector2(Mathf.Clamp((float)into, 0.03f, 1), 1);
+                var bt = Ui.Label("T", bar.parent, tier >= Sim.Tiers ? "The whole track is done" : "Step " + tier + " of " + Sim.Tiers + "  ·  " + Mathf.CeilToInt((float)((tier + 1) * Sim.PerTier - pts)) + " miles to the next", 26, Color.white); bt.rectTransform.Fill(); bt.Stroke(2f);
+                y -= 70;
+            }
+            int shown = 0;
+            foreach (var st in Sim.Steps)
+            {
+                bool reached = st.Tier <= tier, claimed = s.StepClaimed(st.Tier);
+                if (claimed) continue;
+                if (!reached && shown >= 5) break;
+                int k = st.Tier;
+                string what = st.Gift == "steel" ? Format.Money(s.StepSteel(st)) + " steel" : Sim.StepName(st);
+                Sprite icon = st.Gift == "steel" ? Ui.Art("steel") : st.Gift == "gems" ? Ui.Art("gem") : st.Gift == "seal" ? Ui.Ic("medal") : Ui.Art("star");
+                y = Entry(y, icon, st.Gift == "seal" ? Ui.Ink : Color.white, "Step " + st.Tier + ":  " + what, reached ? "Ready" : Format.Money(st.Need - pts) + " more miles",
+                    reached ? "CLAIM" : null, Ui.Green, reached ? (Action)(() => { if (S.ClaimStep(k)) { Sfx.Play("claim", 0.8f); Haptics.Success(); Telemetry.Log("Expedition.claimed", ("Expedition.tier", k.ToString())); GameRoot.Instance.Save(); } }) : null,
+                    null, reached);
+                if (!reached) shown++;
+            }
+            return y;
         }
 
         // ---- awards ----
@@ -316,6 +395,28 @@ namespace Ironclad.Game
             float y = 0;
             y = Entry(y, Ui.Ic("trophy"), Ui.Ink, "This week's furthest run", "Every run counts toward this week's board on Game Center. It starts again every Monday.", "SEE", Ui.Blue,
                 GameCenter.Blocked == null ? (Action)GameCenter.ShowWeekly : () => Toast(GameCenter.Blocked));
+            y = Heading(y, "MASTERY: long goals. Each gives a title, some a theme for the whole train.");
+            foreach (var m in Sim.Masteries)
+            {
+                var id = m.Id; bool done = s.MasteryDone(m), claimed = s.MasteryClaimed(m);
+                double have = Math.Min(m.Goal, m.Have(s));
+                var skin = m.Skin != null ? Content.Skin(m.Skin) : null;
+                string gives = "Title: " + m.Title + (skin != null ? "  ·  Theme: " + skin.Name : "");
+                y = Entry(y, Ui.Ic("medal"), claimed ? new Color(0.3f, 0.25f, 0.2f, 0.45f) : Ui.Ink, m.Name, m.Blurb + "\n<color=#7A5A40>" + gives + "</color>",
+                    done && !claimed ? "CLAIM" : null, Ui.Gold, done && !claimed ? (Action)(() => { if (S.ClaimMastery(id)) { Sfx.Play("star", 0.9f); Haptics.Success(); Telemetry.Log("Mastery.claimed", ("Mastery.id", id)); GameRoot.Instance.Save(); Toast("Title: " + m.Title); } }) : null,
+                    claimed ? "DONE" : done ? null : Format.Money(have) + " / " + Format.Money(m.Goal), done && !claimed);
+            }
+            if (s.State.titles.Count > 0)
+            {
+                y = Heading(y, "TITLES: worn on the depot under your conductor's name");
+                foreach (var t in s.State.titles)
+                {
+                    var title = t; bool worn = s.State.title == t;
+                    y = Entry(y, Ui.Ic("crown"), Ui.Ink, title, worn ? "Worn now" : "Earned", worn ? "TAKE OFF" : "WEAR", worn ? Ui.Off : Ui.Blue,
+                        () => { if (S.UseTitle(worn ? "" : title)) { Sfx.Play("build", 0.6f); Telemetry.Log("Title.worn", ("Title.name", worn ? "" : title)); GameRoot.Instance.Save(); } });
+                }
+            }
+            y = Heading(y, "AWARDS");
             var list = new List<AchievementDef>(Sim.Achievements);
             list.Sort((a, b) => Rank(s, a).CompareTo(Rank(s, b)));
             foreach (var a in list)

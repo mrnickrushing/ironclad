@@ -193,8 +193,16 @@ namespace Ironclad.Core
         /// <summary>Couples up a saved order (what is built of it, as many as there are places). Only between runs or at a station.</summary>
         public bool UseFormation(int slot)
         {
-            if (slot < 0 || slot >= Formations || !CanCouple) return false;
-            var want = State.formations[slot].cars.FindAll(id => Built(id) && id != "engine");
+            if (slot < 0 || slot >= Formations) return false;
+            return UseOrder(State.formations[slot].cars);
+        }
+
+        /// <summary>Couples up this order of wagons (those built, as far as the places go). At a station each wagon keeps
+        /// its own plating and field levels.</summary>
+        bool UseOrder(List<string> order)
+        {
+            if (!CanCouple || Trial) return false;
+            var want = order.FindAll(id => Built(id) && id != "engine");
             if (want.Count > Slots) want = want.GetRange(0, Slots);
             if (want.Count == 0) return false;
             var r = State.run;

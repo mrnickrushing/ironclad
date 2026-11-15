@@ -15,6 +15,7 @@ namespace Ironclad.Game
             var s = S;
             _homeSteel = Pill(_face, new Vector2(0, 1), new Vector2(24, -20), 320, Ui.Art("steel"), Color.white, () => Open(Page.Workshop));
             _homeGems = Pill(_face, new Vector2(1, 1), new Vector2(-24, -20), 240, Ui.Art("gem"), Color.white, () => Open(Page.Shop));
+            if (TrainView.PreviewSkin != null) { BuildPreviewBar(); UpdateDepot(); return; }
 
             // The line: its name on a ribbon, arrows to the others that are open, how far it has been crossed.
             var ribbon = Ui.Ribbon("Line", _face, Ui.Coral); ribbon.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -8), new Vector2(720, 110));
@@ -24,7 +25,8 @@ namespace Ironclad.Game
             int best = s.State.best[s.State.route];
             string next = s.State.route + 1 < Content.Routes.Count && !s.RouteOpen(s.State.route + 1) ? "  ·  " + Content.Routes[s.State.route + 1].Name + " opens at mile " + Content.Routes[s.State.route + 1].Opens : "";
             // What to aim for: a wagon to build, else the next plans, else the next line.
-            var sub = Ui.Label("S", _face, best > 0 ? "Furthest: mile " + best + (s.State.runs > 0 ? "" : next) : def.Blurb, 28, Color.white, TextAnchor.MiddleCenter, false); sub.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -118), new Vector2(1200, 40)); sub.Stroke(2f);
+            string worn = s.State.title.Length > 0 ? "  ·  <color=#FFD27A>" + s.State.title + "</color>" : "";
+            var sub = Ui.Label("S", _face, (best > 0 ? "Furthest: mile " + best + (s.State.runs > 0 ? "" : next) : def.Blurb) + worn, 28, Color.white, TextAnchor.MiddleCenter, false); sub.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -118), new Vector2(1200, 40)); sub.Stroke(2f);
             // The next goal, and how far there is to go.
             var g = s.NextGoal;
             if (g != null && s.State.runs > 0)
@@ -55,6 +57,15 @@ namespace Ironclad.Game
             var chip = Ui.Button("Depot", _face, "", Ui.Gold, ShowDepotCard, 28); _depotChip = (RectTransform)chip.transform;
             _depotChip.Place(new Vector2(0, 1), new Vector2(0, 1), new Vector2(24, -110), new Vector2(420, 84));
             _depotText = chip.GetComponentInChildren<Text>();
+
+            // This week's trial, once there is something to measure it against.
+            if (s.TrialOpen)
+            {
+                var tb = Ui.Button("Trial", _face, null, Ui.Grape, ShowTrialCard, 26); var trt = (RectTransform)tb.transform;
+                trt.Place(new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(24, 40), new Vector2(330, 96));
+                var ti = Ui.Img("I", trt, Color.white); ti.sprite = Ui.Ic("calendar"); ti.preserveAspect = true; ti.rectTransform.Place(new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(18, 4), new Vector2(50, 50));
+                var tlab = Ui.Label("L", trt, "WEEKLY TRIAL\n<size=20>" + (s.TrialBest > 0 ? "best: mile " + s.TrialBest : s.TrialNow.Name) + "</size>", 26, Color.white); tlab.rectTransform.Fill(); tlab.rectTransform.offsetMin = new Vector2(74, 10); tlab.rectTransform.offsetMax = new Vector2(-10, -4); tlab.Stroke(2f); tlab.lineSpacing = 0.85f;
+            }
 
             // DEPART, and whether to set off again by itself.
             var go = Ui.Button("Depart", _face, "DEPART", Ui.Green, () => { if (S.StartRun()) { Sfx.Play("dispatch", 0.9f); Haptics.Medium(); GameRoot.Instance.Save(); } }, 64);
@@ -119,8 +130,8 @@ namespace Ironclad.Game
             bool show = waiting >= 1 && s.DepotSeconds >= 300;      // not worth a button until the patrols have been out a while
             if (_depotChip.gameObject.activeSelf != show) _depotChip.gameObject.SetActive(show);
             if (show) _depotText.text = "DEPOT  +" + Format.Money(waiting) + (s.DepotSeconds >= s.DepotCap ? "  (full)" : "");
-            if (_awardDot != null) _awardDot.gameObject.SetActive(s.AchievementsReady > 0);
-            if (_todayDot != null) _todayDot.gameObject.SetActive(s.TodayReady > 0);
+            if (_awardDot != null) _awardDot.gameObject.SetActive(s.AchievementsReady > 0 || s.MasteriesReady > 0);
+            if (_todayDot != null) _todayDot.gameObject.SetActive(s.TodayReady > 0 || s.StepsReady > 0);
             if (!ModalOpen && !ScreenOpen && s.Run == null && s.State.tutorialStep >= 1 && s.NewlyUnlocked.Count > 0) ShowUnlocked();
             if (s.StarterOfferDue && !ModalOpen && !ScreenOpen && Store.Available) OfferStarter();
             if (_trainDot != null) _trainDot.gameObject.SetActive(s.Unbuilt.Count > 0);
@@ -142,6 +153,58 @@ namespace Ironclad.Game
             ((RectTransform)buy.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(205, 44), new Vector2(380, 116));
             var no = Ui.Button("No", card, "NOT NOW", Ui.Off, CloseCard, 38);
             ((RectTransform)no.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-205, 44), new Vector2(380, 116));
+        }
+
+        /// <summary>Trying a theme on: its name, take it (or use it, if owned) or go back.</summary>
+        void BuildPreviewBar()
+        {
+            var s = S; var k = Content.Skin(TrainView.PreviewSkin);
+            if (k == null) { TrainView.PreviewSkin = null; _dirty = true; return; }
+            var bar = Ui.ArtImg("Preview", _face, "panel", Color.white, 40); bar.raycastTarget = true;
+            bar.rectTransform.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 24), new Vector2(1180, 230));
+            var b = bar.rectTransform;
+            Ui.Label("T", b, "TRYING ON: " + k.Name.ToUpperInvariant(), 40, Ui.Ink).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -18), new Vector2(1100, 54));
+            var bl = Ui.Label("B", b, k.Blurb, 26, Ui.Dim, TextAnchor.MiddleCenter, false); bl.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -70), new Vector2(1100, 40)); bl.resizeTextForBestFit = true; bl.resizeTextMinSize = 18; bl.resizeTextMaxSize = 26;
+            bool own = s.SkinOwned(k.Id);
+            Action back = () => { TrainView.PreviewSkin = null; Sfx.Play("close", 0.5f); _dirty = true; };
+            string label = own ? "USE IT" : k.Gems > 0 ? k.Gems + " GEMS" : k.Engines > 0 ? "ENGINE NO. " + (k.Engines + 1) : (k.From ?? "NOT FOR SALE");
+            Action take = own ? (Action)(() => { S.UseSkin(k.Id); TrainView.PreviewSkin = null; Sfx.Play("build", 0.6f); GameRoot.Instance.Save(); _dirty = true; })
+                : k.Gems > 0 && s.State.gems >= k.Gems ? (Action)(() => BuyTheme(k)) : null;
+            var tk = Ui.Button("Take", b, label, own ? Ui.Blue : Ui.Grape, take, 34); ((RectTransform)tk.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(210, 22), new Vector2(380, 100));
+            var bk = Ui.Button("Back", b, "BACK", Ui.Off, back, 34); ((RectTransform)bk.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-210, 22), new Vector2(380, 100));
+        }
+
+        /// <summary>This week's trial: the train, the rules, the best so far and what the marks give.</summary>
+        void ShowTrialCard()
+        {
+            var s = S; var t = s.TrialNow;
+            var card = Card(1160, 780, "WEEKLY TRIAL");
+            Ui.Label("N", card, t.Name, 46, Ui.Ink).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -96), new Vector2(1000, 60));
+            Ui.Label("B", card, t.Blurb, 28, Ui.Dim, TextAnchor.MiddleCenter, false).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -156), new Vector2(1000, 40));
+            // The train, engine on the right, every wagon at level t.Level, and the opening card.
+            int n = t.Cars.Length + 1; float w = 150;
+            for (int i = 0; i < n; i++)
+            {
+                string type = i == n - 1 ? "engine" : t.Cars[n - 2 - i];
+                var pic = CarPicture(card, type); pic.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2((i - (n - 1) * 0.5f) * w, -206), new Vector2(130, 130));
+            }
+            var c = Content.Card(t.Cards[0]);
+            string rules = "Every wagon at level " + t.Level + ", starting with " + c.Name + ". The same train and the same luck for everyone this week. Nothing from your workshop, and no steel: just how far you get.";
+            var rl = Ui.Label("R", card, rules, 26, Ui.Ink, TextAnchor.MiddleCenter, false); rl.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -350), new Vector2(1040, 80)); rl.resizeTextForBestFit = true; rl.resizeTextMinSize = 18; rl.resizeTextMaxSize = 26;
+            string marks = "Mile 10: the title Trial Runner  ·  Mile 25: Proving Ground Regular  ·  Mile 40: the Proving Ground theme";
+            var ml = Ui.Label("M", card, marks, 24, new Color(0.45f, 0.3f, 0.65f), TextAnchor.MiddleCenter, false); ml.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -436), new Vector2(1040, 60)); ml.resizeTextForBestFit = true; ml.resizeTextMinSize = 16; ml.resizeTextMaxSize = 24;
+            int days = (int)(7 - (s.Today + 3) % 7);
+            Ui.Label("W", card, (s.TrialBest > 0 ? "Your best this week: mile " + s.TrialBest : "No run yet this week") + "  ·  a new trial in " + days + (days == 1 ? " day" : " days"), 28, Ui.Dim, TextAnchor.MiddleCenter, false)
+                .rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -510), new Vector2(1040, 44));
+            var go = Ui.Button("Go", card, "START TRIAL", Ui.Grape, () =>
+            {
+                if (!S.StartTrial()) return;
+                CloseCard(); Sfx.Play("dispatch", 0.9f); Haptics.Medium();
+                Telemetry.Log("Trial.started", ("Trial.name", S.TrialNow.Name), ("Trial.week", S.Week.ToString()));
+                GameRoot.Instance.Save();
+            }, 40);
+            ((RectTransform)go.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(210, 40), new Vector2(380, 110));
+            var no = Ui.Button("No", card, "NOT NOW", Ui.Off, CloseCard, 38); ((RectTransform)no.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-210, 40), new Vector2(380, 110));
         }
 
         /// <summary>A celebration of what has just opened up, and the next thing to aim for.</summary>

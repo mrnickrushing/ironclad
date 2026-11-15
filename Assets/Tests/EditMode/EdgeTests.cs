@@ -203,13 +203,14 @@ namespace Ironclad.Tests
         {
             double now = 1_700_000_000;
             var s = new Sim(GameState.New()); s.RealNow = () => now;
+            s.State.cohort = 10;    // the "later_day" way of the timing test (the other waits for the first boss)
             s.Tick(0.1); s.State.runs = 20;
             Assert.IsFalse(s.StarterOfferDue, "not on the first day");
             now += 86400;
             Assert.IsTrue(s.StarterOfferDue);
             s.StarterOffered();
             Assert.IsFalse(s.StarterOfferDue, "once");
-            var t = new Sim(GameState.New()); t.RealNow = () => now; t.Tick(0.1); t.State.runs = 20; now += 86400;
+            var t = new Sim(GameState.New()); t.RealNow = () => now; t.State.cohort = 10; t.Tick(0.1); t.State.runs = 20; now += 86400;
             t.Grant("ironclad.starter", "x");
             Assert.IsFalse(t.StarterOfferDue, "not to someone who has it");
         }
