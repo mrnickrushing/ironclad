@@ -472,7 +472,11 @@ namespace Ironclad.Core
             double scrip = d.Bounty * Math.Pow(Content.BountyPerMile, r.mile - 1) * ScripMult * (r.boostMiles > 0 && r.boostKind == "gulch" ? 2 : 1);
             r.scrip += scrip; r.kills++; State.kills++;
             if (_from >= 0 && _from < r.cars.Count) Add(State.carKills, r.cars[_from].type, 1);
-            if (d.Boss) { State.bosses++; State.seals++; r.seals++; r.steel += Content.BossSteel * MileSteel(Route, r.mile) / Content.SteelPerMileBase * SteelMult; }
+            if (d.Boss)
+            {
+                State.bosses++; AddExp(5);
+                if (!r.trial) { State.seals++; r.seals++; r.steel += Content.BossSteel * MileSteel(Route, r.mile) / Content.SteelPerMileBase * SteelMult; }
+            }
             if (r.mark == e.id) r.mark = 0;
             Fell?.Invoke(e, scrip);
         }
@@ -482,16 +486,17 @@ namespace Ironclad.Core
             var r = State.run;
             double steel = MileSteel(Route, r.mile) * SteelMult * BoostSteel;
             if (r.boostMiles > 0 && --r.boostMiles == 0) r.boostKind = "";
+            if (r.trial) steel = 0;      // a trial pays nothing but its place on the week's list
             r.steel += steel;
-            State.miles++;
+            State.miles++; AddExp(1);
             int before = BestMile;
-            if (r.mile > State.best[r.route])
+            if (!r.trial && r.mile > State.best[r.route])
             {
                 State.best[r.route] = r.mile;
                 // The first time a station on a line is reached, the town pays a few gems.
                 if (r.mile % Content.StationEvery == 0) { State.gems += StationGems; FirstStation?.Invoke(r.mile, StationGems); }
             }
-            if (BestMile > before) foreach (var d in Content.Cars) if (d.Mile > before && d.Mile <= BestMile && d.Id != "engine" && !Built(d.Id)) Plans?.Invoke(d);
+            if (!r.trial && BestMile > before) foreach (var d in Content.Cars) if (d.Mile > before && d.Mile <= BestMile && d.Id != "engine" && !Built(d.Id)) Plans?.Invoke(d);
             MileDone?.Invoke(r.mile, steel);
             if (BossMile) { EnterStation(); return; }
             r.mile++; r.mileTime = 0;
@@ -718,7 +723,7 @@ namespace Ironclad.Core
 
         public bool RunEnded { get { return State.run != null && State.run.phase == (int)Phase.Over; } }
         public const int ReviveGems = 30;
-        public bool CanRevive { get { return RunEnded && !State.run.revived; } }
+        public bool CanRevive { get { return RunEnded && !State.run.revived && !State.run.trial; } }
 
         /// <summary>Once a run: back on the rails with half the hull, the plating made good and the raiders driven off.</summary>
         public bool Revive(bool forGems)
@@ -754,6 +759,13 @@ namespace Ironclad.Core
         public bool CloseRun()
         {
             if (!RunEnded) return false;
+            if (State.run.trial)
+            {
+                CloseTrial(State.run);
+                State.run = null;
+                Touch();
+                return true;
+            }
             double steel = RunSteel;
             State.steel += steel; State.lifetime += steel; State.lastRunSteel = steel;
             State.runs++;

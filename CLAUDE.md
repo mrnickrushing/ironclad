@@ -65,6 +65,16 @@ The project was started from Reel Empire (`~/reelempire`): the platform code (`G
   `TrainView.Heavier`); guns kick, mortars dip, supply cars pulse, fitters spark; wagons scorch as plating runs down and
   say FIXED when patched; raiders stand on soft shadows with rings when striking; landmarks pass at miles 3 and 7 of
   each leg (`TrainView.BuildLandmark`, kept within 15 m of the line or the camera can't see them).
+- Meta (`Core/Sim.Meta.cs`): themes paint the whole train (`SkinDef` engine tint, wagon tint `WR/WG/WB`, smoke
+  `SR/SG/SB`, pennant and depot bunting `FR/FG/FB`; `From` names where an unsold one is earned); SEE IT tries one on at
+  the depot (`TrainView.PreviewSkin`, `Hud.BuildPreviewBar`). Mastery (`Sim.Masteries`, `ClaimMastery`) gives titles
+  (`State.titles`, worn one under the depot's sub line, `UseTitle`) and three themes. Builds that work (`Sim.Builds`,
+  `UseBuild`, couple a tested order in one tap). The weekly trial (`Sim.Trials`, `Week`, opens at mile 20,
+  `StartTrial`): a fixed train at `TrialDef.Level`, the same seed for everyone that week, no workshop, steel, revive,
+  bests or plans; marks at miles 10/25/40 give two titles and the Proving Ground theme. The depot grows (`Sim.Depot`:
+  sidings, parked old engines, trophy flags, workers). The expedition (`Sim.Steps`, 30 free steps a 28-day season,
+  `AddExp` one a mile and five a boss; steel, gems, seals, a title and the Pathfinder theme) is on TODAY. Telemetry:
+  Theme.previewed/bought, Mastery.claimed, Title.worn, Build.used, Trial.started/finished, Expedition.claimed.
 - `Game/Debug/PlayBot.cs` (editor only) plays through the real HUD methods: `PlayBot.Begin(10)`, `PlayBot.Report()`.
 - `Tools/ios-export.sh` switches the Editor to the iOS platform and recompiles before building, and refuses an export
   without the AdMob id or the entitlements. Music is `Tools/art/music.py` ("day" while rolling, "night" at rest).

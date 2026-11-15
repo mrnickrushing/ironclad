@@ -82,6 +82,10 @@ namespace Ironclad.Core
         public double R = 1, G = 1, B = 1;      // the tint over the model's own colours
         public int Gems;                        // 0: not sold (the first one, or a gift)
         public int Engines;                     // given with this many new engines (0: never)
+        public double WR = 1, WG = 1, WB = 1;   // the whole train wears it: the wagons' tint
+        public double SR = 0.93, SG = 0.93, SB = 0.93;     // the smoke
+        public double FR = 1.3, FG = 0.45, FB = 0.35;      // the pennant on the engine and the depot's bunting
+        public string From;                     // how one not sold is earned (shown in the list)
     }
 
     /// <summary>A card offered at a station: it lasts for the run.</summary>
@@ -94,7 +98,7 @@ namespace Ironclad.Core
         public string Icon;             // its picture on the card
     }
 
-    public static class Content
+    public static partial class Content
     {
         // ---- tuning ----
         public const double Step = 0.05;            // seconds of the fight per step
@@ -213,10 +217,17 @@ namespace Ironclad.Core
         public static readonly List<SkinDef> Skins = new List<SkinDef>
         {
             new SkinDef { Id = "", Name = "Iron Horse", Blurb = "The engine the line gave you: plain iron and a lot of rivets.", Model = "loco_b", R = 0.92, G = 0.86, B = 0.86 },
-            new SkinDef { Id = "charter", Name = "Charter Green", Blurb = "Painted for the line's new charter. Given with your first new engine.", Model = "loco_b", R = 0.62, G = 1.05, B = 0.66, Engines = 1 },
-            new SkinDef { Id = "belle", Name = "Prairie Belle", Blurb = "An older engine with a tall stack, kept bright by her crew.", Model = "loco", R = 1, G = 1, B = 1, Gems = 120 },
-            new SkinDef { Id = "brass", Name = "Brass Baron", Blurb = "Polished brass from the buffers to the bell. Taken from the Baron himself.", Model = "loco_b", R = 1.3, G = 1.02, B = 0.5, Gems = 200 },
-            new SkinDef { Id = "black", Name = "Black Diamond", Blurb = "A heavy coal hauler, black as the night line.", Model = "loco_c", R = 0.55, G = 0.55, B = 0.62, Gems = 300 },
+            new SkinDef { Id = "charter", Name = "Charter Green", Blurb = "Painted for the line's new charter. Given with your first new engine.", Model = "loco_b", R = 0.62, G = 1.05, B = 0.66, Engines = 1, WR = 0.85, WG = 1.05, WB = 0.85, FR = 0.4, FG = 1.2, FB = 0.5 },
+            new SkinDef { Id = "belle", Name = "Prairie Belle", Blurb = "An older engine with a tall stack, kept bright by her crew, and wagons to match.", Model = "loco", R = 1, G = 1, B = 1, Gems = 120, WR = 1.08, WG = 1.0, WB = 0.88, FR = 1.3, FG = 0.95, FB = 0.4 },
+            new SkinDef { Id = "brass", Name = "Brass Baron", Blurb = "Polished brass from the buffers to the bell, on every wagon. Taken from the Baron himself.", Model = "loco_b", R = 1.3, G = 1.02, B = 0.5, Gems = 200, WR = 1.2, WG = 1.02, WB = 0.7, FR = 1.4, FG = 1.1, FB = 0.4 },
+            new SkinDef { Id = "black", Name = "Black Diamond", Blurb = "A heavy coal hauler, black as the night line; the wagons in soot.", Model = "loco_c", R = 0.55, G = 0.55, B = 0.62, Gems = 300, WR = 0.62, WG = 0.62, WB = 0.7, SR = 0.42, SG = 0.42, SB = 0.45, FR = 0.3, FG = 0.3, FB = 0.35 },
+            new SkinDef { Id = "frontier", Name = "Frontier Red", Blurb = "Barn red from end to end, with cream trim.", Model = "loco_b", R = 1.25, G = 0.55, B = 0.45, Gems = 250, WR = 1.2, WG = 0.72, WB = 0.62, FR = 1.4, FG = 1.3, FB = 1.1 },
+            new SkinDef { Id = "midnight", Name = "Midnight Express", Blurb = "Deep blue and silver, with pale blue steam.", Model = "loco_c", R = 0.5, G = 0.62, B = 1.15, Gems = 400, WR = 0.72, WG = 0.82, WB = 1.15, SR = 0.78, SG = 0.86, SB = 1.0, FR = 0.6, FG = 0.8, FB = 1.4 },
+            new SkinDef { Id = "gunmetal", Name = "Gunmetal", Blurb = "Blued steel, for a gunner who has fired a great many shells.", Model = "loco_c", R = 0.7, G = 0.75, B = 0.85, WR = 0.75, WG = 0.8, WB = 0.9, FR = 0.9, FG = 0.9, FB = 1.0, From = "MASTERY" },
+            new SkinDef { Id = "racer", Name = "Yellow Racer", Blurb = "Light, bright and quick-looking: for those who travel light.", Model = "loco", R = 1.35, G = 1.15, B = 0.4, WR = 1.25, WG = 1.12, WB = 0.6, FR = 1.4, FG = 0.5, FB = 0.3, From = "MASTERY" },
+            new SkinDef { Id = "baron", Name = "Baron's Bane", Blurb = "Black and gold, painted with the Baron's own colours turned against him.", Model = "loco_b", R = 0.5, G = 0.45, B = 0.45, WR = 0.6, WG = 0.55, WB = 0.5, SR = 0.55, SG = 0.5, SB = 0.5, FR = 1.4, FG = 1.1, FB = 0.3, From = "MASTERY" },
+            new SkinDef { Id = "trial", Name = "Proving Ground", Blurb = "Test-track white and red. Mile 40 in a weekly trial.", Model = "loco_b", R = 1.3, G = 1.25, B = 1.2, WR = 1.25, WG = 1.2, WB = 1.15, FR = 1.4, FG = 0.35, FB = 0.3, From = "WEEKLY TRIAL" },
+            new SkinDef { Id = "pathfinder", Name = "Pathfinder", Blurb = "Expedition green and copper. The last step of an expedition.", Model = "loco", R = 0.55, G = 0.9, B = 0.75, WR = 0.75, WG = 1.0, WB = 0.85, FR = 1.3, FG = 0.75, FB = 0.4, From = "EXPEDITION" },
         };
         public static SkinDef Skin(string id) { return Skins.Find(k => k.Id == (id ?? "")); }
 

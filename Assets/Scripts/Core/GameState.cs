@@ -89,7 +89,8 @@ namespace Ironclad.Core
         public string bossKind = "";        // the boss of the station leg being rolled
         // A choice the line offers between stations (see Content.Choices).
         public string choice = ""; public double choiceIn;
-        public string boostKind = ""; public int boostMiles;      // what a choice taken does to the next miles
+        public string boostKind = ""; public int boostMiles;
+        public bool trial;                  // the week's trial: its own train, no steel, no workshop      // what a choice taken does to the next miles
         public double surge;                // seconds of Steam Recharge's faster fire left
     }
 
@@ -143,6 +144,11 @@ namespace Ironclad.Core
         public List<Formation> formations = new List<Formation>();
         public List<string> celebrated = new List<string>();   // unlocks already shown on the UNLOCKED card
         public bool celebrateInit;
+        // Titles and long goals, the weekly trial, the expedition track.
+        public List<string> titles = new List<string>(); public string title = "";
+        public List<string> mastered = new List<string>();
+        public long trialWeek = -1; public int trialBest, trialBestEver, trialRuns;
+        public long expSeason = -1; public double expPoints; public List<int> expClaimed = new List<int>();
 
         // The shop.
         public List<string> owned = new List<string>();
@@ -178,6 +184,10 @@ namespace Ironclad.Core
             while (formations.Count < 3) formations.Add(new Formation());
             foreach (var f in formations) if (f.cars == null) f.cars = new List<string>();
             if (celebrated == null) celebrated = new List<string>();
+            if (titles == null) titles = new List<string>();
+            if (title == null || (title.Length > 0 && !titles.Contains(title))) title = "";
+            if (mastered == null) mastered = new List<string>();
+            if (expClaimed == null) expClaimed = new List<int>();
             if (cohort < 0 || cohort > 99) cohort = (int)((uint)Guid.NewGuid().GetHashCode() % 100);
             if (skin == null || (skin.Length > 0 && Content.Skin(skin) == null)) skin = "";
             if (lifetimeAtRenew > lifetime) lifetimeAtRenew = lifetime;

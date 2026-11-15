@@ -254,7 +254,8 @@ namespace Ironclad.Game
             _mileFill.color = boss != null ? Ui.Coral : Ui.Gold;
             bool rollingFace = _shown == Face.Run;
             if (_lineText.gameObject.activeSelf != rollingFace) { _lineText.gameObject.SetActive(rollingFace); _mileFill.transform.parent.gameObject.SetActive(rollingFace); }
-            _lineText.text = s.Route.Name + (s.BossMile ? "  ·  <color=#FFB347>" + Content.Enemy(Sim.BossKind(r.mile)).Name.ToUpperInvariant() + "</color>" : "  ·  station at mile " + ((r.mile - 1) / Content.StationEvery + 1) * Content.StationEvery);
+            if (r.trial) _lineText.text = "<color=#D9B8FF>WEEKLY TRIAL</color>  ·  " + s.TrialNow.Name + (s.TrialBest > 0 ? "  ·  best this week " + s.TrialBest : "") + (s.BossMile ? "  ·  <color=#FFB347>" + Content.Enemy(Sim.BossKind(r.mile)).Name.ToUpperInvariant() + "</color>" : "");
+            else _lineText.text = s.Route.Name + (s.BossMile ? "  ·  <color=#FFB347>" + Content.Enemy(Sim.BossKind(r.mile)).Name.ToUpperInvariant() + "</color>" : "  ·  station at mile " + ((r.mile - 1) / Content.StationEvery + 1) * Content.StationEvery);
             if (_choiceTime != null && r.choice.Length > 0)
             {
                 _choiceTime.text = Mathf.CeilToInt((float)Math.Max(0, r.choiceIn)) + "";
@@ -479,21 +480,38 @@ namespace Ironclad.Game
             var dim = Ui.Img("Dim", _face, new Color(0.14f, 0.07f, 0.04f, 0.5f)); dim.raycastTarget = true; dim.rectTransform.Fill();
             var panel = Ui.ArtImg("Over", _face, "panel", Color.white, 60); panel.raycastTarget = true;
             var p = panel.rectTransform; p.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -10), new Vector2(1040, 900));
-            if (_overShownFor != r.time) { _overShownFor = r.time; panel.gameObject.AddComponent<PopIn>(); GameCenter.ReportRun(r.mile); }
+            if (_overShownFor != r.time) { _overShownFor = r.time; panel.gameObject.AddComponent<PopIn>(); if (!r.trial) GameCenter.ReportRun(r.mile); }
             var ribbon = Ui.Ribbon("R", p, Ui.Coral); ribbon.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 0.5f), new Vector2(0, -8), new Vector2(700, 116));
             var t = Ui.Label("T", ribbon.transform, "END OF THE LINE", 50, Color.white); t.rectTransform.Fill(); t.rectTransform.offsetMin = new Vector2(40, 24); t.rectTransform.offsetMax = new Vector2(-40, 0); t.Stroke(2.5f);
             bool best = r.mile - 1 >= s.State.best[r.route] && r.mile > 1;
             Ui.Label("M", p, "MILE " + r.mile, 88, Ui.Ink).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -74), new Vector2(900, 100));
-            Ui.Label("L", p, s.Route.Name + (best ? "  ·  <color=#C8501E>your furthest yet</color>" : "  ·  best " + s.State.best[r.route]), 30, Ui.Dim, TextAnchor.MiddleCenter, false).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -172), new Vector2(900, 38));
+            if (r.trial) Ui.Label("L", p, "<color=#7A3FB0>WEEKLY TRIAL</color>  ·  " + s.TrialNow.Name, 30, Ui.Dim, TextAnchor.MiddleCenter, false).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -172), new Vector2(900, 38));
+            else Ui.Label("L", p, s.Route.Name + (best ? "  ·  <color=#C8501E>your furthest yet</color>" : "  ·  best " + s.State.best[r.route]), 30, Ui.Dim, TextAnchor.MiddleCenter, false).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -172), new Vector2(900, 38));
             // How close it came: the thing that makes the next run feel winnable.
             var miss = s.NearMiss;
             if (miss != null) { var ml = Ui.Label("Miss", p, miss, 34, Ui.Coral); ml.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -212), new Vector2(940, 44)); }
             Ui.Label("K", p, Format.Money(r.kills) + " raiders turned back  ·  " + r.cards.Count + (r.cards.Count == 1 ? " card" : " cards") + (r.seals > 0 ? "  ·  <color=#7A3FB0>+" + r.seals + (r.seals == 1 ? " seal" : " seals") + "</color>" : ""), 26, Ui.Dim, TextAnchor.MiddleCenter, false).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, miss != null ? -254 : -216), new Vector2(900, 36));
             var steel = Ui.ArtImg("Steel", p, "well", Color.white, 30); steel.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -296), new Vector2(620, 104));
-            Ui.Label("S", steel.transform, "+" + Format.Money(s.RunSteel) + " steel" + (r.doubled ? "  (doubled)" : ""), 52, Ui.Ink).rectTransform.Fill(8);
+            if (r.trial)
+            {
+                int reached = r.mile - 1, wk = Mathf.Max(s.TrialBest, reached);
+                var tl = Ui.Label("S", steel.transform, "Reached mile " + reached + "  <size=30>best this week " + wk + "</size>", 44, Ui.Ink); tl.rectTransform.Fill(8); tl.resizeTextForBestFit = true; tl.resizeTextMinSize = 24; tl.resizeTextMaxSize = 44;
+                // The next mark this week, and how far off it is.
+                int mark = -1; for (int i = 0; i < Sim.TrialMarks.Length; i++) if (wk < Sim.TrialMarks[i]) { mark = i; break; }
+                string prize = mark < 0 ? null : Sim.TrialTitles[mark] != null ? "the title " + Sim.TrialTitles[mark] : "the Proving Ground theme";
+                Ui.Label("N", p, mark < 0 ? "<color=#2E7D32>Every mark this week is yours</color>" : "Next mark: mile " + Sim.TrialMarks[mark] + " for " + prize, 28, Ui.Dim, TextAnchor.MiddleCenter, false).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -410), new Vector2(940, 38));
+                if (mark >= 0)
+                {
+                    Image tf; var tbar = Bar(p, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -458), new Vector2(600, 42), new Color(0.55f, 0.35f, 0.75f), out tf);
+                    tf.rectTransform.anchorMax = new Vector2(Mathf.Clamp((float)wk / Sim.TrialMarks[mark], 0.03f, 1), 1);
+                    var tt = Ui.Label("T", tbar.parent, "mile " + wk + " of " + Sim.TrialMarks[mark], 30, Color.white); tt.rectTransform.Fill(); tt.Stroke(2f);
+                }
+            }
+            else Ui.Label("S", steel.transform, "+" + Format.Money(s.RunSteel) + " steel" + (r.doubled ? "  (doubled)" : ""), 52, Ui.Ink).rectTransform.Fill(8);
             // What the next run can open, and how far there is to go.
             var unbuilt = s.Unbuilt; var next = s.NextUnlock;
-            if (unbuilt.Count > 0) Ui.Label("N", p, "<color=#2E7D32>Unlocked: the " + unbuilt[0].Name + ". Build it in TRAIN</color>", 28, Ui.Dim, TextAnchor.MiddleCenter, false).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -414), new Vector2(940, 40));
+            if (r.trial) { }
+            else if (unbuilt.Count > 0) Ui.Label("N", p, "<color=#2E7D32>Unlocked: the " + unbuilt[0].Name + ". Build it in TRAIN</color>", 28, Ui.Dim, TextAnchor.MiddleCenter, false).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -414), new Vector2(940, 40));
             else if (next != null)
             {
                 Ui.Label("N", p, "Next unlock at mile " + next.Mile + " " + next.Where + ": " + next.Name, 28, Ui.Dim, TextAnchor.MiddleCenter, false).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -410), new Vector2(940, 38));
@@ -524,17 +542,19 @@ namespace Ironclad.Game
                 var g = Ui.Button("ReviveGems", p, "BACK ON THE RAILS\n<size=24>" + Sim.ReviveGems + " gems</size>", gems ? Ui.Grape : Ui.Off, gems ? (Action)(() => { if (S.Revive(true)) { Sfx.Play("star", 0.8f); GameRoot.Instance.Save(); } }) : null, 32);
                 ((RectTransform)g.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(ad ? 250 : 0, y), new Vector2(470, 120));
             }
-            if (AdReady(AdReward.DoubleRun))
+            bool dbl = !r.trial && AdReady(AdReward.DoubleRun);
+            if (dbl)
             {
                 var d = Ui.Button("Double", p, AdLabel("DOUBLE THE STEEL"), Ui.Gold, () => WatchAd(AdReward.DoubleRun, () => { Sfx.Play("coin", 0.9f); Haptics.Success(); }), 32);
                 ((RectTransform)d.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-250, 44), new Vector2(470, 120));
             }
             var c = Ui.Button("Collect", p, "COLLECT", Ui.Green, () =>
             {
-                int mile = S.Run.mile;
+                int mile = S.Run.mile; bool trial = S.Run.trial;
+                if (trial) Telemetry.Log("Trial.finished", ("Trial.name", S.TrialNow.Name), ("Trial.mile", (mile - 1).ToString()));
                 if (S.CloseRun()) { Sfx.Play("claim", 0.9f); Haptics.Success(); GameRoot.Instance.Save(true); if (mile >= 20) RateSoon(); AfterRun(); }
             }, 44);
-            ((RectTransform)c.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(AdReady(AdReward.DoubleRun) ? 250 : 0, 44), new Vector2(470, 120));
+            ((RectTransform)c.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(dbl ? 250 : 0, 44), new Vector2(470, 120));
             _collectLabel = c.GetComponentInChildren<Text>(); _overAuto = AutoCollectAfter;
         }
     }

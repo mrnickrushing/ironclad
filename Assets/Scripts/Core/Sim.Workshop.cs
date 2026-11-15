@@ -6,8 +6,8 @@ namespace Ironclad.Core
     /// <summary>What is kept between runs: steel, the workshop's upgrades, the wagons built and the order they are coupled in.</summary>
     public sealed partial class Sim
     {
-        public int UpgradeLevel(string id) { var u = State.upgrades.Find(x => x.id == id); return u == null ? 0 : u.level; }
-        public int CarLevel(string id) { var c = State.cars.Find(x => x.id == id); return c == null ? 0 : c.level; }
+        public int UpgradeLevel(string id) { if (Trial) return 0; var u = State.upgrades.Find(x => x.id == id); return u == null ? 0 : u.level; }
+        public int CarLevel(string id) { if (Trial) return id == "engine" ? 1 : TrialNow.Level; var c = State.cars.Find(x => x.id == id); return c == null ? 0 : c.level; }
         public bool Built(string id) { return CarLevel(id) > 0; }
 
         public double UpgradeCost(string id)
@@ -33,7 +33,7 @@ namespace Ironclad.Core
 
         // ---- what the Baron's seals buy ----
 
-        public int PerkLevel(string id) { var u = State.perks.Find(x => x.id == id); return u == null ? 0 : u.level; }
+        public int PerkLevel(string id) { if (Trial) return 0; var u = State.perks.Find(x => x.id == id); return u == null ? 0 : u.level; }
         public bool PerkMaxed(string id) { return PerkLevel(id) >= Content.Perk(id).Max; }
         public int PerkCost(string id) { return Content.Perk(id).Cost * (PerkLevel(id) + 1); }
 
@@ -113,6 +113,7 @@ namespace Ironclad.Core
         /// <summary>Couples a built wagon on at the back. The same kind can ride more than once.</summary>
         public bool Couple(string id)
         {
+            if (Trial) return false;
             if (!CanCouple || id == "engine" || !Built(id) || State.train.Count >= Slots) return false;
             State.train.Add(id);
             SyncRunTrain();
@@ -123,6 +124,7 @@ namespace Ironclad.Core
         /// <summary>Takes the wagon in this place off (0 is the one behind the engine). One always stays.</summary>
         public bool Uncouple(int place)
         {
+            if (Trial) return false;
             if (!CanCouple || place < 0 || place >= State.train.Count || State.train.Count <= 1) return false;
             State.train.RemoveAt(place);
             if (State.run != null) State.run.cars.RemoveAt(place + 1);
