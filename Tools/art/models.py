@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Converts the free kit models the game uses into Assets/Resources/Models/<id>.fbx (vertex-coloured, one unit on
 their longest side, or one unit tall): python3 Tools/art/models.py [id...]   (fetch kits with kenney.py first:
-watercraft-kit car-kit city-kit-industrial city-kit-roads mini-characters pirate-kit survival-kit nature-kit)"""
+watercraft-kit car-kit city-kit-industrial city-kit-roads pirate-kit survival-kit nature-kit)"""
 import os, subprocess, sys
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 F = os.path.join(ROOT, "art-src", "free")
 G = "/Models/GLB format/"
-TRN, TD, MINI, PIR, SUR, NAT = "train-kit" + G, "tower-defense-kit" + G, "mini-characters" + G, "pirate-kit" + G, "survival-kit" + G, "nature-kit/Models/GLTF format/"
+TRN, TD, PIR, SUR, NAT = "train-kit" + G, "tower-defense-kit" + G, "pirate-kit" + G, "survival-kit" + G, "nature-kit/Models/GLTF format/"
 MODELS = {  # id: (source, "size" | "height"[, pose, extra args...])
     "loco": (TRN + "train-locomotive-a.glb", "size"), "loco_b": (TRN + "train-locomotive-b.glb", "size"), "loco_c": (TRN + "train-locomotive-c.glb", "size"),
     "flatbed": (TRN + "train-carriage-flatbed.glb", "size"), "flatbed_wood": (TRN + "train-carriage-flatbed-wood.glb", "size"),
@@ -24,15 +24,22 @@ MODELS = {  # id: (source, "size" | "height"[, pose, extra args...])
     "pole": ("city-kit-roads" + G + "electricity-pole-single.glb", "height"),
     "cliff": (NAT + "cliff_block_rock.glb", "size"), "fence": (NAT + "fence_simple.glb", "size"), "stump": (NAT + "stump_old.glb", "size"), "log_stack": (NAT + "log_stackLarge.glb", "size"),
 }
-# Raiders: kit people, each frozen in four strides and standing.
-for i, k in enumerate(["character-male-a", "character-male-b", "character-male-c", "character-male-d", "character-male-e", "character-male-f"]):
-    for tag, pose in (("w0", "walk:f0"), ("w1", "walk:f0.25"), ("w2", "walk:f0.5"), ("w3", "walk:f0.75"), ("idle", "idle:f0")):
-        MODELS["man_%d_%s" % (i, tag)] = (MINI + k + ".glb", "height", pose)
+# Raiders: mastjie's Cowboy (CC0), posed by Tools/blender/autorig.py and dressed in six outfits (a bandana over each
+# face): standing, four strides, riding, on a wagon seat, at a handcar's bar; the sledge men stride with a hammer.
+for i in range(6):
+    for tag, pose in (("idle", "idle"), ("w0", "walk0"), ("w1", "walk1"), ("w2", "walk2"), ("w3", "walk3"), ("ride", "ride"), ("drive", "drive"), ("pump", "pump")):
+        MODELS["man_%d_%s" % (i, tag)] = ("props/cowboy.glb", "height", None, "--autopose", pose, "--outfit", str(i), "--maxfaces", "1800")
+for i in (1, 3):
+    for f in range(4):
+        MODELS["man_%d_c%d" % (i, f)] = ("props/cowboy.glb", "height", None, "--autopose", "carry%d" % f, "--outfit", str(i), "--maxfaces", "1800")
+MODELS["carriage"] = ("props/carriage.glb", "size", None, "--swap", "0.9,0.05,0.03=0.2,0.085,0.04;0.83,0.89,0.87=0.035,0.028,0.022")   # bay horses, dark manes
+MODELS["guard_aim"] = ("props/cowboy.glb", "height", None, "--autopose", "aim", "--outfit", "6", "--maxfaces", "1800")    # the rifle wagon's crew
+MODELS["sledgehammer"] = (SUR + "tool-hammer.glb", "height")
 # Single models from poly.pizza (CC0 or CC BY, see art-src/free/props/manifest.json), fetched by props.py.
 P = "props/"
-for mid, mode in (("horse_f", "size"), ("horse_e", "size"), ("west_cart", "size"), ("wagon_c", "size"), ("carriage", "size"), ("cart", "size"), ("cowboy", "height"),
+for mid, mode in (("horse_f", "size"), ("horse_e", "size"), ("west_cart", "size"), ("wagon_c", "size"), ("carriage", "size"), ("cart", "size"),
                   ("saloon", "size"), ("water_tower_c", "height"), ("windmill", "height"), ("dynamite", "height"), ("gatling", "size"), ("big_cannon", "size"), ("minecart", "size")):
-    MODELS[mid] = (P + mid + ".glb", mode)
+    MODELS.setdefault(mid, (P + mid + ".glb", mode))
 out = os.path.join(ROOT, "Assets", "Resources", "Models")
 os.makedirs(out, exist_ok=True)
 for mid in (sys.argv[1:] or list(MODELS)):

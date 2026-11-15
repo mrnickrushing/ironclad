@@ -353,7 +353,7 @@ namespace Ironclad.Game
                 case "rifle":
                     v.Body = Models.Along("boxcar", v.Root, L, false, new Color(1.05f, 0.92f, 0.8f));
                     v.Gun = new GameObject("Gun").transform; v.Gun.SetParent(v.Root, false); v.Gun.localPosition = new Vector3(0, 2.3f, 0);
-                    for (int k = -1; k <= 1; k += 2) { var m = Models.Tall("cowboy", v.Gun, 1.7f); m.localPosition = new Vector3(0, 0, k * 0.55f); m.localRotation = Quaternion.Euler(0, 90, 0); }
+                    for (int k = -1; k <= 1; k += 2) { var m = Figure("guard_aim", v.Gun, 1.7f); m.localPosition = new Vector3(0, 0, k * 0.55f); m.localRotation = Quaternion.Euler(0, 90, 0); }
                     v.Muzzle = new Vector3(0, 3.6f, 0);
                     break;
                 case "supply": v.Body = Models.Along("woodcar", v.Root, L); for (int k = -1; k <= 1; k++) { var c = Models.Tall(k == 0 ? "chest" : "crate", v.Root, 0.9f); c.localPosition = new Vector3(k * 1.3f, 2.0f, 0); } break;
@@ -366,14 +366,38 @@ namespace Ironclad.Game
 
         // ---- raiders ----
 
-        static readonly string[] Men = { "man_0", "man_1", "man_2", "man_3", "man_4", "man_5" };
-        static Mesh[] _strides(string man) { var m = new Mesh[4]; for (int i = 0; i < 4; i++) m[i] = Resources.Load<Mesh>("Models/" + man + "_w" + i); return m; }
+        // The raiders are one cowboy in six outfits (Tools/blender/autorig.py), each frozen in its poses: standing,
+        // four strides, riding, on a wagon seat, at a handcar's bar; the sledge men (outfits 1 and 3) carry a hammer.
+        // Every pose of a figure shares its standing feet as the origin and its standing height as one unit.
+        const float Hip = 0.52f;
+        static readonly Vector3 SledgeHand = new Vector3(-0.2f, 0.84f, 0.06f);     // the hand up at his shoulder in the carry pose       // where he sits, as a share of his standing height
+        static Mesh _mesh(string id) { return Resources.Load<Mesh>("Models/" + id); }
 
-        Transform Man(Transform parent, int pick, float height, bool walks, List<Strider> striders, Color? tint = null)
+        static Transform Figure(string id, Transform parent, float height)
         {
-            string man = Men[Mathf.Abs(pick) % Men.Length];
-            var t = Models.Tall(man + "_idle", parent, height, tint);
-            if (walks) { var s = t.gameObject.AddComponent<Strider>(); s.Strides = _strides(man); s.Still = Resources.Load<Mesh>("Models/" + man + "_idle"); striders.Add(s); }
+            var holder = new GameObject(id).transform; holder.SetParent(parent, false);
+            var go = new GameObject("Mesh"); go.transform.SetParent(holder, false); go.transform.localScale = Vector3.one * height;
+            go.AddComponent<MeshFilter>().sharedMesh = _mesh(id);
+            go.AddComponent<MeshRenderer>().sharedMaterial = Materials.Kit;
+            return holder;
+        }
+
+        /// <summary>A raider in a pose ("ride", "drive", "pump"), or walking ("walk"; "carry" for the sledge men).</summary>
+        Transform Man(Transform parent, int pick, float height, string pose, List<Strider> striders)
+        {
+            int k = Mathf.Abs(pick) % 6;
+            if (pose == "carry") k = k % 2 == 0 ? 1 : 3;
+            string man = "man_" + k + "_";
+            bool walks = pose == "walk" || pose == "carry";
+            var t = Figure(man + (pose == "walk" ? "idle" : pose == "carry" ? "c0" : pose), parent, height);
+            if (walks)
+            {
+                var st = t.gameObject.AddComponent<Strider>();
+                st.Strides = new Mesh[4];
+                for (int i = 0; i < 4; i++) st.Strides[i] = _mesh(man + (pose == "carry" ? "c" : "w") + i);
+                st.Still = _mesh(man + (pose == "carry" ? "c0" : "idle"));
+                striders.Add(st);
+            }
             return t;
         }
 
@@ -387,35 +411,55 @@ namespace Ironclad.Game
             {
                 case "outrider":
                     Models.Along("horse_f", body, 2.7f, false, HorseTint(e.id)).localRotation = Quaternion.Euler(0, -90, 0);
-                    Man(body, e.id, 1.5f, false, striders).localPosition = new Vector3(0, 1.25f, -0.1f);
+                    Man(body, e.id, 1.5f, "ride", striders).localPosition = new Vector3(0, 1.32f - Hip * 1.5f, -0.15f);
                     v.Height = 3.2f; v.Bob = 1;
                     break;
-                case "sledge": Man(body, e.id, 2.9f, true, striders, new Color(0.8f, 0.7f, 0.7f)); v.Height = 3.4f; break;
+                case "sledge":
+                    {
+                        // A big man with a sledgehammer on his shoulder: slow, and he hits hard.
+                        var m = Man(body, e.id, 2.0f, "carry", striders);
+                        var hammer = Models.Tall("sledgehammer", m, 1.0f);
+                        hammer.localPosition = SledgeHand * 2.0f + new Vector3(0, -0.3f, 0.15f); hammer.localRotation = Quaternion.Euler(-38, 0, 0);     // over the shoulder, the head behind
+                        v.Height = 2.6f;
+                    }
+                    break;
                 case "powder":
-                    Man(body, e.id, 1.5f, true, striders, new Color(1.2f, 0.8f, 0.7f));
-                    Models.Tall("dynamite", body, 0.9f).localPosition = new Vector3(0, 1.0f, -0.35f);
+                    Man(body, e.id, 1.5f, "walk", striders);
+                    Models.Tall("dynamite", body, 0.7f).localPosition = new Vector3(0, 0.85f, -0.25f);
                     v.Height = 2.2f;
                     break;
                 case "gunwagon":
                     Models.Along("west_cart", body, 3.4f).localRotation = Quaternion.Euler(0, -90, 0);
                     Models.Along("horse_f", body, 2.6f, false, HorseTint(e.id)).localPosition = new Vector3(0, 0, 2.9f); body.GetChild(1).localRotation = Quaternion.Euler(0, -90, 0);
-                    Man(body, e.id, 1.5f, false, striders).localPosition = new Vector3(0, 1.0f, 0);
+                    Man(body, e.id, 1.5f, "drive", striders).localPosition = new Vector3(0, 1.05f - Hip * 1.5f, 1.0f);
                     v.Height = 3.2f; v.Bob = 0.4f;
                     break;
                 case "handcar":
-                    Models.Along("minecart", body, 2.6f, false, new Color(1.5f, 1.4f, 1.3f)).localRotation = Quaternion.Euler(0, -90, 0);
-                    Man(body, e.id, 1.5f, false, striders).localPosition = new Vector3(0, 1.0f, 0.3f);
-                    Man(body, e.id + 1, 1.5f, false, striders).localPosition = new Vector3(0, 1.0f, -0.4f);
+                    {
+                        // Two men at the bar of a flatbed handcar, facing each other across it.
+                        Models.Along("handcar_base", body, 3.0f, false, new Color(0.9f, 0.8f, 0.7f)).localRotation = Quaternion.Euler(0, -90, 0);
+                        float deck = 0.62f;
+                        var front = Man(body, e.id, 1.5f, "pump", striders); front.localPosition = new Vector3(0, deck, 0.8f); front.localRotation = Quaternion.Euler(0, 180, 0);
+                        Man(body, e.id + 1, 1.5f, "pump", striders).localPosition = new Vector3(0, deck, -0.8f);
+                        var lever = Models.Built("lever", body, mb =>
+                        {
+                            var iron = new Color(0.2f, 0.19f, 0.2f);
+                            mb.Cylinder(new Vector3(0, deck, 0), new Vector3(0, deck + 0.95f, 0), 0.07f, 8, new Color(0.3f, 0.22f, 0.15f));
+                            mb.Cylinder(new Vector3(0, deck + 0.98f, -0.42f), new Vector3(0, deck + 0.98f, 0.42f), 0.045f, 6, iron);
+                        });
+                    }
                     v.Height = 3f;
                     break;
                 case "warwagon":
                     Models.Along("wagon_c", body, 4.6f, false, new Color(0.62f, 0.55f, 0.55f)).localRotation = Quaternion.Euler(0, -90, 0);
-                    Models.Along("horse_f", body, 2.8f, false, new Color(0.55f, 0.5f, 0.5f)).localPosition = new Vector3(0, 0, 3.8f); body.GetChild(1).localRotation = Quaternion.Euler(0, -90, 0);
+                    Models.Along("horse_f", body, 3.3f, false, new Color(0.55f, 0.5f, 0.5f)).localPosition = new Vector3(0, 0, 4.1f); body.GetChild(1).localRotation = Quaternion.Euler(0, -90, 0);
+                    Man(body, e.id, 1.5f, "drive", striders).localPosition = new Vector3(0, 2.45f - Hip * 1.5f, 2.0f);
                     v.Height = 4.2f; v.Bob = 0.3f;
                     break;
                 default:    // the Baron's carriage
-                    Models.Along("carriage", body, 8f, false, new Color(0.75f, 0.5f, 0.55f)).localRotation = Quaternion.Euler(0, -90, 0);
+                    Models.Along("carriage", body, 8f, false, new Color(0.85f, 0.72f, 0.72f)).localRotation = Quaternion.Euler(0, -90, 0);
                     Models.Tall("flag", body, 5f, new Color(1.3f, 0.4f, 0.4f)).localPosition = new Vector3(0, 3.6f, -1.5f);
+                    Man(body, e.id, 1.6f, "drive", striders).localPosition = new Vector3(0, 2.0f - Hip * 1.6f, -0.6f);     // the coachman
                     v.Height = 7.5f; v.Bob = 0.2f;
                     break;
             }
@@ -424,7 +468,7 @@ namespace Ironclad.Game
             if (line > 0)
             {
                 var wear = LineWear[Mathf.Min(line, LineWear.Length - 1)];
-                foreach (var mr in body.GetComponentsInChildren<MeshRenderer>()) { var m = mr.sharedMaterial; var baseTint = m.HasProperty("_Tint") ? m.GetColor("_Tint") : Color.white; mr.sharedMaterial = Materials.KitTint(baseTint * wear, m.HasProperty("_HueShift") ? m.GetFloat("_HueShift") : 0); }
+                foreach (var mr in body.GetComponentsInChildren<MeshRenderer>()) { if (mr.transform.parent.name.StartsWith("man_")) continue; var m = mr.sharedMaterial; var baseTint = m.HasProperty("_Tint") ? m.GetColor("_Tint") : Color.white; mr.sharedMaterial = Materials.KitTint(baseTint * wear, m.HasProperty("_HueShift") ? m.GetFloat("_HueShift") : 0); }
             }
             bool big = e.kind == "boss" || e.kind == "warwagon";
             body.localScale = Vector3.one * (big ? 1.15f : 1.5f); v.Height *= big ? 1.15f : 1.5f; v.Body = body; v.Size = big ? 1.15f : 1.5f;

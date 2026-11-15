@@ -5,9 +5,9 @@ in the game (MORE, Credits).
 
 ## Models
 - **Kenney** (kenney.nl, CC0): Train Kit (locomotive, wagons, rails), Tower Defense Kit (turrets), City Kit Roads (telegraph poles), Pirate Kit (cannon,
-  barrels, crates, flag), Nature Kit (trees, rocks, cactus, tent), Survival Kit, Mini Characters (the raiders).
+  barrels, crates, flag), Nature Kit (trees, rocks, cactus, tent), Survival Kit (the sledgehammer).
 - **Quaternius** (CC0, poly.pizza): Cannon, Cart, Horse.
-- **mastjie** (CC0, poly.pizza): Cowboy.
+- **mastjie** (CC0, poly.pizza): Cowboy (every raider and rifleman: posed and dressed by `Tools/blender/autorig.py`).
 - **Kay Lousberg** (CC0, poly.pizza): Watertower.
 - **jeremy** (CC BY 3.0, poly.pizza): Horse (galloping).
 - **Zsky** (CC BY 3.0, poly.pizza): Gatling Gun Turret.

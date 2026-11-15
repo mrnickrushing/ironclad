@@ -38,6 +38,15 @@ meshes = [o for o in bpy.context.scene.objects if o.type == "MESH"]
 arm = next((o for o in bpy.context.scene.objects if o.type == "ARMATURE"), None)
 
 
+# --autopose NAME: a character without a skeleton is posed by autorig.py (riding, driving, a stride...), sized by its
+# standing height with its standing feet as the origin, so every pose of one figure lines up.
+autopose = arg("--autopose", None, str)
+rest = None
+if autopose and arm is None:
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import autorig
+    rest = autorig.pose(meshes, autopose)
+
 # --pose action:frame  freezes a rigged character in one frame of one of its clips (a walking stride, sitting), so
 # crowds can be drawn as plain meshes and animated by swapping a few of them.
 pose = arg("--pose", None, str)
@@ -61,13 +70,19 @@ if pose and arm is not None:
                 if mod.type == "ARMATURE":
                     bpy.ops.object.modifier_apply(modifier=mod.name)
 maxfaces = arg("--maxfaces", 0.0)
-if maxfaces:
+
+
+def slim():
     total = sum(len(o.data.polygons) for o in meshes)
-    if total > maxfaces:
+    if maxfaces and total > maxfaces:
         for o in meshes:
             bpy.context.view_layer.objects.active = o
             m = o.modifiers.new("slim", "DECIMATE"); m.ratio = maxfaces / total
             bpy.ops.object.modifier_apply(modifier=m.name)
+
+
+if rest is None:
+    slim()      # before the colours, which are sampled per corner; a posed figure is painted by its parts first
 
 
 def to_linear(c):
@@ -106,6 +121,14 @@ def sample(img, uv):
     w, h, px = cache[img.name]
     if not (uv[0] == uv[0] and uv[1] == uv[1]):  # NaN UVs on a few Kenney faces
         uv = (0.0, 0.0)
+    if w <= 4 and h <= 4:
+        # A tiny texture (mastjie's people paint with a 2x2 one) is meant to be blended between its texels, as a renderer
+        # filters it: sample it the same way, or every colour in between collapses to one of four.
+        fx = min(w - 1.0, max(0.0, (uv[0] % 1.0) * w - 0.5)); fy = min(h - 1.0, max(0.0, (uv[1] % 1.0) * h - 0.5))
+        x0, y0 = int(fx), int(fy); x1, y1 = min(w - 1, x0 + 1), min(h - 1, y0 + 1); tx, ty = fx - x0, fy - y0
+        def at(x, y, c):
+            return px[(y * w + x) * 4 + c]
+        return tuple(to_linear((at(x0, y0, c) * (1 - tx) + at(x1, y0, c) * tx) * (1 - ty) + (at(x0, y1, c) * (1 - tx) + at(x1, y1, c) * tx) * ty) for c in range(3)) + (1,)
     x = min(w - 1, max(0, int((uv[0] % 1.0) * w)))
     y = min(h - 1, max(0, int((uv[1] % 1.0) * h)))
     i = (y * w + x) * 4
@@ -141,6 +164,23 @@ for o in meshes:
     for li, c in picks:
         col.data[li].color = c
     me.color_attributes.active_color = col
+# --swap r,g,b=r,g,b[;...]: repaints one of a model's colours (as baked, linear) with another (the carriage's red horses
+# become bays).
+if "--swap" in a:
+    pairs = [[tuple(float(x) for x in side.split(",")) for side in pair.split("=")] for pair in arg("--swap", "", str).split(";")]
+    for o in meshes:
+        for d in o.data.color_attributes["Col"].data:
+            for frm, to in pairs:
+                if sum((x - y) ** 2 for x, y in zip(d.color[:3], frm)) < 0.003:
+                    d.color = to + (1,)
+if "--colours" in a:
+    from collections import Counter
+    print("[colours]", Counter(tuple(round(x, 2) for x in d.color[:3]) for o in meshes for d in o.data.color_attributes["Col"].data).most_common(20))
+outfit = arg("--outfit", -1, int)
+if rest is not None and outfit >= 0:
+    autorig.recolour(meshes, outfit)
+if rest is not None:
+    slim()
 
 # --double: a model whose faces are wound to be seen from one side only (a clock's dial behind its rim) gets every
 # face twice, the copy turned over, so it shows from both.
@@ -157,6 +197,8 @@ bpy.context.view_layer.update()
 pts = [o.matrix_world @ Vector(c) for o in meshes for c in o.bound_box]
 mn = Vector((min(p.x for p in pts), min(p.y for p in pts), min(p.z for p in pts)))
 mx = Vector((max(p.x for p in pts), max(p.y for p in pts), max(p.z for p in pts)))
+if rest is not None:
+    mn, mx = rest
 dims = mx - mn
 k = 1.0
 if height:
