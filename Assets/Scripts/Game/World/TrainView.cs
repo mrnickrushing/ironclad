@@ -53,6 +53,9 @@ namespace Ironclad.Game
         {
             public Transform Root, Gun, Body; public Vector3 Muzzle; public float Flash, Hurt, GunYaw; public bool Out; public Renderer[] Rends; public float AimOffset; public Light Lamp;
             public float Lean;          // a knocked-out wagon sags to one side
+            public float Kick, Dip, Pulse, GunScale = 1;     // a cannon's recoil, a mortar's dip, the supply car's beat, a heavier gun
+            public Vector3 GunBase; public string Type;
+            public Transform Scorch1, Scorch2; public double LastPlate = -1;
         }
         readonly List<CarView> _cars = new List<CarView>();
 
@@ -61,7 +64,15 @@ namespace Ironclad.Game
             public Transform Root, Bar, Fill, Body; public Vector3 At; public float Bob, Seen, Punch, Size = 1, Lunge; public double LastCooldown; public EnemyState E; public float Height; public Strider[] Striders;
             public Quaternion Turn = Quaternion.identity;      // where it faces; a tumble is drawn over it
             public float Tumble, TumbleSide = 1;                // the whistle bowls it over: 1 .. 0 through the roll
+            public Transform Shadow, Threat, Shield; public float Foot = 3, HealAt;
         }
+
+        sealed class Tele { public Transform Ring, Fill; public float Life, Max, Size; public int Car; }
+        readonly List<Tele> _teles = new List<Tele>();
+
+        sealed class Landmark { public Transform T; public float X, Half; public bool River; public List<Vector3> Fires = new List<Vector3>(); }
+        readonly List<Landmark> _landmarks = new List<Landmark>();
+        int _landMile = -1;
         readonly Dictionary<int, FoeView> _foeViews = new Dictionary<int, FoeView>();
         readonly List<int> _gone = new List<int>();
 
@@ -84,13 +95,14 @@ namespace Ironclad.Game
             Fx.Init(_fx);
             _sim = S;
             _sim.Fired += OnFired; _sim.Fell += OnFell; _sim.Burst += OnBurst; _sim.Struck += OnStruck; _sim.Hit += OnHit; _sim.RunOver += OnRunOver; _sim.MileDone += OnMile;
+            _sim.Warning += OnWarning; _sim.Spoiled += OnSpoiled;
             BuildRails();
             Sync(true);
         }
 
         void OnDestroy()
         {
-            if (_sim != null) { _sim.Fired -= OnFired; _sim.Fell -= OnFell; _sim.Burst -= OnBurst; _sim.Struck -= OnStruck; _sim.Hit -= OnHit; _sim.RunOver -= OnRunOver; _sim.MileDone -= OnMile; }
+            if (_sim != null) { _sim.Fired -= OnFired; _sim.Fell -= OnFell; _sim.Burst -= OnBurst; _sim.Struck -= OnStruck; _sim.Hit -= OnHit; _sim.RunOver -= OnRunOver; _sim.MileDone -= OnMile; _sim.Warning -= OnWarning; _sim.Spoiled -= OnSpoiled; }
             if (Instance == this) Instance = null;
         }
 
@@ -102,6 +114,8 @@ namespace Ironclad.Game
             for (int i = _country.childCount - 1; i >= 0; i--) Destroy(_country.GetChild(i).gameObject);
             if (_ground != null) Destroy(_ground.gameObject);
             _props.Clear();
+            foreach (var l in _landmarks) if (l.T != null) Destroy(l.T.gameObject);
+            _landmarks.Clear();
             var t = Themes[theme];
             // The ground: a wide sheet whose colour wanders smoothly (a colour at every corner, no squares), the same
             // again every Span * 2 so it can roll past for ever. Along the line the grass gives way to a worn verge.
@@ -240,6 +254,9 @@ namespace Ironclad.Game
                 float x = Mathf.Repeat(c.X - _travel + Span, Span * 2) - Span;
                 if (x < -80 || x > 70) continue;      // only what the camera can see (it looks a little behind the engine)
                 if (station && c.Z > 3.5f && c.Z < 22 && Mathf.Abs(x - _stationX) < 26) continue;      // not through the platform or the saloon
+                bool under = false;
+                foreach (var l in _landmarks) if (Mathf.Abs(x - l.X) < l.Half && (l.River || c.Z > 6.5f)) { under = true; break; }
+                if (under) continue;      // nor through a landmark's buildings, or growing in its river
                 _coverBatch[n++] = world * Matrix4x4.TRS(new Vector3(x, 0, c.Z), c.Turn, Vector3.one * c.Size) * _coverPivot;
                 if (n == _coverBatch.Length)
                 {
@@ -290,6 +307,12 @@ namespace Ironclad.Game
             {
                 _bestX -= metres;
                 _bestPost.localPosition = new Vector3(_bestX, 0, BestZ);
+            }
+            for (int i = _landmarks.Count - 1; i >= 0; i--)
+            {
+                var l = _landmarks[i];
+                l.X -= metres; l.T.localPosition = new Vector3(l.X, 0, 0);
+                if (l.X < -Span - 40) { Destroy(l.T.gameObject); _landmarks.RemoveAt(i); }
             }
             if (_station != null)
             {
@@ -354,6 +377,82 @@ namespace Ironclad.Game
             var flag = Models.Tall("flag", _station, 6); flag.localPosition = new Vector3(21, 0.9f, 6.5f);
         }
 
+        // ---- landmarks: something to pass on every leg ----
+
+        static readonly string[][] LandmarkKinds =
+        {
+            new[] { "town", "homestead" }, new[] { "mine", "canyon" }, new[] { "river", "fort" }, new[] { "homestead", "town" }, new[] { "fort", "canyon" },
+        };
+
+        /// <summary>A town, a burning homestead, a river crossing, a mine, canyon walls or a fort, built ahead of the
+        /// engine at miles 3 and 7 of every leg so each one is passed on the way to its station.</summary>
+        void BuildLandmark(string kind, float x)
+        {
+            var t = Themes[Mathf.Max(0, _theme)];
+            var root = new GameObject("Landmark_" + kind).transform; root.SetParent(transform, false); root.localPosition = new Vector3(x, 0, 0);
+            var l = new Landmark { T = root, X = x, Half = 18 };
+            System.Func<string, float, float, float, float, Color?, Transform> put = (id, h, px, pz, yaw, tint) =>
+            {
+                var m = id.StartsWith("rock") || id == "cliff" ? Models.Tall(id, root, h, tint ?? t.Rock) : Models.Tall(id, root, h, tint);
+                m.localPosition = new Vector3(px, 0, pz); m.localRotation = Quaternion.Euler(0, yaw, 0);
+                return m;
+            };
+            switch (kind)
+            {
+                case "town":
+                    put("saloon", 11, 0, 14f, 180, null); put("water_tower_c", 12, -13, 17f, 0, null); put("tent", 3.2f, 11, 12f, 200, null);
+                    put("windmill", 13, 22, 22f, 30, null); put("signpost", 3, -5, 7.5f, 15, null);
+                    for (int i = 0; i < 4; i++) put(i % 2 == 0 ? "barrel" : "crate", 1.1f, 4 + i * 1.4f, 20.5f + (i % 2) * 0.6f - 12, i * 40, null);
+                    for (int i = 0; i < 3; i++) put("fence", 1.4f, -11 + i * 2.6f, 7.5f, 0, null);
+                    l.Half = 26;
+                    break;
+                case "homestead":
+                    {
+                        var charred = new Color(0.42f, 0.36f, 0.34f);
+                        put("saloon", 8, 0, 12f, 170, charred); put("tent", 2.8f, -9, 10f, 120, charred);
+                        for (int i = 0; i < 4; i++) put("fence", 1.3f, -12 + i * 2.5f, 7f, 0, charred);
+                        put("log_stack", 1.6f, 8, 9f, 40, null); put("campfire", 0.8f, 6, 7.5f, 0, null);
+                        l.Fires.Add(new Vector3(-1.5f, 6.5f, 12)); l.Fires.Add(new Vector3(2.5f, 5.5f, 13)); l.Fires.Add(new Vector3(-9, 2.5f, 10));
+                        l.Half = 16;
+                    }
+                    break;
+                case "mine":
+                    put("tower", 10, 0, 15f, 0, new Color(0.75f, 0.62f, 0.5f)); put("cliff", 16, -4, 25f, 0, null); put("cliff", 12, 12, 23f, 70, null);
+                    put("minecart", 1.6f, 5, 9f, 90, null); put("minecart", 1.6f, 8, 9f, 90, null); put("log_stack", 2, -7, 10f, 20, null); put("crate", 1.1f, -3, 8.5f, 10, null);
+                    l.Half = 20;
+                    break;
+                case "canyon":
+                    for (int i = 0; i < 4; i++) put("cliff", 16 + (i % 2) * 6, -21 + i * 14, 27 + (i % 2) * 6 - 12, i * 50, null);
+                    l.Half = 30;
+                    break;
+                case "river":
+                    {
+                        var water = new Color(0.3f, 0.5f, 0.62f); var bank = Color.Lerp(t.Ground, t.Bed, 0.6f);
+                        var w = Models.Built("River", root, mb =>
+                        {
+                            mb.Matte();
+                            mb.Quad(new Vector3(-7.5f, 0.02f, -80), new Vector3(-7.5f, 0.02f, 80), new Vector3(7.5f, 0.02f, 80), new Vector3(7.5f, 0.02f, -80), bank);
+                            mb.Quad(new Vector3(-5.5f, 0.04f, -80), new Vector3(-5.5f, 0.04f, 80), new Vector3(5.5f, 0.04f, 80), new Vector3(5.5f, 0.04f, -80), water);
+                            // The trestle the line crosses on: posts and cross braces under the rails.
+                            var wood = new Color(0.45f, 0.33f, 0.24f);
+                            for (int i = -2; i <= 2; i++) foreach (float z in new[] { -2.1f, 2.1f }) mb.Box(new Vector3(i * 2.4f, 0.1f, z), new Vector3(0.3f, 0.6f, 0.3f), wood);
+                            mb.Box(new Vector3(0, 0.26f, -2.2f), new Vector3(12, 0.16f, 0.22f), wood); mb.Box(new Vector3(0, 0.26f, 2.2f), new Vector3(12, 0.16f, 0.22f), wood);
+                        });
+                        w.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                        for (int i = 0; i < 6; i++) put(i % 2 == 0 ? "grass" : "bush", 1.2f, (i % 2 == 0 ? -6.5f : 6.5f), 8 + i * 6 - 12, i * 60, t.Plant);
+                        l.Half = 8; l.River = true;
+                    }
+                    break;
+                default:    // a fort
+                    for (int i = 0; i < 10; i++) put("fence", 2.2f, -12 + i * 2.6f, 8f, 0, new Color(0.8f, 0.68f, 0.55f));
+                    put("tower", 9, -14, 10f, 0, null); put("tower", 9, 14, 10f, 0, null); put("flag", 7, 0, 14f, 0, null);
+                    put("tent", 3, 5, 14f, 200, null); put("catapult", 3, -5, 13f, 160, null);
+                    l.Half = 20;
+                    break;
+            }
+            _landmarks.Add(l);
+        }
+
         // ---- the train ----
 
         static readonly Color Iron = new Color(0.7f, 0.72f, 0.78f), Dark = new Color(0.5f, 0.5f, 0.56f);
@@ -369,6 +468,7 @@ namespace Ironclad.Game
                 v.Root.localPosition = new Vector3((float)Sim.CarX(i), 0.35f, 0);
                 BuildCar(v, types[i]);
                 v.Rends = v.Root.GetComponentsInChildren<Renderer>();
+                if (i > 0) Scorches(v);
                 _cars.Add(v);
             }
             if (CameraRig.Instance != null) CameraRig.Instance.Centre((float)Sim.CarX(types.Count - 1) * 0.5f, -(float)Sim.CarX(types.Count - 1) + 6);
@@ -377,6 +477,7 @@ namespace Ironclad.Game
         Transform Gun(CarView v, string model, float length, float deck, float aimOffset, Color? tint = null, float hue = 0)
         {
             v.Gun = new GameObject("Gun").transform; v.Gun.SetParent(v.Root, false); v.Gun.localPosition = new Vector3(0, deck, 0);
+            v.GunBase = v.Gun.localPosition;
             var g = Models.Along(model, v.Gun, length, false, tint, hue);
             v.AimOffset = aimOffset;
             v.Muzzle = new Vector3(0, deck + 0.9f, 0);
@@ -397,7 +498,7 @@ namespace Ironclad.Game
                         var k = Content.Skin(skin) ?? Content.Skins[0];
                         v.Body = Models.Along(k.Model, v.Root, L + 0.3f, true, new Color((float)k.R, (float)k.G, (float)k.B));
                     }
-                    Gun(v, "ship_cannon", 1.9f, 2.15f, 0); v.Gun.localPosition = new Vector3(1.4f, 2.15f, 0); v.Muzzle = new Vector3(1.4f, 2.7f, 0);
+                    Gun(v, "ship_cannon", 1.9f, 2.15f, 0); v.Gun.localPosition = v.GunBase = new Vector3(1.4f, 2.15f, 0); v.Muzzle = new Vector3(1.4f, 2.7f, 0);
                     {
                         // The headlamp: lit at night, throwing a pool of warm light ahead and around the engine.
                         var lampGo = new GameObject("Headlamp"); lampGo.transform.SetParent(v.Root, false); lampGo.transform.localPosition = new Vector3(4.5f, 3.2f, 0);
@@ -420,6 +521,55 @@ namespace Ironclad.Game
                 case "repair": v.Body = Models.Along("lumbercar", v.Root, L); { var c = Models.Tall("box", v.Root, 0.9f); c.localPosition = new Vector3(1.2f, 2.0f, 0); } break;
                 default: v.Body = Models.Along("boxcar", v.Root, L); break;
             }
+            v.Type = type;
+            int tier = type != "engine" && S != null ? S.CarTier(type) : 0;
+            if (tier > 0) Heavier(v, tier);
+        }
+
+        /// <summary>A wagon levelled up looks it: riveted side plates (level 10), brass bands and a bigger gun (25), a
+        /// bigger gun again and a pennant (50).</summary>
+        void Heavier(CarView v, int tier)
+        {
+            var b = new Bounds(); bool any = false;
+            foreach (var r in v.Body.GetComponentsInChildren<Renderer>()) { if (!any) { b = r.bounds; any = true; } else b.Encapsulate(r.bounds); }
+            if (!any) return;
+            var c = b.center - v.Root.position; var e = b.extents;
+            var iron = new Color(0.33f, 0.34f, 0.38f); var rivet = new Color(0.62f, 0.62f, 0.66f); var brass = new Color(1f, 0.76f, 0.32f);
+            var parts = Models.Built("Tier", v.Root, mb =>
+            {
+                mb.Matte();
+                float y = Mathf.Max(0.45f, c.y - e.y * 0.25f), h = Mathf.Min(0.75f, e.y * 0.9f);
+                foreach (float side in new[] { -1f, 1f })
+                {
+                    mb.Box(new Vector3(c.x, y, c.z + side * (e.z + 0.05f)), new Vector3(e.x * 1.7f, h, 0.08f), iron, rivet);
+                    for (int k = 0; k < 6; k++) mb.Box(new Vector3(c.x - e.x * 0.8f + k * e.x * 0.32f, y + h * 0.36f, c.z + side * (e.z + 0.1f)), new Vector3(0.09f, 0.09f, 0.04f), rivet);
+                }
+                if (tier >= 2)
+                    foreach (float bx in new[] { -0.62f, 0.62f })
+                        mb.Box(new Vector3(c.x + e.x * bx, c.y, c.z), new Vector3(0.16f, e.y * 2 + 0.06f, e.z * 2 + 0.18f), brass);
+            });
+            parts.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            v.GunScale = tier >= 3 ? 1.3f : tier >= 2 ? 1.15f : 1;
+            if (v.Gun != null) v.Gun.localScale = Vector3.one * v.GunScale;
+            if (tier >= 3)
+            {
+                var flag = Models.Tall("flag", v.Root, 2.4f, new Color(1.3f, 0.45f, 0.35f));
+                flag.localPosition = new Vector3(c.x - e.x * 0.85f, c.y + e.y, c.z);
+            }
+        }
+
+        /// <summary>Soot on the camera's side of a wagon, shown as its plating runs down.</summary>
+        void Scorches(CarView v)
+        {
+            if (v.Body == null) return;
+            var b = new Bounds(); bool any = false;
+            foreach (var r in v.Body.GetComponentsInChildren<Renderer>()) { if (!any) { b = r.bounds; any = true; } else b.Encapsulate(r.bounds); }
+            if (!any) return;
+            var c = b.center - v.Root.position; var e = b.extents;
+            var soot = new Color(0.07f, 0.05f, 0.04f, 0.8f);
+            v.Scorch1 = Fx.Decal(v.Root, soot); v.Scorch1.localPosition = new Vector3(c.x - e.x * 0.4f, c.y + e.y * 0.1f, c.z - e.z - 0.12f); v.Scorch1.localScale = new Vector3(1.8f, 1.1f, 1);
+            v.Scorch2 = Fx.Decal(v.Root, soot); v.Scorch2.localPosition = new Vector3(c.x + e.x * 0.45f, c.y - e.y * 0.2f, c.z - e.z - 0.13f); v.Scorch2.localScale = new Vector3(2.2f, 1.3f, 1);
+            v.Scorch1.gameObject.SetActive(false); v.Scorch2.gameObject.SetActive(false);
         }
 
         // ---- raiders ----
@@ -514,6 +664,27 @@ namespace Ironclad.Game
                     Man(body, e.id, 1.5f, "drive", striders).localPosition = new Vector3(0, 2.45f - Hip * 1.5f, 2.0f);
                     v.Height = 4.2f; v.Bob = 0.3f;
                     break;
+                case "convoy":      // the Baron's convoy: his carriage in black iron, riding inside its escort
+                    Models.Along("carriage", body, 8f, false, new Color(0.42f, 0.42f, 0.5f)).localRotation = Quaternion.Euler(0, -90, 0);
+                    Models.Tall("flag", body, 5f, new Color(0.5f, 0.6f, 1.3f)).localPosition = new Vector3(0, 3.6f, -1.5f);
+                    Man(body, e.id, 1.6f, "drive", striders).localPosition = new Vector3(0, 2.0f - Hip * 1.6f, -0.6f);
+                    v.Height = 7.5f; v.Bob = 0.2f;
+                    break;
+                case "longgun":     // a siege gun on a war wagon
+                    Models.Along("wagon_c", body, 5f, false, new Color(0.5f, 0.44f, 0.42f)).localRotation = Quaternion.Euler(0, -90, 0);
+                    Models.Along("horse_f", body, 3.3f, false, new Color(0.4f, 0.36f, 0.36f)).localPosition = new Vector3(0, 0, 4.4f); body.GetChild(1).localRotation = Quaternion.Euler(0, -90, 0);
+                    { var gun = Models.Along("big_cannon", body, 4.4f, false, new Color(0.55f, 0.55f, 0.6f)); gun.localPosition = new Vector3(0, 2.1f, -0.6f); gun.localRotation = Quaternion.Euler(0, 90, 0); }
+                    Man(body, e.id, 1.5f, "drive", striders).localPosition = new Vector3(0, 2.45f - Hip * 1.5f, 2.2f);
+                    v.Height = 5.2f; v.Bob = 0.25f;
+                    break;
+                case "mender":      // the raiders' field wagon: crates of parts and a green flag
+                    Models.Along("wagon_c", body, 4.8f, false, new Color(0.72f, 0.95f, 0.72f)).localRotation = Quaternion.Euler(0, -90, 0);
+                    Models.Along("horse_f", body, 3.3f, false, HorseTint(e.id)).localPosition = new Vector3(0, 0, 4.2f); body.GetChild(1).localRotation = Quaternion.Euler(0, -90, 0);
+                    for (int k = 0; k < 3; k++) Models.Tall(k == 1 ? "chest" : "crate", body, 0.9f).localPosition = new Vector3(0, 2.3f, -1.2f + k * 0.9f);
+                    Models.Tall("flag", body, 4.5f, new Color(0.45f, 1.3f, 0.5f)).localPosition = new Vector3(0, 2.3f, -2f);
+                    Man(body, e.id, 1.5f, "drive", striders).localPosition = new Vector3(0, 2.45f - Hip * 1.5f, 2.0f);
+                    v.Height = 5f; v.Bob = 0.3f;
+                    break;
                 default:    // the Baron's carriage
                     Models.Along("carriage", body, 8f, false, new Color(0.85f, 0.72f, 0.72f)).localRotation = Quaternion.Euler(0, -90, 0);
                     Models.Tall("flag", body, 5f, new Color(1.3f, 0.4f, 0.4f)).localPosition = new Vector3(0, 3.6f, -1.5f);
@@ -528,13 +699,20 @@ namespace Ironclad.Game
                 var wear = LineWear[Mathf.Min(line, LineWear.Length - 1)];
                 foreach (var mr in body.GetComponentsInChildren<MeshRenderer>()) { if (mr.transform.parent.name.StartsWith("man_")) continue; var m = mr.sharedMaterial; var baseTint = m.HasProperty("_Tint") ? m.GetColor("_Tint") : Color.white; mr.sharedMaterial = Materials.KitTint(baseTint * wear, m.HasProperty("_HueShift") ? m.GetFloat("_HueShift") : 0); }
             }
-            bool big = e.kind == "boss" || e.kind == "warwagon";
+            var kd = Content.Enemy(e.kind);
+            bool big = kd.Boss || e.kind == "warwagon";
             body.localScale = Vector3.one * (big ? 1.15f : 1.5f); v.Height *= big ? 1.15f : 1.5f; v.Body = body; v.Size = big ? 1.15f : 1.5f;
             v.Striders = striders.ToArray();
             // The health bar: only drawn once the raider has been hurt.
             v.Bar = Fx.Quad(v.Root, new Color(0.12f, 0.07f, 0.05f, 0.85f), false); v.Bar.localScale = new Vector3(Content.Enemy(e.kind).Boss ? 5f : 1.9f, 0.3f, 1);
             v.Fill = Fx.Quad(v.Bar, new Color(0.95f, 0.25f, 0.2f, 1f), false); v.Fill.localPosition = new Vector3(0, 0, -0.01f);
             v.Bar.gameObject.SetActive(false);
+            // A soft shadow under it, so it stands out from the ground; a ring when it is striking the train (blue on the
+            // convoy's escort, which shields the boss); the convoy's shield while its escort lives.
+            v.Foot = kd.Boss ? 10 : e.kind == "warwagon" ? 8.5f : e.kind == "gunwagon" ? 6.5f : e.kind == "handcar" ? 5 : e.kind == "outrider" ? 3.6f : 2.6f;
+            v.Shadow = Fx.Disc(v.Root, new Color(0.05f, 0.04f, 0.03f, 0.5f), false);
+            v.Threat = Fx.Disc(v.Root, e.escort ? new Color(0.35f, 0.6f, 1f, 1f) : new Color(1f, 0.25f, 0.2f, 1f), true);
+            if (kd.Shield > 0) v.Shield = Fx.Disc(v.Root, new Color(0.4f, 0.7f, 1f, 1f), true);
             return v;
         }
 
@@ -553,7 +731,8 @@ namespace Ironclad.Game
             var types = new List<string> { "engine" };
             if (r != null) { types.Clear(); foreach (var c in r.cars) types.Add(c.type); }
             else types.AddRange(s.State.train.GetRange(0, Mathf.Min(s.State.train.Count, s.Slots)));
-            string key = string.Join(",", types) + "|" + s.State.skin;
+            string key = string.Join(",", types) + "|" + s.State.skin + "|";
+            foreach (var ty in types) key += s.CarTier(ty);
             if (key != _trainKey) { _trainKey = key; BuildTrain(types); }
 
             bool stopped = r == null || r.phase != (int)Phase.Rolling;
@@ -592,6 +771,33 @@ namespace Ironclad.Game
             // Trouble: the hull under 30% (the picture's edges pulse red, the danger music comes in).
             Look.DangerWant = rolling && r != null && r.hullMax > 0 ? Mathf.Clamp01((0.3f - (float)(r.hull / r.hullMax)) / 0.22f) : 0;
             BestPost(r);
+            if (r != null && rolling && r.mile != _landMile)
+            {
+                _landMile = r.mile;
+                int m = r.mile % Content.StationEvery;
+                if (m == 3 || m == 7) BuildLandmark(LandmarkKinds[_theme % LandmarkKinds.Length][m == 3 ? 0 : 1], 150);
+            }
+            foreach (var l in _landmarks)
+                foreach (var f in l.Fires)
+                    if (Random.value < dt * 10)
+                    {
+                        var at = l.T.TransformPoint(f);
+                        Fx.Flame(at + Random.insideUnitSphere * 0.8f, Vector3.up * Random.Range(1.5f, 3f));
+                        if (Random.value < 0.5f) Fx.Smoke(at + Vector3.up * 1.5f, new Color(0.2f, 0.18f, 0.18f, 0.6f), 2.4f, new Vector3(-_speed * 0.4f, 4, 0));
+                    }
+            for (int i = _teles.Count - 1; i >= 0; i--)
+            {
+                var tl = _teles[i];
+                tl.Life -= dt * Pace;
+                if (tl.Life <= 0 || !rolling) { Destroy(tl.Ring.gameObject); Destroy(tl.Fill.gameObject); _teles.RemoveAt(i); continue; }
+                float k = 1 - tl.Life / tl.Max;
+                var c = tl.Car >= 0 && tl.Car < _cars.Count ? _cars[tl.Car].Root.position : tl.Ring.position;
+                var g = new Vector3(c.x, 0.16f, c.z);
+                tl.Ring.position = g; tl.Fill.position = g + Vector3.up * 0.01f;
+                tl.Ring.localScale = Vector3.one * tl.Size * (1 + 0.04f * Mathf.Sin(Time.time * 18));
+                tl.Fill.localScale = Vector3.one * tl.Size * 0.95f * k;
+                Fx.Tint(tl.Fill, new Color(1f, 0.15f, 0.1f, 0.35f + 0.4f * k));
+            }
 
             // The train.
             float rock = Mathf.Clamp01(_speed / Cruise);
@@ -619,7 +825,38 @@ namespace Ironclad.Game
                 if (!isOut && car != null && car.platingMax > 0 && car.plating < car.platingMax * 0.35 && Random.value < dt * 4) Fx.Smoke(v.Root.position + new Vector3(Random.Range(-1f, 1f), 1.6f, 0), new Color(0.3f, 0.28f, 0.28f, 0.5f), 1f, new Vector3(-_speed * 0.5f, 3, 0));      // nearly gone: it smokes
                 if (isOut && Random.value < dt * 9) Fx.Smoke(v.Root.position + new Vector3(Random.Range(-1.5f, 1.5f), 1.8f, 0), new Color(0.12f, 0.1f, 0.1f, 0.75f), 1.6f, new Vector3(-_speed * 0.5f, 4, 0));
                 v.Flash = Mathf.MoveTowards(v.Flash, 0, dt * 9);
-                if (v.Gun != null) v.Gun.localScale = Vector3.one * (1 + 0.14f * v.Flash);      // the gun jumps as it fires
+                if (v.Gun != null) v.Gun.localScale = Vector3.one * v.GunScale * (1 + 0.14f * v.Flash);      // the gun jumps as it fires
+                // Cannons kick back along the barrel; a mortar's whole wagon dips under the shot.
+                v.Kick = Mathf.MoveTowards(v.Kick, 0, dt * 4); v.Dip = Mathf.MoveTowards(v.Dip, 0, dt * 3);
+                if (v.Gun != null) v.Gun.localPosition = v.GunBase - (v.Gun.localRotation * Vector3.right) * 0.45f * v.Kick * v.Kick;
+                if (v.Dip > 0) v.Root.localPosition += new Vector3(0, -0.22f * Mathf.Sin(v.Dip * Mathf.PI), 0);
+                // Plating running down shows: soot, then more soot and sparks; patched up, it says so.
+                if (car != null && car.platingMax > 0 && v.Scorch1 != null)
+                {
+                    double f = car.plating / car.platingMax;
+                    if (v.Scorch1.gameObject.activeSelf != f < 0.7) v.Scorch1.gameObject.SetActive(f < 0.7);
+                    if (v.Scorch2.gameObject.activeSelf != f < 0.45) v.Scorch2.gameObject.SetActive(f < 0.45);
+                    if (f < 0.45 && !isOut && Random.value < dt * 2.5f) Fx.Spark(v.Root.position + new Vector3(Random.Range(-2f, 2f), 1.3f, -1.1f));
+                    if (v.LastPlate >= 0 && car.plating - v.LastPlate > car.platingMax * 0.25 && rolling)
+                    {
+                        Fx.Mend(v.Root.position + Vector3.up * 1.6f);
+                        if (Hud.Instance != null) Hud.Instance.Pop(v.Root.position + Vector3.up * 4, "FIXED", new Color(0.45f, 1f, 0.5f), 34);
+                    }
+                    v.LastPlate = car.plating;
+                }
+                // The supply car's beat reaches the wagons either side; the fitters' sparks go where plating is short.
+                if (rolling && !isOut && (v.Type == "supply" || v.Type == "repair"))
+                {
+                    v.Pulse -= dt * Pace;
+                    if (v.Pulse <= 0)
+                    {
+                        v.Pulse = v.Type == "supply" ? 2.4f : 0.8f;
+                        if (v.Type == "supply") Fx.Ring(v.Root.position, (float)Content.CarLength * 2.4f, new Color(1f, 0.8f, 0.3f, 0.5f), 0.9f);
+                        else if (r != null)
+                            for (int k = 1; k < r.cars.Count && k < _cars.Count; k++)
+                                if (r.cars[k].platingMax > 0 && r.cars[k].plating < r.cars[k].platingMax) { Fx.Mend(_cars[k].Root.position + Vector3.up * 1.5f); break; }
+                    }
+                }
                 v.Hurt = Mathf.MoveTowards(v.Hurt, 0, dt * 5);
                 if (v.Hurt > 0) v.Root.localPosition += new Vector3(0, 0, Mathf.Sin(Time.time * 70) * 0.07f * v.Hurt);
             }
@@ -668,6 +905,42 @@ namespace Ironclad.Game
                     }
                     v.LastCooldown = e.cooldown;
                     v.Lunge = Mathf.MoveTowards(v.Lunge, 0, dt * 6);
+                    {
+                        var ground = _foes.TransformPoint(new Vector3(v.At.x, 0.07f, v.At.z));
+                        var flat = Quaternion.Euler(90, 0, 0);
+                        v.Shadow.position = ground; v.Shadow.rotation = flat; v.Shadow.localScale = Vector3.one * v.Foot;
+                        bool ring = e.escort || e.striking || e.windup > 0;
+                        if (v.Threat.gameObject.activeSelf != ring) v.Threat.gameObject.SetActive(ring);
+                        if (ring) { v.Threat.position = ground + Vector3.up * 0.02f; v.Threat.rotation = flat; v.Threat.localScale = Vector3.one * v.Foot * (1.05f + 0.06f * Mathf.Sin(Time.time * 8)); }
+                        if (v.Shield != null)
+                        {
+                            bool on = r.enemies.Exists(o => o.escort && o.hp > 0);
+                            if (v.Shield.gameObject.activeSelf != on) v.Shield.gameObject.SetActive(on);
+                            if (on) { v.Shield.position = ground + Vector3.up * 1.6f; v.Shield.rotation = flat; v.Shield.localScale = Vector3.one * (v.Foot * 1.3f + Mathf.Sin(Time.time * 3) * 0.4f); }
+                        }
+                    }
+                    // The Long Gun's aim: a thin red line to the wagon it has marked.
+                    if (e.windup > 0 && _cars.Count > 0)
+                    {
+                        int at = Mathf.Clamp(e.aimCar, 0, _cars.Count - 1);
+                        if (Random.value < 0.5f) Fx.Tracer(v.Root.position + Vector3.up * (v.Height * 0.55f), _cars[at].Root.position + Vector3.up * 1.4f, 0.04f, new Color(1f, 0.2f, 0.15f, 0.8f), 0.06f);
+                    }
+                    // The Mending Wagon patches up the raiders round it.
+                    if (Content.Enemy(e.kind).Heal > 0 && rolling)
+                    {
+                        v.HealAt -= dt * Pace;
+                        if (v.HealAt <= 0)
+                        {
+                            v.HealAt = 0.7f;
+                            foreach (var kv in _foeViews)
+                            {
+                                var o = kv.Value; if (o == v || o.E == null || o.E.hp <= 0 || o.E.hp >= o.E.hpMax) continue;
+                                if ((o.At - v.At).sqrMagnitude > 144) continue;
+                                Fx.Arc(v.Root.position + Vector3.up * (v.Height * 0.7f), o.Root.position + Vector3.up * (o.Height * 0.5f), new Color(0.35f, 1f, 0.45f), 0.18f, 0.3f);
+                                Fx.Mend(o.Root.position + Vector3.up * (o.Height * 0.5f));
+                            }
+                        }
+                    }
                     foreach (var st in v.Striders) st.Moving = moving && e.stun <= 0;
                     v.Punch = Mathf.MoveTowards(v.Punch, 0, dt * 8);
                     if (v.Body != null) v.Body.localScale = new Vector3(1 + 0.16f * v.Punch, 1 - 0.12f * v.Punch, 1 + 0.16f * v.Punch) * v.Size;      // a hit squashes it for a moment
@@ -708,6 +981,7 @@ namespace Ironclad.Game
                 if (Random.value < 0.25f) Sfx.Play("flame", 0.18f, Random.Range(0.9f, 1.1f));
                 return;
             }
+            if (def.Id == "mortar") v.Dip = 1; else if (def.Flight > 0 || def.Id == "engine") v.Kick = 1;
             if (def.Flight > 0)
             {
                 Fx.Shell(from, to, (float)def.Flight / Mathf.Max(0.2f, Pace), def.Id == "mortar" ? 14 : 4);
@@ -716,7 +990,13 @@ namespace Ironclad.Game
                 if (CameraRig.Instance != null) CameraRig.Instance.Shake(0.12f);
                 return;
             }
-            if (def.Chain > 0) { Fx.Bolt(_lastBolt.HasValue && Time.time - _boltAt < 0.02f ? _lastBolt.Value : from, to); _lastBolt = to; _boltAt = Time.time; Sfx.Play("zap", 0.25f, Random.Range(0.9f, 1.2f)); return; }
+            if (def.Chain > 0)
+            {
+                Fx.Bolt(_lastBolt.HasValue && Time.time - _boltAt < 0.02f ? _lastBolt.Value : from, to); _lastBolt = to; _boltAt = Time.time;
+                for (int k = 0; k < 2; k++) { var fork = to + new Vector3(Random.Range(-1.6f, 1.6f), Random.Range(-0.6f, 0.9f), Random.Range(-1.6f, 1.6f)); Fx.Arc(to, fork, new Color(0.6f, 0.9f, 1f), 0.16f, 0.1f); }
+                Sfx.Play("zap", 0.25f, Random.Range(0.9f, 1.2f)); return;
+            }
+            if (def.Id == "gatling" && Random.value < 0.6f) Fx.Brass(v.Root.position + v.GunBase + Vector3.up * 0.5f, new Vector3(Random.Range(-0.3f, 0.3f), 0, -1));
             bool heavy = def.Id == "rifle" || def.Id == "engine";
             Fx.Tracer(from, to, heavy ? 0.16f : 0.09f, crit ? new Color(1f, 0.55f, 0.2f) : new Color(1f, 0.92f, 0.55f));
             Fx.Flash(from, heavy ? 1.1f : 0.7f);
@@ -773,6 +1053,24 @@ namespace Ironclad.Game
             if (CameraRig.Instance != null) CameraRig.Instance.Shake(1f);
         }
 
+        void OnWarning(double x, double z, double radius, double seconds)
+        {
+            int car = 0; float near = float.MaxValue;
+            for (int i = 0; i < _cars.Count; i++) { float d = Mathf.Abs(_cars[i].Root.localPosition.x - (float)x); if (d < near) { near = d; car = i; } }
+            var tl = new Tele { Ring = Fx.Disc(_fx, new Color(1f, 0.2f, 0.12f, 1f), true), Fill = Fx.Disc(_fx, new Color(1f, 0.15f, 0.1f, 0.35f), false), Life = (float)seconds, Max = (float)seconds, Size = (float)radius * 2.2f, Car = car };
+            _teles.Add(tl);
+            Sfx.Play("clang", 0.5f, 0.55f);
+            if (Hud.Instance != null && _cars.Count > car) Hud.Instance.Pop(_cars[car].Root.position + Vector3.up * 5, "INCOMING!", new Color(1f, 0.35f, 0.25f), 36);
+        }
+
+        void OnSpoiled(EnemyState e)
+        {
+            foreach (var tl in _teles) { Destroy(tl.Ring.gameObject); Destroy(tl.Fill.gameObject); }
+            _teles.Clear();
+            FoeView v;
+            if (_foeViews.TryGetValue(e.id, out v) && Hud.Instance != null) Hud.Instance.Pop(v.At + Vector3.up * (v.Height + 1), "AIM SPOILED!", new Color(0.6f, 0.9f, 1f), 40);
+        }
+
         void OnMile(int mile, double steel)
         {
             if (Hud.Instance != null && _cars.Count > 0) Hud.Instance.Pop(_cars[0].Root.position + Vector3.up * 6, "+" + Format.Money(steel) + " steel", new Color(0.8f, 0.9f, 1f), 36);
@@ -826,7 +1124,8 @@ namespace Ironclad.Game
         {
             Sprite sp;
             if (type == "engine" && S != null) type = "engine@" + S.State.skin;      // the engine's picture wears its livery
-            if (_icons.TryGetValue(type, out sp)) return sp;
+            string iconKey = type + "#" + (S != null && !type.StartsWith("engine") ? S.CarTier(type) : 0);      // and a heavier wagon its plates
+            if (_icons.TryGetValue(iconKey, out sp)) return sp;
             var stage = new GameObject("IconStage").transform;
             stage.position = new Vector3(0, -900, 0);
             var v = new CarView { Root = new GameObject(type).transform };
@@ -855,7 +1154,7 @@ namespace Ironclad.Game
             RenderTexture.active = prev; cam.targetTexture = null; RenderTexture.ReleaseTemporary(rt);
             DestroyImmediate(stage.gameObject);
             sp = Sprite.Create(tex, new Rect(0, 0, N, N), new Vector2(0.5f, 0.5f), 100);
-            return _icons[type] = sp;
+            return _icons[iconKey] = sp;
         }
 
         /// <summary>Where a car is, for the interface (signs over wagons).</summary>

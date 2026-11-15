@@ -116,7 +116,8 @@ namespace Ironclad.Core
                 if (r.bossLeft >= 0)
                 {
                     int pct = Math.Max(1, (int)Math.Ceiling(r.bossLeft * 100));
-                    return (pct <= 25 ? "So close: the" : "The") + " Baron's carriage was down to " + pct + "%";
+                    var boss = Content.Enemy(r.bossKind.Length > 0 ? r.bossKind : "boss");
+                    return (pct <= 25 ? "So close: " : "") + boss.Name + " was down to " + pct + "%";
                 }
                 if (r.left <= 0) return null;
                 string what = r.mile % Content.StationEvery == 0 ? "the station" : "mile " + (r.mile + 1);
@@ -135,7 +136,7 @@ namespace Ironclad.Core
                 if (Content.Enemy(e.kind).Boss) r.bossLeft = e.hpMax > 0 ? e.hp / e.hpMax : 0;
                 else r.left++;
             }
-            if (BossMile && !r.bossOut) r.bossLeft = 1;
+            if (BossMile && !r.bossOut) { r.bossLeft = 1; r.bossKind = BossKind(r.mile); }
         }
 
         // ---- free deals at a station ----

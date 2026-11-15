@@ -34,6 +34,10 @@ namespace Ironclad.Core
         public event Action<int, int> FirstStation;
         /// <summary>The run is over.</summary>
         public event Action RunOver;
+        /// <summary>A boss is aiming at the train: where (x, z), how wide, and how long until it fires.</summary>
+        public event Action<double, double, double, double> Warning;
+        /// <summary>The whistle spoiled a boss's aim.</summary>
+        public event Action<EnemyState> Spoiled;
 
         public Func<double> RealNow = () => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0;
         /// <summary>Seconds to add to UTC for the player's clock (days turn at local midnight).</summary>

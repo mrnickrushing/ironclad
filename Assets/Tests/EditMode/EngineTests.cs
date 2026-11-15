@@ -183,7 +183,7 @@ namespace Ironclad.Tests
             for (int i = 0; i < 2000 && !s.RunEnded; i++) s.Tick(0.5);
             Assert.IsTrue(s.RunEnded);
             Assert.GreaterOrEqual(s.Run.bossLeft, 0);
-            StringAssert.Contains("Baron's carriage", s.NearMiss);
+            StringAssert.Contains("Baron's Carriage", s.NearMiss);
         }
 
         [Test]

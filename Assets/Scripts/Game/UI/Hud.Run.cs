@@ -152,11 +152,41 @@ namespace Ironclad.Game
             _whistleFill = Ui.Img("Cool", _whistle.transform, new Color(0.1f, 0.06f, 0.04f, 0.6f), true); _whistleFill.rectTransform.Fill(6);
             _whistleFill.type = Image.Type.Filled; _whistleFill.fillMethod = Image.FillMethod.Vertical; _whistleFill.sprite = Ui.Round;
 
+            // The line's offer between stations: take it or let it go by (the countdown declines).
+            _choiceTime = null;
+            var ch = S.Choice;
+            if (ch != null) BuildChoice(ch);
+
             // One line of help while the game is new.
             var hint = Ui.ArtImg("Hint", _face, "plate", Ui.Ink, 36); _hint = hint.rectTransform;
             _hint.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-110, 262), new Vector2(980, 66));
             _hintText = Ui.Label("T", _hint, "", 30, Color.white, TextAnchor.MiddleCenter, false); _hintText.rectTransform.Fill(8); _hintText.rectTransform.offsetMin = new Vector2(8, 12);
             UpdateRun();
+        }
+
+        Text _choiceTime; Image _choiceFill; string _choiceShown;
+
+        void BuildChoice(ChoiceDef ch)
+        {
+            var box = Ui.ArtImg("Choice", _face, "panel", Color.white, 40); box.raycastTarget = true;
+            box.rectTransform.Place(new Vector2(1, 0), new Vector2(1, 0), new Vector2(-24, 240), new Vector2(520, 350));      // lower right, clear of the train
+            if (_choiceShown != ch.Id + S.Run.mile) { _choiceShown = ch.Id + S.Run.mile; box.gameObject.AddComponent<PopIn>(); Sfx.Play("open", 0.6f); }
+            var b = box.rectTransform;
+            var rib = Ui.Ribbon("R", b, Ui.Blue); rib.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 0.5f), new Vector2(0, -4), new Vector2(440, 84));
+            var t = Ui.Label("T", rib.transform, ch.Title, 32, Color.white); t.rectTransform.Fill(); t.rectTransform.offsetMin = new Vector2(30, 16); t.rectTransform.offsetMax = new Vector2(-30, 0); t.Stroke(2f);
+            t.resizeTextForBestFit = true; t.resizeTextMinSize = 18; t.resizeTextMaxSize = 32;
+            var body = Ui.Label("B", b, ch.Body, 26, Ui.Ink, TextAnchor.MiddleCenter, false); body.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -50), new Vector2(460, 160));
+            body.resizeTextForBestFit = true; body.resizeTextMinSize = 16; body.resizeTextMaxSize = 26;
+            var timer = Ui.Img("Timer", b, new Color(0, 0, 0, 0.12f), true); timer.sprite = Ui.Round; timer.rectTransform.Place(new Vector2(1, 1), new Vector2(0.5f, 0.5f), new Vector2(-20, -20), new Vector2(64, 64));
+            _choiceFill = Ui.Img("Fill", timer.transform, Ui.Gold); _choiceFill.sprite = Ui.Round; _choiceFill.rectTransform.Fill(4);
+            _choiceFill.type = Image.Type.Filled; _choiceFill.fillMethod = Image.FillMethod.Radial360;
+            _choiceTime = Ui.Label("N", timer.transform, "", 28, Color.white); _choiceTime.rectTransform.Fill(); _choiceTime.Stroke(2f);
+            string id = ch.Id;
+            var take = Ui.Button("Take", b, ch.Take, Ui.Green, () => { if (S.Choose(true)) { Sfx.Play("claim", 0.7f); Haptics.Medium(); Telemetry.Log("Choice.made", ("Choice.id", id), ("Choice.took", "1")); } }, 28);
+            ((RectTransform)take.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-118, 20), new Vector2(226, 90));
+            var leave = Ui.Button("Leave", b, ch.Leave, Ui.Off, () => { if (S.Choose(false)) { Sfx.Play("close", 0.5f); Telemetry.Log("Choice.made", ("Choice.id", id), ("Choice.took", "0")); } }, 28);
+            ((RectTransform)leave.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(118, 20), new Vector2(226, 90));
+            foreach (var btn in new[] { take, leave }) { var l = btn.GetComponentInChildren<Text>(); l.resizeTextForBestFit = true; l.resizeTextMinSize = 16; l.resizeTextMaxSize = 28; }
         }
 
         void BuyField(int car)
@@ -186,6 +216,8 @@ namespace Ironclad.Game
         {
             var s = S; var r = s.Run;
             if (r == null || r.phase == (int)Phase.Station) return null;
+            // A boss says how to beat it, until the player has beaten a few.
+            if (s.State.bosses < 12) foreach (var e in r.enemies) if (e.hp > 0 && Content.Enemy(e.kind).Boss && Content.Enemy(e.kind).Hint != null) return Content.Enemy(e.kind).Name + ": " + Content.Enemy(e.kind).Hint;
             if (s.State.runs >= 3) { if (s.State.runs < 12) for (int i = 1; i < r.cars.Count; i++) if (r.cars[i].Out) return r.scrip >= s.FieldCost(i) ? "A wagon is out of action: tap FIX to put its plating back" : "A wagon with no plating stops firing until it is fixed or you reach a station"; return null; }
             bool canBuy = false; for (int i = 0; i < r.cars.Count; i++) if (r.scrip >= s.FieldCost(i)) canBuy = true;
             for (int i = 1; i < r.cars.Count; i++) if (r.cars[i].Out) return r.scrip >= s.FieldCost(i) ? "A wagon is out of action: tap FIX to put its plating back" : "A wagon with no plating stops firing until it is fixed or you reach a station";
@@ -213,7 +245,12 @@ namespace Ironclad.Game
             _mileFill.color = boss != null ? Ui.Coral : Ui.Gold;
             bool rollingFace = _shown == Face.Run;
             if (_lineText.gameObject.activeSelf != rollingFace) { _lineText.gameObject.SetActive(rollingFace); _mileFill.transform.parent.gameObject.SetActive(rollingFace); }
-            _lineText.text = s.Route.Name + (s.BossMile ? "  ·  <color=#FFB347>THE BARON'S CARRIAGE</color>" : "  ·  station at mile " + ((r.mile - 1) / Content.StationEvery + 1) * Content.StationEvery);
+            _lineText.text = s.Route.Name + (s.BossMile ? "  ·  <color=#FFB347>" + Content.Enemy(Sim.BossKind(r.mile)).Name.ToUpperInvariant() + "</color>" : "  ·  station at mile " + ((r.mile - 1) / Content.StationEvery + 1) * Content.StationEvery);
+            if (_choiceTime != null && r.choice.Length > 0)
+            {
+                _choiceTime.text = Mathf.CeilToInt((float)Math.Max(0, r.choiceIn)) + "";
+                _choiceFill.fillAmount = Mathf.Clamp01((float)(r.choiceIn / Content.ChoiceSeconds));
+            }
             _scripText.text = Format.Money(r.scrip);
             _steelText.text = Format.Money(r.steel);
             _gemText.text = s.State.gems.ToString();
@@ -238,6 +275,84 @@ namespace Ironclad.Game
             if (_shown == Face.Station && s.State.auto) { _stationIdle += Time.unscaledDeltaTime; if (_stationIdle > 12) { _stationIdle = 0; s.PassStation(); } }
         }
 
+        /// <summary>A card on the station table: rarity band and glow, its picture, name, what it does, which wagons it
+        /// helps and, for a card that changes how the train fights, a ribbon that says so.</summary>
+        void CardFace(RectTransform p, Pick pick, Vector2 at, float cw, Action take)
+        {
+            var def = Content.Card(pick.card); var s = S;
+            const float ch = 384;
+            if (pick.rarity > 0)
+            {
+                var glow = Ui.ArtImg("Glow", p, "card", RarityColors[pick.rarity] * new Color(1, 1, 1, pick.rarity == 2 ? 0.95f : 0.7f), 26);
+                glow.rectTransform.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), at, new Vector2(cw + 22, ch + 22));
+                if (pick.rarity == 2) glow.gameObject.AddComponent<Throb>();
+            }
+            var card = Ui.ArtImg("Card", p, "card", Color.white, 26); card.raycastTarget = true;
+            card.rectTransform.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), at, new Vector2(cw, ch));
+            var band = Ui.Img("Band", card.transform, RarityColors[pick.rarity], true); band.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -14), new Vector2(cw - 40, 46));
+            Ui.Label("R", band.transform, RarityNames[pick.rarity], 26, Color.white).rectTransform.Fill();
+
+            // Its picture: painted art if there is any for it, else its glyph on a disc of the rarity's colour.
+            var art = Resources.Load<Texture2D>("UI/Cards/" + def.Id);
+            float picX = def.Behaviour ? -cw / 2 + 70 : 0;
+            if (art != null)
+            {
+                var a = Ui.Img("Art", card.transform, Color.white); a.sprite = Sprite.Create(art, new Rect(0, 0, art.width, art.height), new Vector2(0.5f, 0.5f)); a.preserveAspect = true;
+                a.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(picX, -64), new Vector2(70, 70));
+            }
+            else
+            {
+                var disc = Ui.Img("Disc", card.transform, Color.Lerp(RarityColors[pick.rarity], Ui.Ink, 0.25f), true); disc.sprite = Ui.Round;
+                disc.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(picX, -64), new Vector2(70, 70));
+                var g = Ui.Img("Glyph", disc.transform, Color.white); g.sprite = Ui.Ic(def.Icon ?? "star"); g.preserveAspect = true; g.rectTransform.Fill(14);
+            }
+            if (def.Behaviour)
+            {
+                var tag = Ui.ArtImg("Tactic", card.transform, "tag", Ui.Coral, 20); tag.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(40, -68), new Vector2(cw - 140, 62));
+                var tl = Ui.Label("T", tag.transform, "CHANGES HOW\nIT FIGHTS", 22, Color.white); tl.rectTransform.Fill(6); tl.lineSpacing = 0.9f; tl.Stroke(1.5f);
+                tl.resizeTextForBestFit = true; tl.resizeTextMinSize = 14; tl.resizeTextMaxSize = 22;
+            }
+            var nm = Ui.Label("N", card.transform, def.Name, 38, Ui.Ink); nm.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -136), new Vector2(cw - 30, 44));
+            nm.resizeTextForBestFit = true; nm.resizeTextMinSize = 22; nm.resizeTextMaxSize = 38;
+            var bl = Ui.Label("B", card.transform, Content.Blurb(def, (Rarity)pick.rarity), 26, Ui.Dim, TextAnchor.MiddleCenter, false); bl.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -180), new Vector2(cw - 40, 86));
+            bl.resizeTextForBestFit = true; bl.resizeTextMinSize = 14; bl.resizeTextMaxSize = 26; bl.lineSpacing = 0.9f;
+
+            // Which of the wagons coupled on it helps.
+            var helps = CardHelps(def);
+            if (helps.Count > 0)
+            {
+                float ps = 38, row = 90 + helps.Count * (ps + 4);
+                var hl = Ui.Label("H", card.transform, "HELPS", 18, Ui.Dim, TextAnchor.MiddleLeft); hl.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0, 1), new Vector2(-row / 2, -268), new Vector2(84, ps));
+                for (int j = 0; j < helps.Count; j++)
+                {
+                    var pic = CarPicture(card.transform, helps[j]); pic.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0, 1), new Vector2(-row / 2 + 86 + j * (ps + 4), -268), new Vector2(ps, ps));
+                }
+            }
+            var tb = Ui.Button("Take", card.transform, "TAKE", Ui.Green, take, 36);
+            ((RectTransform)tb.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 12), new Vector2(cw - 80, 64));
+        }
+
+        /// <summary>The wagons in the train a card works on (at most four, the engine for the hull).</summary>
+        List<string> CardHelps(CardDef def)
+        {
+            var r = S.Run; var list = new List<string>();
+            if (r == null) return list;
+            Func<CarDef, bool> pick;
+            switch (def.Id)
+            {
+                case "hull": pick = c => c.Id == "engine"; break;
+                case "plate": case "mend": pick = c => c.Id != "engine"; break;
+                case "decoy": { var last = r.cars[r.cars.Count - 1].type; pick = c => c.Id == last; break; }
+                case "splash": case "cluster": pick = c => c.Splash > 0; break;
+                case "arc": pick = c => c.Chain > 0; break;
+                case "ricochet": pick = c => c.Id == "gatling"; break;
+                case "damage": case "rate": case "crit": case "range": case "glass": case "recharge": pick = c => !c.Support; break;
+                default: return list;
+            }
+            foreach (var c in r.cars) { var d = Content.Car(c.type); if (pick(d) && !list.Contains(c.type)) list.Add(c.type); if (list.Count == 4) break; }
+            return list;
+        }
+
         // ---- the station ----
 
         int _shuntFrom = -1, _stationShownFor = -1; float _stationIdle; double _overShownFor = -1;
@@ -257,17 +372,9 @@ namespace Ironclad.Game
                 var sub = Ui.Label("S", p, "Plating made good, " + Mathf.RoundToInt((float)Content.StationHull * 100) + "% of the hull back. Take one card: it lasts the rest of this run.", 30, Ui.Dim, TextAnchor.MiddleCenter, false); sub.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -66), new Vector2(1300, 40));
                 for (int i = 0; i < r.offer.Count; i++)
                 {
-                    int k = i; var pick = r.offer[i]; var def = Content.Card(pick.card);
-                    var card = Ui.ArtImg("Card", p, "card", Color.white, 26); card.raycastTarget = true;
+                    int k = i; var pick = r.offer[i];
                     int nc = r.offer.Count; float cw = nc <= 3 ? 410 : nc == 4 ? 340 : 276, gap = cw + 22;
-                    card.rectTransform.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2((i - (nc - 1) * 0.5f) * gap, -36), new Vector2(cw, 370));
-                    var band = Ui.Img("Band", card.transform, RarityColors[pick.rarity], true); band.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -14), new Vector2(cw - 40, 50));
-                    Ui.Label("R", band.transform, RarityNames[pick.rarity], 28, Color.white).rectTransform.Fill();
-                    var nm = Ui.Label("N", card.transform, def.Name, 40, Ui.Ink); nm.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -70), new Vector2(cw - 30, 70));
-                    nm.resizeTextForBestFit = true; nm.resizeTextMinSize = 24; nm.resizeTextMaxSize = 40;
-                    var bl = Ui.Label("B", card.transform, Content.Blurb(def, (Rarity)pick.rarity), 30, Ui.Dim, TextAnchor.MiddleCenter, false); bl.rectTransform.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -34), new Vector2(cw - 44, 120)); bl.resizeTextForBestFit = true; bl.resizeTextMinSize = 20; bl.resizeTextMaxSize = 30;
-                    var take = Ui.Button("Take", card.transform, "TAKE", Ui.Green, () => { if (S.TakeCard(k)) { Sfx.Play("claim", 0.8f); Haptics.Success(); } }, 38);
-                    ((RectTransform)take.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 16), new Vector2(cw - 80, 84));
+                    CardFace(p, pick, new Vector2((i - (nc - 1) * 0.5f) * gap, -48), cw, () => { if (S.TakeCard(k)) { Sfx.Play("claim", 0.8f); Haptics.Success(); if (Content.Card(pick.card).Behaviour) Telemetry.Log("Card.tactic", ("Card.id", pick.card)); } });
                 }
                 // The first deal of other cards at each station is free; after that it costs gems.
                 bool free = s.FreeReroll, canRoll = free || s.State.gems >= Sim.RerollGems;
@@ -452,6 +559,14 @@ namespace Ironclad.Game
             var tl = Ui.Label("T", tipBox.transform, "<b>Try:</b> " + d.Tip, 28, Ui.Ink, TextAnchor.MiddleCenter, false); tl.rectTransform.Fill(14); tl.resizeTextForBestFit = true; tl.resizeTextMinSize = 18; tl.resizeTextMaxSize = 28;
             var ok = Ui.Button("Ok", card, "GOT IT", Ui.Green, CloseCard, 40); ((RectTransform)ok.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 36), new Vector2(360, 104));
         }
+    }
+
+    /// <summary>Breathes a glow in and out (the epic card's).</summary>
+    public sealed class Throb : MonoBehaviour
+    {
+        Image _img; Color _c;
+        void Awake() { _img = GetComponent<Image>(); _c = _img.color; }
+        void Update() { float k = 0.55f + 0.45f * Mathf.Sin(Time.unscaledTime * 3.2f); _img.color = new Color(_c.r, _c.g, _c.b, _c.a * k); transform.localScale = Vector3.one * (1 + 0.012f * k); }
     }
 
     /// <summary>A button that keeps buying while it is held down.</summary>

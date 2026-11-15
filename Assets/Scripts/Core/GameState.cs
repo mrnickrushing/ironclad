@@ -28,6 +28,10 @@ namespace Ironclad.Core
         public double x, z, hp, hpMax, damage, cooldown, stun;
         public double facing;               // radians, for the picture
         public bool striking;               // close enough to hit the train: the guns deal with these first
+        public bool escort;                 // rides with the Baron's convoy
+        public double windup;               // the Long Gun is aiming (seconds left)
+        public int aimCar;                  // at this car
+        public double burn;                 // the Furnace Car set it alight (seconds left)
     }
 
     [Serializable]
@@ -82,6 +86,11 @@ namespace Ironclad.Core
         public double hurtClose;            // of the damage taken, what came from raiders striking from close in
         public int firstOut = -1; public string firstOutType = ""; public int firstOutMile;
         public bool legOut;                 // a wagon was knocked out since the last station
+        public string bossKind = "";        // the boss of the station leg being rolled
+        // A choice the line offers between stations (see Content.Choices).
+        public string choice = ""; public double choiceIn;
+        public string boostKind = ""; public int boostMiles;      // what a choice taken does to the next miles
+        public double surge;                // seconds of Steam Recharge's faster fire left
     }
 
     /// <summary>The save: plain fields and lists so JsonUtility can write it. Every class it holds is [Serializable].</summary>
@@ -126,7 +135,7 @@ namespace Ironclad.Core
         public long taskDay = -1; public int taskClaimed; public List<double> taskBase = new List<double>();
         public List<string> taskIds = new List<string>();     // the day's three tasks
         // Counts some of the day's tasks are made of.
-        public long crits, fieldBuys, stationsClean, stationsLight;
+        public long crits, fieldBuys, stationsClean, stationsLight, choicesTaken;
         public List<Tally> carKills = new List<Tally>();       // raiders turned back by each kind of wagon
         public int cohort = -1;             // 0..99, fixed per save: which way a test of the shop's timing goes
         public double lastRunSteel;         // what the last run paid (for the Rolling Mill's preview)
@@ -195,6 +204,9 @@ namespace Ironclad.Core
                 if (run.offer == null) run.offer = new List<Pick>();
                 if (run.hurtBy == null) run.hurtBy = new List<Tally>();
                 if (run.firstOutType == null) run.firstOutType = "";
+                if (run.bossKind == null) run.bossKind = "";
+                if (run.choice == null) run.choice = "";
+                if (run.boostKind == null) run.boostKind = "";
                 run.cars.RemoveAll(c => c == null || Content.Car(c.type) == null);
                 if (run.cars.Count == 0 || run.cars[0].type != "engine") run = null;
             }
