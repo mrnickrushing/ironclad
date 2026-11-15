@@ -215,7 +215,7 @@ namespace Ironclad.Core
             if (r.scrip < cost) return false;
             r.scrip -= cost;
             var c = r.cars[car];
-            c.field++;
+            c.field++; State.fieldBuys++;
             if (c.platingMax > 0) { c.platingMax = PlateOf(c); c.plating = c.platingMax; c.down = false; }      // and it is back in the fight
             Touch();
             return true;

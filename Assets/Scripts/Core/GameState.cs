@@ -16,6 +16,8 @@ namespace Ironclad.Core
         public double downFor;              // seconds it has been out (Spare Plating brings it back)
         public bool down;                   // plating gone: it stops firing and raiders pass it by until a quarter is back
         public bool Out { get { return down; } }
+        public double dealt;                // damage this car has done on the run (the end-of-run breakdown)
+        public int outs;                    // times it has been knocked out on the run
     }
 
     [Serializable]
@@ -33,6 +35,14 @@ namespace Ironclad.Core
 
     [Serializable]
     public sealed class Pick { public string card; public int rarity; }
+
+    /// <summary>A count kept by name (damage by raider kind, kills by wagon).</summary>
+    [Serializable]
+    public sealed class Tally { public string id; public double v; }
+
+    /// <summary>A train order the player saved, to couple up again in one tap.</summary>
+    [Serializable]
+    public sealed class Formation { public List<string> cars = new List<string>(); }
 
     public enum Phase { Rolling, Station, Over }
 
@@ -67,6 +77,11 @@ namespace Ironclad.Core
         public bool retired;                // the player ended it (no "so close" on the last card)
         public int left;                    // raiders still riding or still to come when the hull went
         public double bossLeft = -1;        // the Baron's carriage's share of health left then (-1: not on the field)
+        // For the breakdown at the end: who hurt the train, and the first wagon knocked out.
+        public List<Tally> hurtBy = new List<Tally>();
+        public double hurtClose;            // of the damage taken, what came from raiders striking from close in
+        public int firstOut = -1; public string firstOutType = ""; public int firstOutMile;
+        public bool legOut;                 // a wagon was knocked out since the last station
     }
 
     /// <summary>The save: plain fields and lists so JsonUtility can write it. Every class it holds is [Serializable].</summary>
@@ -109,6 +124,16 @@ namespace Ironclad.Core
         public string skin = "";
         public List<string> skins = new List<string>();
         public long taskDay = -1; public int taskClaimed; public List<double> taskBase = new List<double>();
+        public List<string> taskIds = new List<string>();     // the day's three tasks
+        // Counts some of the day's tasks are made of.
+        public long crits, fieldBuys, stationsClean, stationsLight;
+        public List<Tally> carKills = new List<Tally>();       // raiders turned back by each kind of wagon
+        public int cohort = -1;             // 0..99, fixed per save: which way a test of the shop's timing goes
+        public double lastRunSteel;         // what the last run paid (for the Rolling Mill's preview)
+        public long adsWatched;
+        public List<Formation> formations = new List<Formation>();
+        public List<string> celebrated = new List<string>();   // unlocks already shown on the UNLOCKED card
+        public bool celebrateInit;
 
         // The shop.
         public List<string> owned = new List<string>();
@@ -138,6 +163,13 @@ namespace Ironclad.Core
             if (seenFeatures == null) seenFeatures = new List<string>();
             if (taskBase == null) taskBase = new List<double>();
             if (skins == null) skins = new List<string>();
+            if (taskIds == null) taskIds = new List<string>();
+            if (carKills == null) carKills = new List<Tally>();
+            if (formations == null) formations = new List<Formation>();
+            while (formations.Count < 3) formations.Add(new Formation());
+            foreach (var f in formations) if (f.cars == null) f.cars = new List<string>();
+            if (celebrated == null) celebrated = new List<string>();
+            if (cohort < 0 || cohort > 99) cohort = (int)((uint)Guid.NewGuid().GetHashCode() % 100);
             if (skin == null || (skin.Length > 0 && Content.Skin(skin) == null)) skin = "";
             if (lifetimeAtRenew > lifetime) lifetimeAtRenew = lifetime;
             if (playerName == null) playerName = "";
@@ -161,6 +193,8 @@ namespace Ironclad.Core
                 if (run.queue == null) run.queue = new List<string>();
                 if (run.cards == null) run.cards = new List<Pick>();
                 if (run.offer == null) run.offer = new List<Pick>();
+                if (run.hurtBy == null) run.hurtBy = new List<Tally>();
+                if (run.firstOutType == null) run.firstOutType = "";
                 run.cars.RemoveAll(c => c == null || Content.Car(c.type) == null);
                 if (run.cars.Count == 0 || run.cars[0].type != "engine") run = null;
             }

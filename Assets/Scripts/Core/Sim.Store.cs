@@ -47,11 +47,16 @@ namespace Ironclad.Core
             new ProductDef { Id = "ironclad.depot", Name = "Night Shift", Blurb = "The depot's patrols work 4 more hours while you're away, for good.", Once = true, FallbackPrice = "$3.99" },
         };
 
-        /// <summary>The Fireman's Pack is shown once, by itself, to someone who has come back on another day and
-        /// finished a few runs. Never on the first day, never twice.</summary>
+        /// <summary>The Fireman's Pack is shown once, by itself, never twice: to half the players on a later day after a few
+        /// runs, to the other half after their first boss (a test the statistics settle).</summary>
         public bool StarterOfferDue
         {
-            get { return !State.starterOffered && !Owns("ironclad.starter") && State.firstDay >= 0 && Today > State.firstDay && State.runs >= 8 && State.run == null; }
+            get
+            {
+                if (State.starterOffered || Owns("ironclad.starter") || State.run != null || State.firstDay < 0) return false;
+                // Two ways under test (see StarterVariant): on a later day after a few runs, or after the first boss.
+                return StarterVariant == "first_boss" ? State.bosses >= 1 && State.runs >= 2 : Today > State.firstDay && State.runs >= 8;
+            }
         }
         public void StarterOffered() { State.starterOffered = true; }
 

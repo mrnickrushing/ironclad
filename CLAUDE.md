@@ -45,7 +45,14 @@ The project was started from Reel Empire (`~/reelempire`): the platform code (`G
   reached on a line, and the Baron's seals (`Content.Perks`, `Sim.BuyPerk`: one seal a boss, seven lasting perks, the
   workshop's second section). A new engine (`Sim.Engine`: `Renew`, charters by `ChartersOnRenew`, `CharterMult`
   on damage, steel and the depot) and gem liveries (`Content.Skins`, `BuySkin`/`UseSkin`; paint only, never stats).
-  The last card's `NearMiss` and `NextUnlock`; one free deal of cards per station (`FreeReroll`). With AUTO on, `Hud.UpdateOver` collects a finished run after a countdown.
+  The last card's `NearMiss` and `NextUnlock`; one free deal of cards per station (`FreeReroll`).
+- Clarity (`Core/Sim.Clarity.cs`): `NeighbourGifts`/`TrainGifts` (what supply and armoured wagons give each place; the
+  tags under the wagons) and `ShuntPreview` (what a move would change, shown under every place while a wagon is picked);
+  ×1/×10/MAX (`UpgradeCostN`, `BuyUpgrades`, `CarCostN`, `BuyCars`); three saved formations (`SaveFormation`,
+  `UseFormation`, also at a station); `Debrief` (each gun's share, first wagon out, the worst raiders, one tip; the run
+  tracks `dealt`, `hurtBy`, `firstOut`); `PurchasePreview` (the shop's before/after card); `NextGoal` on the depot and
+  the UNLOCKED card (`NewlyUnlocked`, `Celebrated`); the Fireman's Pack timing test (`StarterVariant` by `cohort`).
+  Daily tasks are drawn from a bigger pool by a per-day shuffle (`TasksFor`, kept in `taskIds`). With AUTO on, `Hud.UpdateOver` collects a finished run after a countdown.
 - `Game/Debug/PlayBot.cs` (editor only) plays through the real HUD methods: `PlayBot.Begin(10)`, `PlayBot.Report()`.
 - `Tools/ios-export.sh` switches the Editor to the iOS platform and recompiles before building, and refuses an export
   without the AdMob id or the entitlements. Music is `Tools/art/music.py` ("day" while rolling, "night" at rest).

@@ -235,11 +235,12 @@ namespace Ironclad.Game
 
         void WatchAd(AdReward reward, Action done)
         {
-            if (S.SkipsAds) { if (S.GrantAd(reward)) { GameRoot.Instance.Save(); done(); } return; }
+            if (S.SkipsAds) { if (S.GrantAd(reward)) { GameRoot.Instance.Save(); Telemetry.Log("Ad.skippedWithPass", ("Ad.reward", reward.ToString())); done(); } return; }
+            Telemetry.Log("Ad.offered", ("Ad.reward", reward.ToString()));
             Ads.Show(ok =>
             {
-                if (!ok) { Toast("The ad wasn't finished, so nothing was given."); return; }
-                if (S.GrantAd(reward)) { GameRoot.Instance.Save(); done(); }
+                if (!ok) { Telemetry.Log("Ad.unfinished", ("Ad.reward", reward.ToString())); Toast("The ad wasn't finished, so nothing was given."); return; }
+                if (S.GrantAd(reward)) { GameRoot.Instance.Save(); Telemetry.Log("Ad.watched", ("Ad.reward", reward.ToString())); done(); }
             });
         }
 

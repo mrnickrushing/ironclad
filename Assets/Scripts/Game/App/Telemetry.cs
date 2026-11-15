@@ -64,7 +64,7 @@ namespace Ironclad.Game
         float _sendIn = 10f, _sampleIn = SampleEvery, _frameSum, _sittingStart;
         int _frames;
         Sim _sim;
-        int _stars = -1, _wagons = -1, _route = -1, _engines = -1; long _runs = -1;
+        int _stars = -1, _wagons = -1, _route = -1, _engines = -1, _tutorial = -1; long _runs = -1, _cards = -1;
 
         void Awake()
         {
@@ -86,7 +86,14 @@ namespace Ironclad.Game
         {
             var s = GameRoot.Sim;
             if (s == null) return;
-            if (s != _sim) { _sim = s; _stars = s.BestMile / 10; _runs = s.State.runs; _wagons = s.State.cars.Count; _route = OpenRoutes(s); _engines = s.State.engines; }
+            if (s != _sim) { _sim = s; _stars = s.BestMile / 10; _runs = s.State.runs; _wagons = s.State.cars.Count; _route = OpenRoutes(s); _engines = s.State.engines; _tutorial = s.State.tutorialStep; _cards = s.State.cardsTaken; }
+            if (s.State.tutorialStep != _tutorial) { _tutorial = s.State.tutorialStep; Send("Tutorial.step", _tutorial); }
+            if (s.State.cardsTaken != _cards)
+            {
+                _cards = s.State.cardsTaken;
+                var r = s.State.run;
+                if (r != null && r.cards.Count > 0) { var last = r.cards[r.cards.Count - 1]; Send("Card.taken", ("Card.id", last.card), ("Card.rarity", last.rarity.ToString(CultureInfo.InvariantCulture)), ("Card.mile", r.mile.ToString(CultureInfo.InvariantCulture))); }
+            }
             if (!_started) { _started = true; Send("Session.started", ("Session.firstLaunch", _firstLaunch ? "true" : "false")); }
             if (s.BestMile / 10 != _stars) { if (s.BestMile / 10 > _stars) Send("Progress.station"); _stars = s.BestMile / 10; }
             if (s.State.runs != _runs) { _runs = s.State.runs; Send("Run.ended"); }
@@ -103,6 +110,9 @@ namespace Ironclad.Game
             }
             if ((_sendIn -= Time.unscaledDeltaTime) <= 0 || _queue.Count >= BatchMax) { _sendIn = SendEvery; Flush(); }
         }
+
+        /// <summary>Queues an event if statistics are running (safe to call from anywhere).</summary>
+        public static void Log(string type, params (string key, string value)[] extra) { if (Instance != null) Instance.Send(type, extra); }
 
         /// <summary>Queues one event with where the game stands (step, level, island, day, minutes played).</summary>
         public void Send(string type, params (string key, string value)[] extra) { Send(type, float.NaN, extra); }
@@ -128,6 +138,10 @@ namespace Ironclad.Game
                 p.Add(("Game.wagons", (s.State.cars.Count - 1).ToString(CultureInfo.InvariantCulture)));
                 p.Add(("Game.mile", (s.Run != null ? s.Run.mile : 0).ToString(CultureInfo.InvariantCulture)));
                 p.Add(("Game.minutesPlayed", Mathf.FloorToInt((float)(s.State.played / 60)).ToString(CultureInfo.InvariantCulture)));
+                p.Add(("Player.cohort", s.State.cohort.ToString(CultureInfo.InvariantCulture)));
+                p.Add(("Player.starter", s.StarterVariant));
+                p.Add(("Player.pass", s.SkipsAds ? "true" : "false"));
+                p.Add(("Player.adsWatched", s.State.adsWatched.ToString(CultureInfo.InvariantCulture)));
             }
             p.Add(("Session.minutes", Mathf.FloorToInt((Time.realtimeSinceStartup - _sittingStart) / 60f).ToString(CultureInfo.InvariantCulture)));
             foreach (var e in extra) p.Add(e);

@@ -239,8 +239,10 @@ namespace Ironclad.Core
                 r.shells.RemoveAt(i);
                 double wide = s.splash * (1 + CardSum("splash"));
                 Burst?.Invoke(s.x, s.z, wide);
+                _from = s.car;
                 foreach (var e in r.enemies)
                     if (e.hp > 0 && Sq(e.x - s.x, e.z - s.z) <= wide * wide) Hurt(e, s.damage, s.crit);
+                _from = -1;
             }
 
             // Mending.
@@ -321,11 +323,22 @@ namespace Ironclad.Core
             else
             {
                 car.plating -= damage;
-                if (car.plating <= 0) { car.plating = 0; car.down = true; Touch(); }
+                if (car.plating <= 0 && !car.down)
+                {
+                    car.plating = 0; car.down = true; car.outs++; r.legOut = true;
+                    if (r.firstOut < 0) { r.firstOut = index; r.firstOutType = car.type; r.firstOutMile = r.mile; }
+                    Touch();
+                }
+                else if (car.plating <= 0) car.plating = 0;
+            }
+            if (by != null)
+            {
+                Add(r.hurtBy, by.kind, damage);
+                if (Content.Enemy(by.kind).Range < 3) r.hurtClose += damage;
             }
             Struck?.Invoke(index, damage);
             double vents = CardSum("vents");
-            if (vents > 0 && by != null && Content.Enemy(by.kind).Range < 3) Hurt(by, damage * vents * MileHp(r.mile) / Math.Max(1e-9, MileDamage(r.mile)), false);
+            if (vents > 0 && by != null && Content.Enemy(by.kind).Range < 3) { int was = _from; _from = -1; Hurt(by, damage * vents * MileHp(r.mile) / Math.Max(1e-9, MileDamage(r.mile)), false); _from = was; }
             if (r.hull <= 0) { r.hull = 0; EndRun(); }
         }
 
@@ -335,13 +348,14 @@ namespace Ironclad.Core
             double cx = CarX(index), range = def.Range * RangeMult;
             bool crit = Roll() < CritChance + def.Crit;
             double damage = ShotDamage(car) * (crit ? CritDamage : 1);
+            _from = index;
 
             if (def.Aim == Aim.Around)
             {
                 bool any = false;
                 foreach (var e in r.enemies)
                     if (e.hp > 0 && Reach(e.x, e.z, index) <= range) { Hurt(e, damage, crit); any = true; }
-                if (any) Fired?.Invoke(index, cx, 0, crit);
+                if (any) { Fired?.Invoke(index, cx, 0, crit); if (crit) State.crits++; }
                 return any;
             }
 
@@ -359,6 +373,7 @@ namespace Ironclad.Core
             }
             if (target == null) return false;
             Fired?.Invoke(index, target.x, target.z, crit);
+            if (crit) State.crits++;
 
             if (def.Flight > 0)
             {
@@ -386,11 +401,20 @@ namespace Ironclad.Core
             return true;
         }
         readonly List<int> _chained = new List<int>();
+        int _from = -1;     // the car whose shot is landing (-1: steam vents, or nobody)
+
+        static void Add(List<Tally> list, string id, double v)
+        {
+            var t = list.Find(x => x.id == id);
+            if (t == null) list.Add(t = new Tally { id = id });
+            t.v += v;
+        }
 
         void Hurt(EnemyState e, double damage, bool crit)
         {
             if (e.hp <= 0) return;
             var r = State.run;
+            if (_from >= 0 && _from < r.cars.Count) r.cars[_from].dealt += Math.Min(damage, e.hp);
             e.hp -= damage;
             Hit?.Invoke(e, damage, crit);
             if (e.hp > 0) return;
@@ -398,6 +422,7 @@ namespace Ironclad.Core
             var d = Content.Enemy(e.kind);
             double scrip = d.Bounty * Math.Pow(Content.BountyPerMile, r.mile - 1) * ScripMult;
             r.scrip += scrip; r.kills++; State.kills++;
+            if (_from >= 0 && _from < r.cars.Count) Add(State.carKills, r.cars[_from].type, 1);
             if (d.Boss) { State.bosses++; State.seals++; r.seals++; r.steel += Content.BossSteel * MileSteel(Route, r.mile) / Content.SteelPerMileBase * SteelMult; }
             if (r.mark == e.id) r.mark = 0;
             Fell?.Invoke(e, scrip);
@@ -433,6 +458,9 @@ namespace Ironclad.Core
             r.hull = Math.Min(r.hullMax, r.hull + r.hullMax * Content.StationHull);
             foreach (var c in r.cars) { c.plating = c.platingMax; c.down = false; c.cooldown = 0; }
             r.rerolled = false;
+            if (!r.legOut) State.stationsClean++;
+            if (r.cars.Count - 1 <= 2) State.stationsLight++;
+            r.legOut = false;
             DealCards();
             Touch();
         }
@@ -605,7 +633,7 @@ namespace Ironclad.Core
         {
             if (!RunEnded) return false;
             double steel = RunSteel;
-            State.steel += steel; State.lifetime += steel;
+            State.steel += steel; State.lifetime += steel; State.lastRunSteel = steel;
             State.runs++;
             State.run = null;
             if (State.depotAt <= 0) State.depotAt = RealNow();

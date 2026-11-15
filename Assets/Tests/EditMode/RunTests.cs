@@ -255,13 +255,36 @@ namespace Ironclad.Tests
             s.Tick(0.1);
             Assert.AreEqual(3, Enumerable.Range(0, Sim.TasksADay).Select(i => s.TaskAt(i).Id).Distinct().Count(), "three different tasks a day");
             s.State.kills += 250; s.State.miles += 30; s.State.cardsTaken += 2; s.State.whistles += 5; s.State.bosses += 2; s.State.runs += 3;
+            s.State.crits += 200; s.State.fieldBuys += 30; s.State.carKills.Add(new Tally { id = "gatling", v = 500 });
+            int gems = s.State.gems + s.TaskAt(0).Gems;
             Assert.IsTrue(s.ClaimTask(0));
             Assert.IsFalse(s.ClaimTask(0));
-            Assert.AreEqual(10, s.State.gems);
-            string first = s.TaskAt(0).Id;
+            Assert.AreEqual(gems, s.State.gems);
+            string day1 = string.Join(",", Enumerable.Range(0, Sim.TasksADay).Select(i => s.TaskAt(i).Id));
             now += 86400;
             Assert.AreEqual(0, s.TaskProgress(0), "a new day starts the count again");
-            Assert.AreNotEqual(first, s.TaskAt(0).Id, "and sets other tasks");
+            Assert.AreNotEqual(day1, string.Join(",", Enumerable.Range(0, Sim.TasksADay).Select(i => s.TaskAt(i).Id)), "and sets other tasks");
+        }
+
+        [Test]
+        public void TheDaysTasksDontRepeatInAPattern()
+        {
+            var s = TestGame.New();
+            s.State.best[0] = 60;
+            foreach (var id in new[] { "cannon", "rifle", "flame", "mortar" }) s.State.cars.Add(new Level { id = id, level = 1 });
+            var sets = new System.Collections.Generic.HashSet<string>(); var seen = new System.Collections.Generic.HashSet<string>();
+            for (long day = 20000; day < 20028; day++)
+            {
+                var t = s.TasksFor(day);
+                Assert.AreEqual(Sim.TasksADay, t.Distinct().Count(), "three different tasks every day");
+                Assert.LessOrEqual(t.Count(id => Sim.Task(id).Car != null), 1, "at most one wagon's own task");
+                sets.Add(string.Join(",", t.OrderBy(x => x))); foreach (var id in t) seen.Add(id);
+                Assert.AreNotEqual(string.Join(",", t), string.Join(",", s.TasksFor(day + 2)), "not the same as two days later");
+            }
+            Assert.GreaterOrEqual(sets.Count, 20, "four weeks bring at least twenty different sets");
+            Assert.GreaterOrEqual(seen.Count, 12, "and most of the tasks there are");
+            var fresh = TestGame.New();
+            Assert.IsFalse(fresh.TasksFor(20000).Any(id => Sim.Task(id).Strategy || Sim.Task(id).Car == "cannon"), "nothing a new train can't do");
         }
 
         [Test]
