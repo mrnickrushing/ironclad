@@ -166,6 +166,12 @@ namespace Ironclad.Tests
             Assert.IsFalse(g.down, "spare plating brings it back");
             for (int i = 0; i < 2000 && !s.AtStation && !s.RunEnded; i++) s.Tick(0.5);
             Assert.AreEqual(4, s.Run.offer.Count, "an extra hand");
+            Assert.IsTrue(s.AtStation);
+            Assert.IsFalse(s.Run.cars.Exists(c => Content.Car(c.type).Splash > 0), "no shell wagon on this train");
+            for (int i = 0; i < 40; i++) { s.State.gems = 100; Assert.IsTrue(s.RerollCards()); Assert.IsFalse(s.Run.offer.Exists(p => p.card == "splash"), "no Grapeshot without shells"); }
+            if (s.State.train.Count >= s.Slots) Assert.IsTrue(s.Uncouple(s.State.train.Count - 1));
+            Assert.IsTrue(s.Couple(s.State.train[0]));
+            Assert.AreEqual(2, s.Run.cars[s.Run.cars.Count - 1].field, "a wagon coupled on at a station gets the quartermaster's levels too");
             s.State.seals = 500;
             for (int i = 0; i < 40; i++) Assert.IsTrue(s.BuyPerk("patrol") || s.PerkMaxed("patrol"));
             Assert.AreEqual(10, s.PerkLevel("patrol"));

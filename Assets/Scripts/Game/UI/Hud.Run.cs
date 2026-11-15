@@ -212,7 +212,7 @@ namespace Ironclad.Game
 
             if (r.offer.Count > 0)
             {
-                var sub = Ui.Label("S", p, "The plating is made good. Take one card: it lasts the rest of this run.", 30, Ui.Dim, TextAnchor.MiddleCenter, false); sub.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -66), new Vector2(1300, 40));
+                var sub = Ui.Label("S", p, "Plating made good, " + Mathf.RoundToInt((float)Content.StationHull * 100) + "% of the hull back. Take one card: it lasts the rest of this run.", 30, Ui.Dim, TextAnchor.MiddleCenter, false); sub.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -66), new Vector2(1300, 40));
                 for (int i = 0; i < r.offer.Count; i++)
                 {
                     int k = i; var pick = r.offer[i]; var def = Content.Card(pick.card);
@@ -228,7 +228,7 @@ namespace Ironclad.Game
                     ((RectTransform)take.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 16), new Vector2(cw - 80, 84));
                 }
                 bool canRoll = s.State.gems >= Sim.RerollGems;
-                var roll = Ui.Button("Roll", p, "3 OTHER CARDS  ·  " + Sim.RerollGems + " gems", canRoll ? Ui.Grape : Ui.Off, canRoll ? (Action)(() => { if (S.RerollCards()) Sfx.Play("click"); }) : null, 26);
+                var roll = Ui.Button("Roll", p, s.State.run.offer.Count + " OTHER CARDS  ·  " + Sim.RerollGems + " gems", canRoll ? Ui.Grape : Ui.Off, canRoll ? (Action)(() => { if (S.RerollCards()) Sfx.Play("click"); }) : null, 26);
                 ((RectTransform)roll.transform).Place(new Vector2(1, 1), new Vector2(1, 1), new Vector2(-30, -20), new Vector2(330, 62));
                 _stationIdle = 0;
                 return;

@@ -21,6 +21,7 @@ namespace Ironclad.Core
         CarState NewCar(string type)
         {
             var c = new CarState { type = type };
+            c.field = PerkLevel("quarter");      // the Quartermaster's head start, for wagons coupled on at a station too
             if (type != "engine") { c.platingMax = PlateOf(c); c.plating = c.platingMax; }
             return c;
         }
@@ -34,8 +35,6 @@ namespace Ironclad.Core
             State.run = r;
             r.cars.Add(NewCar("engine"));
             foreach (var id in State.train) if (r.cars.Count - 1 < Slots) r.cars.Add(NewCar(id));
-            int head = PerkLevel("quarter");
-            if (head > 0) foreach (var c in r.cars) { c.field = head; if (c.platingMax > 0) { c.platingMax = PlateOf(c); c.plating = c.platingMax; } }
             r.hullMax = HullMax; r.hull = r.hullMax;
             r.scrip = StartScrip;
             r.whistleIn = 0;
@@ -427,6 +426,8 @@ namespace Ironclad.Core
             var r = State.run;
             r.offer.Clear();
             var left = new List<CardDef>(Content.Cards);
+            // Grapeshot does nothing for a train with no shells to burst.
+            if (!r.cars.Exists(c => Content.Car(c.type).Splash > 0)) left.RemoveAll(c => c.Id == "splash");
             int lucky = PerkLevel("lucky");
             double epic = Content.RarityOdds[2] + 0.01 * lucky, rare = Content.RarityOdds[1] + 0.03 * lucky;
             for (int i = 0; i < 3 + PerkLevel("hand") && left.Count > 0; i++)

@@ -114,8 +114,8 @@ namespace Ironclad.Game
                 case "speed": return "Now up to x" + Content.Speeds[s.SpeedsOpen - 1].ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
                 case "start": return "Now " + Format.Money(s.StartScrip) + " scrip";
                 case "whistle": return "Now every " + Math.Round(s.WhistleEvery) + " s";
-                case "mend": return "Now " + (u.Step * lv * 100).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "% a second";
-                default: return "Now +" + Math.Round(u.Step * lv * 100) + "%";
+                case "mend": return lv == 0 ? "" : "Now " + (u.Step * lv * 100).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "% a second";
+                default: return lv == 0 ? "" : "Now +" + Math.Round(u.Step * lv * 100) + "%";
             }
         }
 
@@ -128,7 +128,7 @@ namespace Ironclad.Game
             {
                 var id = u.Id; bool max = s.UpgradeMaxed(id); double cost = s.UpgradeCost(id); bool can = s.State.steel >= cost;
                 y = Entry(y, Ui.Ic(id == "slots" ? "box" : id == "speed" ? "bolt" : id == "whistle" ? "bell" : id == "scrip" || id == "start" ? "coins" : id == "steel" ? "sack" : id == "hull" || id == "plate" || id == "mend" ? "wrench" : "target"), Ui.Ink,
-                    u.Name + "  <size=24><color=#7A5A40>level " + s.UpgradeLevel(id) + "</color></size>", u.Blurb + ".  " + UpgradeNow(s, u),
+                    u.Name + "  <size=24><color=#7A5A40>level " + s.UpgradeLevel(id) + "</color></size>", (u.Blurb + ".  " + UpgradeNow(s, u)).TrimEnd(),
                     max ? null : Format.Money(cost) + " steel", Ui.Green, max || !can ? null : (Action)(() => { if (S.BuyUpgrade(id)) { Sfx.Play("build", 0.6f); Haptics.Light(); } }), max ? "MAX" : null);
             }
             y = Heading(y, "THE BARON'S SEALS: you have " + s.State.seals + ". One from every carriage you bring down.");
@@ -235,7 +235,7 @@ namespace Ironclad.Game
                 y = Entry(y, Ui.Ic("clock"), Ui.Ink, w.Name, steel > 0 ? "+" + Format.Money(steel) + " steel: " + w.Hours + " hours of patrols at once" : "Finish a run first: the patrols work the lines you have crossed",
                     w.Gems + " GEMS", Ui.Grape, steel > 0 && s.State.gems >= w.Gems ? (Action)(() => { if (S.BuyWarp(k)) { Sfx.Play("coin", 0.9f); Toast("+" + Format.Money(steel) + " steel"); GameRoot.Instance.Save(); } }) : null);
             }
-            y = Heading(y, "FOR GOOD: bought once, kept for ever");
+            y = Heading(y, "BOUGHT ONCE");
             foreach (var prod in Sim.Products)
             {
                 if (!prod.Once) continue;
@@ -270,8 +270,8 @@ namespace Ironclad.Game
             y = Entry(y, Ui.Ic("sound"), Ui.Ink, "Sound", Sfx.Muted ? "Off" : "On", Sfx.Muted ? "TURN ON" : "TURN OFF", Ui.Blue, () => { Sfx.Muted = !Sfx.Muted; again(); });
             y = Entry(y, Ui.Ic("sound"), Ui.Ink, "Music", Sfx.Music ? "On" : "Off", Sfx.Music ? "TURN OFF" : "TURN ON", Ui.Blue, () => { Sfx.Music = !Sfx.Music; again(); });
             y = Entry(y, Ui.Ic("bolt"), Ui.Ink, "Battery saver", FrameBudget.BatterySaver ? "On: 30 frames a second, a cooler phone" : "Off: 60 frames a second", FrameBudget.BatterySaver ? "TURN OFF" : "TURN ON", Ui.Blue, () => { FrameBudget.BatterySaver = !FrameBudget.BatterySaver; again(); });
-            y = Entry(y, Ui.Ic("bolt"), Ui.Ink, "Vibration", Haptics.On ? "On: a tap you can feel" : "Off", Haptics.On ? "TURN OFF" : "TURN ON", Ui.Blue, () => { Haptics.On = !Haptics.On; again(); });
-            y = Entry(y, Ui.Ic("bell"), Ui.Ink, "Reminders", Reminders.On ? "On: a notification when the depot is full" : "Off", Reminders.On ? "TURN OFF" : "TURN ON", Ui.Blue, () => { Reminders.On = !Reminders.On; again(); });
+            y = Entry(y, Ui.Ic("vibrate"), Ui.Ink, "Vibration", Haptics.On ? "On: a tap you can feel" : "Off", Haptics.On ? "TURN OFF" : "TURN ON", Ui.Blue, () => { Haptics.On = !Haptics.On; again(); });
+            y = Entry(y, Ui.Ic("bell"), Ui.Ink, "Reminders", Reminders.On ? "On: when the depot is full, the train is waiting, or today's gift is ready" : "Off", Reminders.On ? "TURN OFF" : "TURN ON", Ui.Blue, () => { Reminders.On = !Reminders.On; again(); });
             y = Entry(y, Ui.Ic("chart"), Ui.Ink, "Anonymous play statistics", (Telemetry.Sharing ? "On" : "Off") + ": where players get stuck. Nothing about you, no tracking.", Telemetry.Sharing ? "TURN OFF" : "TURN ON", Ui.Blue, () => { Telemetry.Sharing = !Telemetry.Sharing; again(); });
 
             y = Heading(y, "YOUR ACCOUNT");
@@ -289,7 +289,7 @@ namespace Ironclad.Game
             y = Entry(y, Ui.Art("star"), Color.white, "Enjoying Ironclad?", "Rate it on the App Store.", "RATE", Ui.Gold, OpenStoreReview);
             y = Entry(y, Ui.Ic("lock"), Ui.Ink, "Privacy policy", "What the game keeps and what it never does.", "READ", Ui.Blue, () => Application.OpenURL(PrivacyUrl));
             y = Entry(y, Ui.Ic("bell"), Ui.Ink, "Help and support", "Questions, problems, a purchase that went wrong.", "OPEN", Ui.Blue, () => Application.OpenURL(SupportUrl));
-            y = Entry(y, Ui.Ic("medal"), Ui.Ink, "Credits", "The free models, fonts and sounds this game is built with.", "SHOW", Ui.Blue, ShowCredits);
+            y = Entry(y, Ui.Ic("medal"), Ui.Ink, "Credits", "The free models, fonts, icons and sounds this game is built with.", "SHOW", Ui.Blue, ShowCredits);
             y = Entry(y, Ui.Ic("trash"), Ui.Ink, "Delete account and start over", "Erases your progress on this device and in your iCloud, and signs you out. Purchases made once can be restored.", "DELETE", Ui.Coral, AskDelete);
             var v = Ui.Label("V", _list, "Ironclad  " + Application.version + "  ·  Rushing Technologies", 24, Ui.Dim, TextAnchor.MiddleCenter, false); v.rectTransform.Band(true, y, 50);
             EndList(-y + 60);
@@ -297,7 +297,7 @@ namespace Ironclad.Game
 
         void AskDelete()
         {
-            Confirm("DELETE EVERYTHING?", "Your steel, wagons, workshop and gems are erased from this device and from your iCloud, and you are signed out. This can't be undone.\n\nThings bought once (not gems) can be restored from the shop.",
+            Confirm("DELETE EVERYTHING?", "Your steel, wagons, workshop, seals and gems are erased from this device and from your iCloud, and you are signed out. This can't be undone.\n\nThings bought once (not gems) can be restored from the shop.",
                 "DELETE", Ui.Coral, () =>
                 {
                     AppleAccount.SignOut(); Telemetry.Forget(); GameCenter.Forget();
@@ -326,12 +326,13 @@ namespace Ironclad.Game
             "Galloping horse: jeremy, CC BY 3.0. Gatling gun: Zsky, CC BY 3.0. Carriage: Jie gu, CC BY 3.0. Dynamite: Neko, CC BY 3.0.\n" +
             "Minecart: Hunter Paramore, CC BY 3.0. Wild West Cart: Anonymous, CC BY 3.0. Saloon, wagon and windmill: Poly by Google, CC BY 3.0. (poly.pizza)\n\n" +
             "<b>Fonts</b>\nLilita One by Juan Montoreano and Fredoka by Milena Brandão and Hafontia, SIL Open Font License.\n\n" +
-            "<b>Sound</b>\nInterface sounds: Kenney, CC0.\n\n<b>Sky</b>\nPoly Haven, CC0.\n\nThank you for playing.";
+            "<b>Sound</b>\nInterface sounds: Kenney, CC0. The music and the sounds of the fight are made for the game.\n\n<b>Icons</b>\nFont Awesome Free by Fonticons, Inc. (fontawesome.com), CC BY 4.0.\n\n<b>Sky</b>\nPoly Haven, CC0.\n\nThank you for playing.";
 
         void ShowCredits()
         {
-            var card = Card(1200, 800, "CREDITS");
-            var b = Ui.Label("B", card, CreditsText, 26, Ui.Ink, TextAnchor.UpperLeft, false); b.rectTransform.Fill(); b.rectTransform.offsetMin = new Vector2(50, 150); b.rectTransform.offsetMax = new Vector2(-50, -90);
+            var card = Card(1500, 880, "CREDITS");
+            var b = Ui.Label("B", card, CreditsText, 26, Ui.Ink, TextAnchor.UpperLeft, false); b.rectTransform.Fill(); b.rectTransform.offsetMin = new Vector2(56, 150); b.rectTransform.offsetMax = new Vector2(-56, -90);
+            b.resizeTextForBestFit = true; b.resizeTextMinSize = 16; b.resizeTextMaxSize = 26;      // it all fits above CLOSE, whatever the screen
             var ok = Ui.Button("Ok", card, "CLOSE", Ui.Blue, CloseCard, 40); ((RectTransform)ok.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 36), new Vector2(360, 104));
         }
     }

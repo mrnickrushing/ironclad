@@ -29,7 +29,7 @@ namespace Ironclad.Core
             new AchievementDef { Id = "boss50", Name = "The Baron's Bane", Blurb = "Bring down 50 of the Baron's carriages", Gems = 40, Goal = 50, Have = s => s.State.bosses },
             new AchievementDef { Id = "wagons4", Name = "Rolling Arsenal", Blurb = "Build 4 kinds of wagon", Gems = 15, Goal = 4, Have = s => s.State.cars.Count - 1 },
             new AchievementDef { Id = "wagons9", Name = "Every Plan in the Drawer", Blurb = "Build all 9 kinds of wagon", Gems = 50, Goal = 9, Have = s => s.State.cars.Count - 1 },
-            new AchievementDef { Id = "long", Name = "The Long Train", Blurb = "Couple on 8 wagons", Gems = 40, Goal = 8, Have = s => s.Slots },
+            new AchievementDef { Id = "long", Name = "The Long Train", Blurb = "Couple on 8 wagons", Gems = 40, Goal = 8, Have = s => s.State.train.Count },
             new AchievementDef { Id = "cards30", Name = "A Full Hand", Blurb = "Take 30 station cards", Gems = 15, Goal = 30, Have = s => s.State.cardsTaken },
             new AchievementDef { Id = "whistle50", Name = "Full Head of Steam", Blurb = "Sound the whistle 50 times", Gems = 10, Goal = 50, Have = s => s.State.whistles },
             new AchievementDef { Id = "runs100", Name = "Regular Service", Blurb = "Set off on 100 runs", Gems = 20, Goal = 100, Have = s => s.State.runs },

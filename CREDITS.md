@@ -21,7 +21,11 @@ in the game (MORE, Credits).
 Lilita One by Juan Montoreano and Fredoka by Milena Brandão and Hafontia, SIL Open Font License.
 
 ## Sound
-Interface sounds: Kenney, CC0. The sounds of the fight are made by the game itself.
+Interface sounds: Kenney, CC0. The sounds of the fight are made by the game itself; the music is written for the game
+(`Tools/art/music.py`).
+
+## Icons
+Font Awesome Free by Fonticons, Inc. (fontawesome.com), CC BY 4.0: the menu icons in `Assets/Resources/UI/Ic`.
 
 ## Sky
 Poly Haven, CC0.

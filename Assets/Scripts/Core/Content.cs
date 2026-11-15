@@ -100,7 +100,7 @@ namespace Ironclad.Core
         public static readonly List<CarDef> Cars = new List<CarDef>
         {
             new CarDef { Id = "engine", Name = "Deck Gun", Blurb = "The engine's own gun. Never leaves the front.", Damage = 6, Interval = 0.8, Range = 13 },
-            new CarDef { Id = "gatling", Name = "Gatling Car", Blurb = "A storm of small rounds at whoever is closest.", Damage = 4, Interval = 0.2, Range = 12 },
+            new CarDef { Id = "gatling", Name = "Gatling Car", Blurb = "A storm of small rounds: first at whoever is hitting the train, then the closest.", Damage = 4, Interval = 0.2, Range = 12 },
             new CarDef { Id = "cannon", Name = "Cannon Car", Blurb = "A slow shell that bursts among them.", Damage = 28, Interval = 2.2, Range = 17, Splash = 3.5, Flight = 0.5, Steel = 60, Mile = 6 },
             new CarDef { Id = "supply", Name = "Supply Car", Blurb = "The wagons either side of it fire a quarter faster.", Aim = Aim.None, Haste = 0.25, Steel = 250, Mile = 12 },
             new CarDef { Id = "rifle", Name = "Sharpshooter Car", Blurb = "Picks out the toughest raider from far off. Crits often.", Aim = Aim.Strongest, Damage = 48, Interval = 2.4, Range = 24, Crit = 0.2, Steel = 900, Mile = 18 },
@@ -173,7 +173,7 @@ namespace Ironclad.Core
             new CardDef { Id = "range", Name = "Long Sights", Blurb = "+{0}% range", Amount = 0.12 },
             new CardDef { Id = "crit", Name = "Lucky Streak", Blurb = "+{0}% chance of a crit", Amount = 0.06 },
             new CardDef { Id = "splash", Name = "Grapeshot", Blurb = "Shells burst {0}% wider", Amount = 0.25 },
-            new CardDef { Id = "vents", Name = "Steam Vents", Blurb = "Raiders who strike the train are scalded for {0}% of the blow", Amount = 0.60 },
+            new CardDef { Id = "vents", Name = "Steam Vents", Blurb = "Raiders who strike the train up close are scalded for {0}% of the blow", Amount = 0.60 },
             new CardDef { Id = "mend", Name = "Field Fitters", Blurb = "Plating mends {0}% a second", Amount = 0.01 },
             new CardDef { Id = "slow", Name = "Sand on the Rails", Blurb = "Raiders come on {0}% slower", Amount = 0.10 },
         };
