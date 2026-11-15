@@ -15,8 +15,8 @@ namespace Ironclad.Game
         static readonly List<Line> _lines = new List<Line>();
         sealed class Flying { public Transform T; public Vector3 A, B; public float Time, Max, Arc; }
         static readonly List<Flying> _shells = new List<Flying>();
-        sealed class Ring { public Transform T; public MeshRenderer R; public float Life, Max, Size; public Color C; public MaterialPropertyBlock P; }
-        static readonly List<Ring> _rings = new List<Ring>();
+        sealed class GroundRing { public Transform T; public MeshRenderer R; public float Life, Max, Size; public Color C; public MaterialPropertyBlock P; }
+        static readonly List<GroundRing> _rings = new List<GroundRing>();
         static Transform _mark; static Mesh _quad;
 
         public static void Init(Transform root)
@@ -114,9 +114,64 @@ namespace Ironclad.Game
             return go.transform;
         }
 
+        /// <summary>A ring spreading over the ground and fading (supply pulses, heals).</summary>
+        public static void Ring(Vector3 at, float size, Color c, float life) { RingAt(new Vector3(at.x, 0.14f, at.z), size, c, life); }
+
+        /// <summary>A disc that lies on the ground and stays until destroyed: soft (shadows, telegraph fills) or a
+        /// thin ring (threat and shield rings). Colour it with <see cref="Tint"/>, size it with its scale.</summary>
+        public static Transform Disc(Transform parent, Color c, bool ring)
+        {
+            var go = new GameObject(ring ? "RingDisc" : "SoftDisc"); go.transform.SetParent(parent, false);
+            go.transform.localRotation = Quaternion.Euler(90, 0, 0);
+            go.AddComponent<MeshFilter>().sharedMesh = QuadMesh;
+            var mr = go.AddComponent<MeshRenderer>(); mr.sharedMaterial = ring ? _ringMat : _alpha; mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            mr.receiveShadows = false;
+            Tint(go.transform, c);
+            return go.transform;
+        }
+
+        /// <summary>A soft-edged mark on a surface (scorch on a wagon's side).</summary>
+        public static Transform Decal(Transform parent, Color c)
+        {
+            var go = new GameObject("Decal"); go.transform.SetParent(parent, false);
+            go.AddComponent<MeshFilter>().sharedMesh = QuadMesh;
+            var mr = go.AddComponent<MeshRenderer>(); mr.sharedMaterial = _alpha; mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            Tint(go.transform, c);
+            return go.transform;
+        }
+
+        static MaterialPropertyBlock _tint;
+        public static void Tint(Transform t, Color c)
+        {
+            var mr = t.GetComponent<MeshRenderer>(); if (mr == null) return;
+            if (_tint == null) _tint = new MaterialPropertyBlock();
+            _tint.SetColor("_Color", c); mr.SetPropertyBlock(_tint);
+        }
+
+        /// <summary>A jagged arc in any colour (the dynamo's forks, the mender's heals).</summary>
+        public static void Arc(Vector3 from, Vector3 to, Color c, float width = 0.3f, float life = 0.14f)
+        {
+            var l = NewLine(7); if (l == null) return;
+            l.L.gameObject.SetActive(true);
+            for (int i = 0; i < 7; i++) { var p = Vector3.Lerp(from, to, i / 6f); if (i > 0 && i < 6) p += Random.insideUnitSphere * 0.6f; l.L.SetPosition(i, p); }
+            l.L.widthMultiplier = width; l.Life = l.Max = life; l.C = c;
+        }
+
+        /// <summary>A few green motes rising (repairs).</summary>
+        public static void Mend(Vector3 at)
+        {
+            for (int i = 0; i < 4; i++) Emit(_fire, at + Random.insideUnitSphere * 0.8f, Vector3.up * Random.Range(1.5f, 3f), new Color(0.4f, 1f, 0.45f, 1f), 0.45f, Random.Range(0.4f, 0.7f));
+        }
+
+        /// <summary>Spent brass falling from a gun.</summary>
+        public static void Brass(Vector3 at, Vector3 side)
+        {
+            Emit(_fire, at, side * Random.Range(2f, 3.5f) + Vector3.up * Random.Range(2f, 3.5f), new Color(1f, 0.78f, 0.3f, 1f), 0.22f, 0.3f);
+        }
+
         static void RingAt(Vector3 at, float size, Color c, float life)
         {
-            Ring ring = null;
+            GroundRing ring = null;
             foreach (var r in _rings) if (r.Life <= 0) { ring = r; break; }
             if (ring == null)
             {
@@ -125,7 +180,7 @@ namespace Ironclad.Game
                 go.transform.rotation = Quaternion.Euler(90, 0, 0);
                 go.AddComponent<MeshFilter>().sharedMesh = QuadMesh;
                 var mr = go.AddComponent<MeshRenderer>(); mr.sharedMaterial = _ringMat; mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                _rings.Add(ring = new Ring { T = go.transform, R = mr, P = new MaterialPropertyBlock() });
+                _rings.Add(ring = new GroundRing { T = go.transform, R = mr, P = new MaterialPropertyBlock() });
             }
             ring.T.gameObject.SetActive(true); ring.T.position = at; ring.Life = ring.Max = life; ring.Size = size; ring.C = c;
         }

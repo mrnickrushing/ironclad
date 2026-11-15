@@ -34,6 +34,18 @@ namespace Ironclad.Core
         public bool Rail;               // comes along the track, from ahead or behind
         public bool Blast;              // spends itself on the first hit
         public bool Boss;
+        // The bosses' own ways of fighting.
+        public int Escorts;             // war wagons that ride in with it
+        public double Shield;           // share of every blow it shrugs off while an escort still rides
+        public double Windup;           // seconds it aims (a red mark on the train) before a shot that hits the car and its neighbours
+        public double Heal;             // share of their health it gives back each second to raiders near it
+        public string Hint;             // what to do about it, under the mile
+    }
+
+    /// <summary>A choice the line offers between stations: take it or roll on (rolling on is always safe).</summary>
+    public sealed class ChoiceDef
+    {
+        public string Id, Title, Body, Take, Leave;
     }
 
     /// <summary>A line to cross. Each is harder than the last and pays more steel.</summary>
@@ -77,6 +89,9 @@ namespace Ironclad.Core
     {
         public string Id, Name, Blurb;  // {0} in the blurb is the amount, as a percentage
         public double Amount;           // at Common; Rare is x1.75, Epic x3
+        public bool Behaviour;          // changes how the train fights (with a cost), not just a number; once a run
+        public string Needs;            // only offered when this wagon is coupled on
+        public string Icon;             // its picture on the card
     }
 
     public static class Content
@@ -105,6 +120,8 @@ namespace Ironclad.Core
         public const double DepotHours = 8;         // the depot's patrols earn for this long unattended
         public const double DepotShare = 0.35;      // of the steel per hour a played run on that line would bring
         public static readonly double[] RarityMult = { 1, 1.75, 3 };
+        public static readonly double[] TacticMult = { 1, 1.3, 1.6 };     // a card that changes how the train fights grows less with rarity
+        public static double Mult(CardDef c, int rarity) { return (c.Behaviour ? TacticMult : RarityMult)[rarity]; }
         public static readonly double[] RarityOdds = { 0.72, 0.23, 0.05 };
         public static readonly double[] Speeds = { 1, 1.5, 2, 3 };
         // A new engine: charters for the steel this engine has earned (the first at CharterSteel, then by its square root),
@@ -133,8 +150,25 @@ namespace Ironclad.Core
             new EnemyDef { Id = "powder", Name = "Powder Monkey", Hp = 18, Speed = 7.5, Damage = 40, Interval = 1, Bounty = 2, Threat = 2, Mile = 12, Blast = true },
             new EnemyDef { Id = "handcar", Name = "Handcar Gang", Hp = 45, Speed = 9, Damage = 8, Interval = 0.9, Bounty = 4, Threat = 3, Mile = 16, Rail = true },
             new EnemyDef { Id = "warwagon", Name = "War Wagon", Hp = 320, Speed = 2, Damage = 22, Interval = 2, Range = 8, Bounty = 16, Threat = 12, Mile = 22 },
-            new EnemyDef { Id = "boss", Name = "The Baron's Carriage", Hp = 230, Speed = 1.6, Damage = 20, Interval = 2, Range = 7, Bounty = 50, Threat = 0, Mile = 10, Boss = true },
+            new EnemyDef { Id = "boss", Name = "The Baron's Carriage", Hp = 230, Speed = 1.6, Damage = 20, Interval = 2, Range = 7, Bounty = 50, Threat = 0, Mile = 10, Boss = true, Hint = "tap it to point every gun at it" },
+            new EnemyDef { Id = "convoy", Name = "The Baron's Convoy", Hp = 200, Speed = 1.5, Damage = 18, Interval = 2, Range = 7, Bounty = 55, Threat = 0, Mile = 20, Boss = true, Escorts = 3, Shield = 0.75, Hint = "its escort shields it: bring the war wagons down first" },
+            new EnemyDef { Id = "longgun", Name = "The Long Gun", Hp = 190, Speed = 1.4, Damage = 30, Interval = 6.5, Range = 11, Bounty = 55, Threat = 0, Mile = 30, Boss = true, Windup = 2.4, Hint = "sound the WHISTLE when it marks a wagon to spoil the shot" },
+            new EnemyDef { Id = "mender", Name = "The Mending Wagon", Hp = 210, Speed = 1.5, Damage = 10, Interval = 2, Range = 9, Bounty = 55, Threat = 0, Mile = 40, Boss = true, Heal = 0.05, Hint = "it mends the raiders round it: bring it down first" },
         };
+
+        /// <summary>The bosses in the order the stations bring them, over and over (the first station is always the carriage).</summary>
+        public static readonly string[] Bosses = { "boss", "convoy", "longgun", "mender" };
+
+        public static readonly List<ChoiceDef> Choices = new List<ChoiceDef>
+        {
+            new ChoiceDef { Id = "fitter", Title = "A STRANDED FITTER", Body = "A fitter waves from a broken handcar. Stopping costs a few seconds out here; she'd work on two of your guns.", Take = "PICK HER UP", Leave = "ROLL ON" },
+            new ChoiceDef { Id = "freight", Title = "FREIGHT AT THE SIDING", Body = "Freight cars stuck at a siding, raiders closing in. Defend them: half as many raiders again, and +60% steel this mile and the next.", Take = "DEFEND IT", Leave = "ROLL ON" },
+            new ChoiceDef { Id = "gulch", Title = "THE GULCH ROUTE", Body = "A short cut through a gulch: double steel and scrip for two miles, but the raiders there hit 30% harder.", Take = "TAKE THE GULCH", Leave = "STAY ON THE LINE" },
+        };
+        public const double ChoiceSeconds = 14;     // left alone, the train rolls on
+
+        /// <summary>Workshop levels at which a wagon looks heavier: plating, then brass, then the works.</summary>
+        public static readonly int[] TierLevels = { 10, 25, 50 };
 
         public static readonly List<RouteDef> Routes = new List<RouteDef>
         {
@@ -188,27 +222,35 @@ namespace Ironclad.Core
 
         public static readonly List<CardDef> Cards = new List<CardDef>
         {
-            new CardDef { Id = "damage", Name = "Hot Barrels", Blurb = "+{0}% damage", Amount = 0.20 },
-            new CardDef { Id = "rate", Name = "Oiled Actions", Blurb = "+{0}% rate of fire", Amount = 0.12 },
-            new CardDef { Id = "plate", Name = "Riveted Plate", Blurb = "+{0}% plating, and it is made good now", Amount = 0.25 },
-            new CardDef { Id = "hull", Name = "Boiler Patch", Blurb = "+{0}% hull, and it is made good now", Amount = 0.20 },
-            new CardDef { Id = "scrip", Name = "Wanted Posters", Blurb = "+{0}% scrip", Amount = 0.30 },
-            new CardDef { Id = "steel", Name = "Salvage Rights", Blurb = "+{0}% steel from this run", Amount = 0.12 },
-            new CardDef { Id = "range", Name = "Long Sights", Blurb = "+{0}% range", Amount = 0.12 },
-            new CardDef { Id = "crit", Name = "Lucky Streak", Blurb = "+{0}% chance of a crit", Amount = 0.06 },
-            new CardDef { Id = "splash", Name = "Grapeshot", Blurb = "Shells burst {0}% wider", Amount = 0.25 },
-            new CardDef { Id = "vents", Name = "Steam Vents", Blurb = "Raiders who strike the train up close are scalded for {0}% of the blow", Amount = 0.60 },
-            new CardDef { Id = "mend", Name = "Field Fitters", Blurb = "Plating mends {0}% a second", Amount = 0.01 },
-            new CardDef { Id = "slow", Name = "Sand on the Rails", Blurb = "Raiders come on {0}% slower", Amount = 0.10 },
+            new CardDef { Id = "damage", Name = "Hot Barrels", Blurb = "+{0}% damage", Amount = 0.20, Icon = "hammer" },
+            new CardDef { Id = "rate", Name = "Oiled Actions", Blurb = "+{0}% rate of fire", Amount = 0.12, Icon = "gear" },
+            new CardDef { Id = "plate", Name = "Riveted Plate", Blurb = "+{0}% plating, and it is made good now", Amount = 0.25, Icon = "box" },
+            new CardDef { Id = "hull", Name = "Boiler Patch", Blurb = "+{0}% hull, and it is made good now", Amount = 0.20, Icon = "lock" },
+            new CardDef { Id = "scrip", Name = "Wanted Posters", Blurb = "+{0}% scrip", Amount = 0.30, Icon = "coins" },
+            new CardDef { Id = "steel", Name = "Salvage Rights", Blurb = "+{0}% steel from this run", Amount = 0.12, Icon = "sack" },
+            new CardDef { Id = "range", Name = "Long Sights", Blurb = "+{0}% range", Amount = 0.12, Icon = "compass" },
+            new CardDef { Id = "crit", Name = "Lucky Streak", Blurb = "+{0}% chance of a crit", Amount = 0.06, Icon = "star" },
+            new CardDef { Id = "splash", Name = "Grapeshot", Blurb = "Shells burst {0}% wider", Amount = 0.25, Icon = "target" },
+            new CardDef { Id = "vents", Name = "Steam Vents", Blurb = "Raiders who strike the train up close are scalded for {0}% of the blow", Amount = 0.60, Icon = "sound" },
+            new CardDef { Id = "mend", Name = "Field Fitters", Blurb = "Plating mends {0}% a second", Amount = 0.01, Icon = "wrench" },
+            new CardDef { Id = "slow", Name = "Sand on the Rails", Blurb = "Raiders come on {0}% slower", Amount = 0.10, Icon = "clock" },
+            // Cards that change how the train fights, each with a price.
+            new CardDef { Id = "cluster", Name = "Split Shells", Blurb = "Shells split into three small blasts, each {0}% of the shell. The shell hits 40% less.", Amount = 0.35, Behaviour = true, Needs = "splash", Icon = "gift" },
+            new CardDef { Id = "arc", Name = "Arc Through Smoke", Blurb = "Arcs jump {0}% further and lose nothing through burning raiders. First strike 20% weaker.", Amount = 0.6, Behaviour = true, Needs = "dynamo", Icon = "bolt" },
+            new CardDef { Id = "recharge", Name = "Steam Recharge", Blurb = "The whistle reloads every gun and they fire {0}% faster for 5 s. Whistle ready 15 s later.", Amount = 0.5, Behaviour = true, Icon = "bell" },
+            new CardDef { Id = "decoy", Name = "Iron Decoy", Blurb = "Raiders go for the last wagon: {0}% more plating, but it fires 40% slower.", Amount = 1.0, Behaviour = true, Icon = "user" },
+            new CardDef { Id = "ricochet", Name = "Ricochet", Blurb = "A Gatling kill carries on into the next raider for {0}% of the shot. Gatling 15% weaker.", Amount = 0.5, Behaviour = true, Needs = "gatling", Icon = "medal" },
+            new CardDef { Id = "glass", Name = "Glass Cannon", Blurb = "+{0}% damage from every gun, but a quarter less hull.", Amount = 0.4, Behaviour = true, Icon = "crown" },
         };
 
         public static CarDef Car(string id) { return Cars.Find(c => c.Id == id); }
         public static EnemyDef Enemy(string id) { return Enemies.Find(e => e.Id == id); }
         public static UpgradeDef Upgrade(string id) { return Upgrades.Find(u => u.Id == id); }
         public static CardDef Card(string id) { return Cards.Find(c => c.Id == id); }
+        public static ChoiceDef Choice(string id) { return Choices.Find(c => c.Id == id); }
         public static string Blurb(CardDef c, Rarity r)
         {
-            double v = c.Amount * RarityMult[(int)r] * 100;
+            double v = c.Amount * Mult(c, (int)r) * 100;
             return string.Format(System.Globalization.CultureInfo.InvariantCulture, c.Blurb, Math.Round(v, v < 10 ? 1 : 0));
         }
     }

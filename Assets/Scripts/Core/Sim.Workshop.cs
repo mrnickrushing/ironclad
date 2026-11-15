@@ -170,32 +170,51 @@ namespace Ironclad.Core
 
         // ---- the numbers a run is fought with ----
 
+        int CardCount(string id) { int n = 0; if (State.run != null) foreach (var p in State.run.cards) if (p.card == id) n++; return n; }
+
+        /// <summary>Puts every wagon's plating maximum right for the run's cards and its place (Iron Decoy thickens the
+        /// last wagon), keeping how much of it is left.</summary>
+        void RefreshPlating()
+        {
+            var r = State.run; if (r == null) return;
+            double decoy = CardSum("decoy");
+            for (int i = 1; i < r.cars.Count; i++)
+            {
+                var c = r.cars[i];
+                double want = PlateOf(c) * (decoy > 0 && i == r.cars.Count - 1 ? 1 + decoy : 1);
+                if (c.platingMax > 0 && Math.Abs(want - c.platingMax) > 1e-9) { c.plating = c.plating / c.platingMax * want; c.platingMax = want; }
+            }
+        }
+
+        /// <summary>How many levels make a wagon look heavier (0..3: plating, brass, the works).</summary>
+        public int CarTier(string id) { int lv = CarLevel(id), t = 0; foreach (int l in Content.TierLevels) if (lv >= l) t++; return t; }
+
         double CardSum(string id)
         {
             double v = 0;
             if (State.run == null) return 0;
             var d = Content.Card(id);
-            foreach (var p in State.run.cards) if (p.card == id) v += d.Amount * Content.RarityMult[p.rarity];
+            foreach (var p in State.run.cards) if (p.card == id) v += d.Amount * Content.Mult(d, p.rarity);
             return v;
         }
 
-        public double DamageMult { get { return (1 + Content.Upgrade("power").Step * UpgradeLevel("power")) * (1 + CardSum("damage")) * CharterMult; } }
-        public double RateMult { get { return (1 + Content.Upgrade("rate").Step * UpgradeLevel("rate")) * (1 + CardSum("rate")); } }
+        public double DamageMult { get { return (1 + Content.Upgrade("power").Step * UpgradeLevel("power")) * (1 + CardSum("damage")) * (1 + CardSum("glass")) * CharterMult; } }
+        public double RateMult { get { return (1 + Content.Upgrade("rate").Step * UpgradeLevel("rate")) * (1 + CardSum("rate")) * (State.run != null && State.run.surge > 0 ? 1 + CardSum("recharge") : 1); } }
         public double RangeMult { get { return 1 + CardSum("range"); } }
         public double CritChance { get { return Content.CritBase + Content.Upgrade("crit").Step * UpgradeLevel("crit") + CardSum("crit"); } }
         public double CritDamage { get { return Content.CritDamageBase + Content.Upgrade("critdmg").Step * UpgradeLevel("critdmg"); } }
         public double ScripMult { get { return (1 + Content.Upgrade("scrip").Step * UpgradeLevel("scrip")) * (1 + CardSum("scrip")); } }
         public double SteelMult { get { return (1 + Content.Upgrade("steel").Step * UpgradeLevel("steel")) * (1 + CardSum("steel")) * (Owns("ironclad.doubler") ? 2 : 1) * CharterMult; } }
-        public double HullMax { get { return Content.HullBase * (1 + Content.Upgrade("hull").Step * UpgradeLevel("hull")) * (1 + CardSum("hull")); } }
+        public double HullMax { get { return Content.HullBase * (1 + Content.Upgrade("hull").Step * UpgradeLevel("hull")) * (1 + CardSum("hull")) * Math.Pow(0.75, CardCount("glass")); } }
         public double PlateMax(string type) { return Content.PlateBase * Content.Car(type).Plating * (1 + Content.Upgrade("plate").Step * UpgradeLevel("plate")) * (1 + CardSum("plate")); }
         public double HullMend { get { return Content.Upgrade("mend").Step * UpgradeLevel("mend"); } }
-        public double WhistleEvery { get { return Content.WhistleCooldown - Content.Upgrade("whistle").Step * UpgradeLevel("whistle"); } }
+        public double WhistleEvery { get { return Content.WhistleCooldown - Content.Upgrade("whistle").Step * UpgradeLevel("whistle") + (CardSum("recharge") > 0 ? 15 : 0); } }
         public double StartScrip { get { return Content.StartScrip + Content.Upgrade("start").Step * UpgradeLevel("start"); } }
 
         /// <summary>What one shot from this car does before crits, with its workshop and field levels.</summary>
         public double ShotDamage(CarState c)
         {
-            return Content.Car(c.type).Damage * Math.Pow(Content.CarPower, CarLevel(c.type) - 1) * Math.Pow(Content.FieldPower, c.field) * DamageMult;
+            return Content.Car(c.type).Damage * Math.Pow(Content.CarPower, CarLevel(c.type) - 1) * Math.Pow(Content.FieldPower, c.field) * DamageMult * (c.type == "gatling" && CardSum("ricochet") > 0 ? 0.85 : 1);
         }
 
         /// <summary>Scrip for the next field level of the car in this place of the run's train (0 is the engine).</summary>
@@ -216,7 +235,7 @@ namespace Ironclad.Core
             r.scrip -= cost;
             var c = r.cars[car];
             c.field++; State.fieldBuys++;
-            if (c.platingMax > 0) { c.platingMax = PlateOf(c); c.plating = c.platingMax; c.down = false; }      // and it is back in the fight
+            if (c.platingMax > 0) { c.platingMax = PlateOf(c); c.plating = c.platingMax; c.down = false; RefreshPlating(); }      // and it is back in the fight
             Touch();
             return true;
         }

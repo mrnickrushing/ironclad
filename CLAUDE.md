@@ -53,6 +53,18 @@ The project was started from Reel Empire (`~/reelempire`): the platform code (`G
   tracks `dealt`, `hurtBy`, `firstOut`); `PurchasePreview` (the shop's before/after card); `NextGoal` on the depot and
   the UNLOCKED card (`NewlyUnlocked`, `Celebrated`); the Fireman's Pack timing test (`StarterVariant` by `cohort`).
   Daily tasks are drawn from a bigger pool by a per-day shuffle (`TasksFor`, kept in `taskIds`). With AUTO on, `Hud.UpdateOver` collects a finished run after a countdown.
+- Depth: four bosses take turns by station (`Sim.BossKind`, `Content.Bosses`): the Baron's Carriage; the Convoy (three
+  `escort` war wagons, takes 75% less while they live); the Long Gun (marks a wagon, `Warning` event and a red filling
+  ring, fires on it and its neighbours after `Windup`; the whistle spoils it, `Spoiled`); the Mending Wagon (heals
+  raiders within 12 m). Each has a `Hint` shown while it rides. Halfway through each leg the line offers a choice
+  (`Content.Choices`, `Sim.Choose`, declined when its 14 s run out): fitter, freight (more raiders, more steel), gulch
+  (double pay, harder hits); `boostKind`/`boostMiles`. Tactic cards (`CardDef.Behaviour`, once a run, `Needs` a wagon,
+  gentler rarity scale `TacticMult`): Split Shells, Arc Through Smoke, Steam Recharge, Iron Decoy (`RefreshPlating`),
+  Ricochet, Glass Cannon. Cards show a glyph (`CardDef.Icon`, or painted art at `Resources/UI/Cards/<id>.png` if added),
+  a rarity glow and the wagons they help (`Hud.CardFace`). Wagons look heavier at levels 10/25/50 (`CarTier`,
+  `TrainView.Heavier`); guns kick, mortars dip, supply cars pulse, fitters spark; wagons scorch as plating runs down and
+  say FIXED when patched; raiders stand on soft shadows with rings when striking; landmarks pass at miles 3 and 7 of
+  each leg (`TrainView.BuildLandmark`, kept within 15 m of the line or the camera can't see them).
 - `Game/Debug/PlayBot.cs` (editor only) plays through the real HUD methods: `PlayBot.Begin(10)`, `PlayBot.Report()`.
 - `Tools/ios-export.sh` switches the Editor to the iOS platform and recompiles before building, and refuses an export
   without the AdMob id or the entitlements. Music is `Tools/art/music.py` ("day" while rolling, "night" at rest).

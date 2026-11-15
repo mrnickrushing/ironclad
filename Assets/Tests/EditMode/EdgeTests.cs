@@ -60,7 +60,7 @@ namespace Ironclad.Tests
             var s = Strong(400);
             s.StartRun();
             for (int i = 0; i < 30000 && !s.RunEnded && s.Run.mile < 150; i++) { s.Tick(0.5); if (s.AtStation) s.PassStation(); for (int c = 0; c < s.Run.cars.Count; c++) s.FieldUpgrade(c); }
-            Assert.GreaterOrEqual(s.Run.mile, 50);
+            Assert.GreaterOrEqual(s.Run.mile, 50, "phase " + s.Run.phase + " hull " + s.Run.hull + "/" + s.Run.hullMax + " mt " + s.Run.mileTime + " boss " + s.Run.bossKind + " left " + s.Run.bossLeft + " en " + string.Join(";", s.Run.enemies.Select(e => e.kind + ":" + (int)e.hp + "/" + (int)e.hpMax + "@" + (int)e.x + "," + (int)e.z + " w" + e.windup.ToString("0.0") + " s" + e.stun.ToString("0.0"))));
             Assert.IsFalse(double.IsInfinity(s.Run.scrip) || double.IsNaN(s.Run.scrip));
             Assert.IsFalse(double.IsInfinity(s.RunSteel) || double.IsNaN(s.RunSteel));
             Assert.LessOrEqual(s.Run.enemies.Count, Content.MaxRaiders + 1, "raiders don't pile up without end");

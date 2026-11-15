@@ -229,11 +229,22 @@ namespace Ironclad.Game
                 int levels; double cost = s.CarCostN(id, built ? BulkN : 1, out levels); bool can = s.State.steel >= cost;
                 string stats = d.Support ? d.Blurb : d.Blurb + "  " + Format.Money(d.Damage * Math.Pow(Content.CarPower, Math.Max(0, lv - 1)) * s.DamageMult) + " damage every " + d.Interval.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + " s";
                 if (!plans) y = Entry(y, Ui.Ic("lock"), Ui.Dim, d.Name, "The plans turn up at mile " + d.Mile + " on any line.", null, Ui.Off, null, "MILE " + d.Mile);
-                else y = Entry(y, TrainView.Instance != null ? TrainView.Instance.Icon(id) : null, Color.white, d.Name + (built ? "  <size=24><color=#7A5A40>level " + lv + "</color></size>" : ""), stats,
+                else y = Entry(y, TrainView.Instance != null ? TrainView.Instance.Icon(id) : null, Color.white, d.Name + (built ? "  <size=24><color=#7A5A40>level " + lv + "</color>" + TierTag(id, lv) + "</size>" : ""), stats,
                     built ? Price(cost, levels) : "BUILD  " + Format.Money(cost) + " steel", built ? Ui.Green : Ui.Gold, can ? (Action)(() => { if (S.BuyCars(id, S.Built(id) ? BulkN : 1) > 0) { Sfx.Play("build", 0.7f); Haptics.Light(); } }) : null, null, !built);
             }
             y = LiveryRows(y);
             EndList(-y + 30);
+        }
+
+        static readonly string[] TierNames = { "", "PLATED", "BRASS-BOUND", "WAR-FITTED" };
+
+        /// <summary>The look a wagon has earned, and the level that brings the next one.</summary>
+        string TierTag(string id, int lv)
+        {
+            if (id == "engine") return "";
+            int t = S.CarTier(id);
+            string now = t > 0 ? "  <color=#B8860B>" + TierNames[t] + "</color>" : "";
+            return t < Content.TierLevels.Length ? now + "  <color=#9A8A78>new look at " + Content.TierLevels[t] + "</color>" : now;
         }
 
         // ---- formations ----

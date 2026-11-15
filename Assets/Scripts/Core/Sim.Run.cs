@@ -119,7 +119,7 @@ namespace Ironclad.Core
             double back = CarX(r.cars.Count - 1);
             var e = new EnemyState { id = r.nextId++, kind = kind };
             e.hpMax = e.hp = d.Hp * MileHp(r.mile);
-            e.damage = d.Damage * MileDamage(r.mile);
+            e.damage = d.Damage * MileDamage(r.mile) * (r.boostMiles > 0 && r.boostKind == "gulch" ? 1.3 : 1);
             e.cooldown = d.Interval * 0.5;
             if (beside != null && !d.Rail)
             {
@@ -178,10 +178,18 @@ namespace Ironclad.Core
             if (BossMile && !r.bossOut && r.mileTime >= 2)
             {
                 r.bossOut = true;
-                var b = Spawn("boss");
+                r.bossKind = BossKind(r.mile);
+                var b = Spawn(r.bossKind);
                 double grow = 1 + 0.6 * (r.mile / Content.StationEvery - 1);
                 b.hpMax = b.hp = b.hp * grow;
+                for (int k = 0; k < Content.Enemy(r.bossKind).Escorts; k++)
+                {
+                    var g = Spawn("warwagon", b);
+                    g.escort = true; g.hpMax = g.hp = g.hp * 0.7;
+                }
             }
+            if (r.surge > 0) r.surge -= dt;
+            if (r.choice.Length > 0) { r.choiceIn -= dt; if (r.choiceIn <= 0) Choose(false); }
 
             // Raiders close in and strike.
             double slow = 1 - Math.Min(0.6, CardSum("slow"));
@@ -189,15 +197,28 @@ namespace Ironclad.Core
             {
                 var e = r.enemies[i];
                 if (e.hp <= 0) continue;
+                if (e.burn > 0) e.burn -= dt;
                 if (e.stun > 0) { e.stun -= dt; continue; }
                 var d = Content.Enemy(e.kind);
+                if (d.Heal > 0)
+                    foreach (var o in r.enemies)
+                        if (o.hp > 0 && o.hp < o.hpMax && Sq(o.x - e.x, o.z - e.z) <= 12 * 12)
+                            o.hp = Math.Min(o.hpMax, o.hp + o.hpMax * d.Heal * (o == e ? 0.5 : 1) * dt);
+                if (e.windup > 0)
+                {
+                    e.windup -= dt;
+                    if (e.windup <= 0) { LongShot(e); if (r.phase != (int)Phase.Rolling) return; }
+                    continue;
+                }
                 int target = 0; double best = double.MaxValue;
+                int last = r.cars.Count - 1; bool decoy = last > 0 && CardSum("decoy") > 0;
                 for (int c = 0; c < r.cars.Count; c++)
                 {
                     if (r.cars[c].Out) continue;
-                    double dist = Reach(e.x, e.z, c);
+                    double dist = Reach(e.x, e.z, c) - (decoy && c == last ? 6 : 0);
                     if (dist < best) { best = dist; target = c; }
                 }
+                if (decoy && target == last) best += 6;
                 e.striking = best <= d.Range + Body;
                 if (!e.striking)
                 {
@@ -214,6 +235,13 @@ namespace Ironclad.Core
                 e.cooldown -= dt;
                 if (e.cooldown > 0) continue;
                 e.cooldown = d.Interval;
+                if (d.Windup > 0)
+                {
+                    // The Long Gun marks a car and fires when its aim is done (the whistle spoils it).
+                    e.windup = d.Windup; e.aimCar = target;
+                    Warning?.Invoke(CarX(target), 0, Content.CarLength * 1.5, d.Windup);
+                    continue;
+                }
                 Strike(target, e.damage, e);
                 if (d.Blast) { Burst?.Invoke(e.x, e.z, 4); e.hp = 0; }
                 if (r.phase != (int)Phase.Rolling) return;
@@ -226,7 +254,7 @@ namespace Ironclad.Core
                 var def = Content.Car(car.type);
                 if (car.Out || def.Support) continue;
                 if (car.cooldown > 0) { car.cooldown -= dt; if (car.cooldown > 0) continue; }
-                if (Fire(c, car, def)) car.cooldown += def.Interval / (RateMult * Haste(c));
+                if (Fire(c, car, def)) car.cooldown += def.Interval / (RateMult * Haste(c)) * (c == r.cars.Count - 1 && c > 0 && CardSum("decoy") > 0 ? 1.4 : 1);
                 else car.cooldown = 0;
             }
 
@@ -238,10 +266,19 @@ namespace Ironclad.Core
                 if (s.t > 0) continue;
                 r.shells.RemoveAt(i);
                 double wide = s.splash * (1 + CardSum("splash"));
+                double split = CardSum("cluster");
                 Burst?.Invoke(s.x, s.z, wide);
                 _from = s.car;
                 foreach (var e in r.enemies)
-                    if (e.hp > 0 && Sq(e.x - s.x, e.z - s.z) <= wide * wide) Hurt(e, s.damage, s.crit);
+                    if (e.hp > 0 && Sq(e.x - s.x, e.z - s.z) <= wide * wide) Hurt(e, s.damage * (split > 0 ? 0.6 : 1), s.crit);
+                if (split > 0)
+                    for (int k = 0; k < 3; k++)
+                    {
+                        double a = k * Math.PI * 2 / 3 + Roll(), bx = s.x + Math.Cos(a) * wide * 0.9, bz = s.z + Math.Sin(a) * wide * 0.9, bw = wide * 0.5;
+                        Burst?.Invoke(bx, bz, bw);
+                        foreach (var e in r.enemies)
+                            if (e.hp > 0 && Sq(e.x - bx, e.z - bz) <= bw * bw) Hurt(e, s.damage * split, s.crit);
+                    }
                 _from = -1;
             }
 
@@ -354,7 +391,7 @@ namespace Ironclad.Core
             {
                 bool any = false;
                 foreach (var e in r.enemies)
-                    if (e.hp > 0 && Reach(e.x, e.z, index) <= range) { Hurt(e, damage, crit); any = true; }
+                    if (e.hp > 0 && Reach(e.x, e.z, index) <= range) { e.burn = 2; Hurt(e, damage, crit); any = true; }
                 if (any) { Fired?.Invoke(index, cx, 0, crit); if (crit) State.crits++; }
                 return any;
             }
@@ -380,12 +417,22 @@ namespace Ironclad.Core
                 r.shells.Add(new Shell { car = index, x = target.x, z = target.z, t = def.Flight, damage = damage, splash = def.Splash, crit = crit });
                 return true;
             }
+            double arc = def.Chain > 0 ? CardSum("arc") : 0;
+            if (arc > 0) damage *= 0.8;
             Hurt(target, damage, crit);
+            double rico = def.Id == "gatling" ? CardSum("ricochet") : 0;
+            if (rico > 0 && target.hp <= 0)
+            {
+                EnemyState next = null; double near = 36;
+                foreach (var e in r.enemies) { if (e.hp <= 0) continue; double dd = Sq(e.x - target.x, e.z - target.z); if (dd < near) { near = dd; next = e; } }
+                if (next != null) { Hurt(next, damage * rico, crit); Fired?.Invoke(index, next.x, next.z, crit); }
+            }
             var from = target;
             _chained.Clear(); _chained.Add(target.id);
+            double jump = 7 * (1 + arc);
             for (int j = 0; j < def.Chain; j++)
             {
-                EnemyState next = null; double near = 49;
+                EnemyState next = null; double near = jump * jump;
                 foreach (var e in r.enemies)
                 {
                     if (e.hp <= 0 || _chained.Contains(e.id)) continue;
@@ -393,7 +440,7 @@ namespace Ironclad.Core
                     if (dd < near) { near = dd; next = e; }
                 }
                 if (next == null) break;
-                damage *= 0.7;
+                if (!(arc > 0 && next.burn > 0)) damage *= 0.7;
                 Hurt(next, damage, crit);
                 Fired?.Invoke(index, next.x, next.z, crit);
                 _chained.Add(next.id); from = next;
@@ -414,13 +461,15 @@ namespace Ironclad.Core
         {
             if (e.hp <= 0) return;
             var r = State.run;
+            var def = Content.Enemy(e.kind);
+            if (def.Shield > 0 && r.enemies.Exists(o => o.escort && o.hp > 0)) damage *= 1 - def.Shield;
             if (_from >= 0 && _from < r.cars.Count) r.cars[_from].dealt += Math.Min(damage, e.hp);
             e.hp -= damage;
             Hit?.Invoke(e, damage, crit);
             if (e.hp > 0) return;
             e.hp = 0;
             var d = Content.Enemy(e.kind);
-            double scrip = d.Bounty * Math.Pow(Content.BountyPerMile, r.mile - 1) * ScripMult;
+            double scrip = d.Bounty * Math.Pow(Content.BountyPerMile, r.mile - 1) * ScripMult * (r.boostMiles > 0 && r.boostKind == "gulch" ? 2 : 1);
             r.scrip += scrip; r.kills++; State.kills++;
             if (_from >= 0 && _from < r.cars.Count) Add(State.carKills, r.cars[_from].type, 1);
             if (d.Boss) { State.bosses++; State.seals++; r.seals++; r.steel += Content.BossSteel * MileSteel(Route, r.mile) / Content.SteelPerMileBase * SteelMult; }
@@ -431,7 +480,8 @@ namespace Ironclad.Core
         void FinishMile()
         {
             var r = State.run;
-            double steel = MileSteel(Route, r.mile) * SteelMult;
+            double steel = MileSteel(Route, r.mile) * SteelMult * BoostSteel;
+            if (r.boostMiles > 0 && --r.boostMiles == 0) r.boostKind = "";
             r.steel += steel;
             State.miles++;
             int before = BestMile;
@@ -446,6 +496,70 @@ namespace Ironclad.Core
             if (BossMile) { EnterStation(); return; }
             r.mile++; r.mileTime = 0;
             FillQueue();
+            if (r.mile % Content.StationEvery == Content.StationEvery / 2 && r.choice.Length == 0)
+            {
+                r.choice = Content.Choices[(int)(Roll() * Content.Choices.Count)].Id; r.choiceIn = Content.ChoiceSeconds;
+                Touch();
+            }
+        }
+
+        double BoostSteel { get { var r = State.run; return r.boostMiles <= 0 ? 1 : r.boostKind == "freight" ? 1.6 : r.boostKind == "gulch" ? 2 : 1; } }
+
+        /// <summary>The boss that rides at this station's mile.</summary>
+        public static string BossKind(int mile) { int k = Math.Max(0, mile / Content.StationEvery - 1); return Content.Bosses[k % Content.Bosses.Length]; }
+
+        /// <summary>The choice the line is offering now (null: none).</summary>
+        public ChoiceDef Choice { get { var r = State.run; return r == null || r.choice.Length == 0 || !Running ? null : Content.Choice(r.choice); } }
+
+        /// <summary>Takes the line's offer, or rolls on. Rolling on costs nothing.</summary>
+        public bool Choose(bool take)
+        {
+            var r = State.run;
+            if (r == null || r.choice.Length == 0) return false;
+            string id = r.choice; r.choice = ""; r.choiceIn = 0;
+            if (take)
+            {
+                State.choicesTaken++;
+                switch (id)
+                {
+                    case "fitter":
+                        r.mileTime -= 6;        // the stop: the mile runs that much longer
+                        var guns = new List<CarState>();
+                        foreach (var c in r.cars) if (!Content.Car(c.type).Support) guns.Add(c);
+                        for (int k = 0; k < 2 && guns.Count > 0; k++) { int g = (int)(Roll() * guns.Count); guns[g].field++; guns.RemoveAt(g); }
+                        break;
+                    case "freight":
+                        {
+                            double budget = (5 + 1.5 * r.mile) * 0.5;
+                            var pool = Content.Enemies.FindAll(e => !e.Boss && e.Mile <= r.mile);
+                            while (budget >= 1)
+                            {
+                                var e = pool[(int)(Roll() * pool.Count)];
+                                if (e.Threat > budget) { if (pool.TrueForAll(x => x.Threat > budget)) break; continue; }
+                                r.queue.Add(e.Id); budget -= e.Threat;
+                            }
+                            r.spawnGap = Content.SpawnSeconds / Math.Max(1, r.queue.Count);
+                            r.boostKind = "freight"; r.boostMiles = 2;
+                        }
+                        break;
+                    case "gulch":
+                        r.boostKind = "gulch"; r.boostMiles = 2;
+                        foreach (var e in r.enemies) e.damage *= 1.3;
+                        break;
+                }
+            }
+            Touch();
+            return true;
+        }
+
+        /// <summary>The Long Gun's shot lands on the car it marked and the cars either side.</summary>
+        void LongShot(EnemyState e)
+        {
+            var r = State.run;
+            int at = Math.Max(0, Math.Min(r.cars.Count - 1, e.aimCar));
+            Burst?.Invoke(CarX(at), 0, Content.CarLength * 1.2);
+            for (int c = Math.Max(0, at - 1); c <= Math.Min(r.cars.Count - 1, at + 1) && r.phase == (int)Phase.Rolling; c++)
+                if (!r.cars[c].Out || c == 0) Strike(c, e.damage, e);
         }
 
         // ---- stations ----
@@ -470,8 +584,11 @@ namespace Ironclad.Core
             var r = State.run;
             r.offer.Clear();
             var left = new List<CardDef>(Content.Cards);
-            // Grapeshot does nothing for a train with no shells to burst.
-            if (!r.cars.Exists(c => Content.Car(c.type).Splash > 0)) left.RemoveAll(c => c.Id == "splash");
+            // Grapeshot and Split Shells do nothing for a train with no shells to burst; a wagon's own card needs the wagon.
+            bool shells = r.cars.Exists(c => Content.Car(c.type).Splash > 0);
+            if (!shells) left.RemoveAll(c => c.Id == "splash");
+            left.RemoveAll(c => c.Needs != null && (c.Needs == "splash" ? !shells : !r.cars.Exists(k => k.type == c.Needs)));
+            left.RemoveAll(c => c.Behaviour && r.cards.Exists(p => p.card == c.Id));
             int lucky = PerkLevel("lucky");
             double epic = Content.RarityOdds[2] + 0.01 * lucky, rare = Content.RarityOdds[1] + 0.03 * lucky;
             for (int i = 0; i < 3 + PerkLevel("hand") && left.Count > 0; i++)
@@ -496,7 +613,9 @@ namespace Ironclad.Core
             r.cards.Add(p);
             State.cardsTaken++;
             if (p.card == "hull") { r.hullMax = HullMax; r.hull = r.hullMax; }
+            if (p.card == "glass") { r.hullMax = HullMax; r.hull = Math.Min(r.hull, r.hullMax); }
             if (p.card == "plate") foreach (var c in r.cars) if (c.platingMax > 0) { c.platingMax = PlateOf(c); c.plating = c.platingMax; }
+            RefreshPlating();
             Touch();
             return true;
         }
@@ -524,6 +643,7 @@ namespace Ironclad.Core
         {
             var r = State.run;
             if (!AtStation || r.offer.Count > 0) return false;
+            RefreshPlating();
             r.phase = (int)Phase.Rolling;
             r.mile++; r.mileTime = 0;
             FillQueue();
@@ -571,6 +691,7 @@ namespace Ironclad.Core
                 if (best > Content.WhistleRange) continue;
                 bool boss = Content.Enemy(e.kind).Boss;
                 e.stun = (Content.WhistleStun + PerkLevel("flags")) * (boss ? 0.5 : 1);
+                if (e.windup > 0) { e.windup = 0; Spoiled?.Invoke(e); }
                 if (boss) continue;
                 double dx = e.x - CarX(near), dz = e.z, len = Math.Sqrt(dx * dx + dz * dz);
                 if (len < 1e-6) { dx = 0; dz = 1; len = 1; }
@@ -578,6 +699,7 @@ namespace Ironclad.Core
             }
             r.whistleIn = WhistleEvery;
             State.whistles++;
+            if (CardSum("recharge") > 0) { foreach (var c in r.cars) c.cooldown = 0; r.surge = 5; }
             Touch();
             return true;
         }
