@@ -27,7 +27,9 @@ The project was started from Reel Empire (`~/reelempire`): the platform code (`G
   `Span * 2`; a station slides in when the run stops; `BuildCar` puts a weapon on each wagon, `BuildFoe` makes each
   raider; the simulation's events drive tracers, shells, bursts), `World/Fx` (two particle systems, pooled lines,
   shells, rings), `World/Models` (`Along`: a kit model laid along the track; `Tall`: stood at a height),
-  `App/CameraRig`, `App/Sfx` (interface sounds are files; the fight's sounds are synthesised in `Synth`).
+  `App/CameraRig` (`Punch`), `App/Sfx` (interface sounds are files; the fight's sounds are synthesised in `Synth`;
+  `Tension` under the music at low hull), `App/SlowMo` (the whistle, the Baron's fall; GameRoot ticks it, unscaled),
+  `App/Look` (`Danger`: the red vignette).
 - Interface (`UI/Hud*.cs`): four faces picked by the run's phase (`Hud.Depot`, `Hud.Run` for the run, the station
   and the end), screens over the depot (`Hud.Screens`: workshop, train, today, awards, shop, settings), `Hud.Signs`
   (words rising from the fight, the toast). Parchment, oxblood and brass, painted by `Tools/art/ui_art.py`.
@@ -41,7 +43,9 @@ The project was started from Reel Empire (`~/reelempire`): the platform code (`G
 
 - Long-term layers: daily gift and three daily tasks from six (`Sim.Daily`), awards, gems for each station first
   reached on a line, and the Baron's seals (`Content.Perks`, `Sim.BuyPerk`: one seal a boss, seven lasting perks, the
-  workshop's second section). With AUTO on, `Hud.UpdateOver` collects a finished run after a countdown.
+  workshop's second section). A new engine (`Sim.Engine`: `Renew`, charters by `ChartersOnRenew`, `CharterMult`
+  on damage, steel and the depot) and gem liveries (`Content.Skins`, `BuySkin`/`UseSkin`; paint only, never stats).
+  The last card's `NearMiss` and `NextUnlock`; one free deal of cards per station (`FreeReroll`). With AUTO on, `Hud.UpdateOver` collects a finished run after a countdown.
 - `Game/Debug/PlayBot.cs` (editor only) plays through the real HUD methods: `PlayBot.Begin(10)`, `PlayBot.Report()`.
 - `Tools/ios-export.sh` switches the Editor to the iOS platform and recompiles before building, and refuses an export
   without the AdMob id or the entitlements. Music is `Tools/art/music.py` ("day" while rolling, "night" at rest).

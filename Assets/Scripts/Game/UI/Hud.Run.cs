@@ -234,8 +234,10 @@ namespace Ironclad.Game
                     var take = Ui.Button("Take", card.transform, "TAKE", Ui.Green, () => { if (S.TakeCard(k)) { Sfx.Play("claim", 0.8f); Haptics.Success(); } }, 38);
                     ((RectTransform)take.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 16), new Vector2(cw - 80, 84));
                 }
-                bool canRoll = s.State.gems >= Sim.RerollGems;
-                var roll = Ui.Button("Roll", p, s.State.run.offer.Count + " OTHER CARDS  ·  " + Sim.RerollGems + " gems", canRoll ? Ui.Grape : Ui.Off, canRoll ? (Action)(() => { if (S.RerollCards()) Sfx.Play("click"); }) : null, 26);
+                // The first deal of other cards at each station is free; after that it costs gems.
+                bool free = s.FreeReroll, canRoll = free || s.State.gems >= Sim.RerollGems;
+                var roll = Ui.Button("Roll", p, s.State.run.offer.Count + " OTHER CARDS  ·  " + (free ? "FREE" : Sim.RerollGems + " gems"), free ? Ui.Green : canRoll ? Ui.Grape : Ui.Off,
+                    canRoll ? (Action)(() => { if (S.RerollCards()) { Sfx.Play("open", 0.7f); _stationShownFor = -1; } }) : null, 26);
                 ((RectTransform)roll.transform).Place(new Vector2(1, 1), new Vector2(1, 1), new Vector2(-30, -20), new Vector2(330, 62));
                 _stationIdle = 0;
                 return;
@@ -304,18 +306,28 @@ namespace Ironclad.Game
             var dim = Ui.Img("Dim", _face, new Color(0.14f, 0.07f, 0.04f, 0.5f)); dim.raycastTarget = true; dim.rectTransform.Fill();
             var panel = Ui.ArtImg("Over", _face, "panel", Color.white, 60); panel.raycastTarget = true;
             var p = panel.rectTransform; p.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -10), new Vector2(1040, 820));
-            if (_overShownFor != r.time) { _overShownFor = r.time; panel.gameObject.AddComponent<PopIn>(); }
+            if (_overShownFor != r.time) { _overShownFor = r.time; panel.gameObject.AddComponent<PopIn>(); GameCenter.ReportRun(r.mile); }
             var ribbon = Ui.Ribbon("R", p, Ui.Coral); ribbon.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 0.5f), new Vector2(0, -8), new Vector2(700, 116));
             var t = Ui.Label("T", ribbon.transform, "END OF THE LINE", 50, Color.white); t.rectTransform.Fill(); t.rectTransform.offsetMin = new Vector2(40, 24); t.rectTransform.offsetMax = new Vector2(-40, 0); t.Stroke(2.5f);
             bool best = r.mile - 1 >= s.State.best[r.route] && r.mile > 1;
-            Ui.Label("M", p, "MILE " + r.mile, 96, Ui.Ink).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -80), new Vector2(900, 110));
-            Ui.Label("L", p, s.Route.Name + (best ? "  ·  <color=#C8501E>your furthest yet</color>" : "  ·  best " + s.State.best[r.route]), 32, Ui.Dim, TextAnchor.MiddleCenter, false).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -190), new Vector2(900, 40));
-            Ui.Label("K", p, Format.Money(r.kills) + " raiders turned back  ·  " + r.cards.Count + (r.cards.Count == 1 ? " card" : " cards") + (r.seals > 0 ? "  ·  <color=#7A3FB0>+" + r.seals + (r.seals == 1 ? " seal" : " seals") + "</color>" : ""), 30, Ui.Dim, TextAnchor.MiddleCenter, false).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -234), new Vector2(900, 40));
-            var unbuilt = s.Unbuilt; var nextPlans = s.NextPlans;
-            string nextLine = unbuilt.Count > 0 ? "<color=#2E7D32>You can build the " + unbuilt[0].Name + " now (TRAIN)</color>" : nextPlans != null ? "Next plans: the " + nextPlans.Name + " at mile " + nextPlans.Mile : null;
-            if (nextLine != null) Ui.Label("N", p, nextLine, 28, Ui.Dim, TextAnchor.MiddleCenter, false).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -420), new Vector2(940, 40));
-            var steel = Ui.ArtImg("Steel", p, "well", Color.white, 30); steel.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -290), new Vector2(620, 120));
-            Ui.Label("S", steel.transform, "+" + Format.Money(s.RunSteel) + " steel" + (r.doubled ? "  (doubled)" : ""), 56, Ui.Ink).rectTransform.Fill(8);
+            Ui.Label("M", p, "MILE " + r.mile, 88, Ui.Ink).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -74), new Vector2(900, 100));
+            Ui.Label("L", p, s.Route.Name + (best ? "  ·  <color=#C8501E>your furthest yet</color>" : "  ·  best " + s.State.best[r.route]), 30, Ui.Dim, TextAnchor.MiddleCenter, false).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -172), new Vector2(900, 38));
+            // How close it came: the thing that makes the next run feel winnable.
+            var miss = s.NearMiss;
+            if (miss != null) { var ml = Ui.Label("Miss", p, miss, 34, Ui.Coral); ml.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -212), new Vector2(940, 44)); }
+            Ui.Label("K", p, Format.Money(r.kills) + " raiders turned back  ·  " + r.cards.Count + (r.cards.Count == 1 ? " card" : " cards") + (r.seals > 0 ? "  ·  <color=#7A3FB0>+" + r.seals + (r.seals == 1 ? " seal" : " seals") + "</color>" : ""), 26, Ui.Dim, TextAnchor.MiddleCenter, false).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, miss != null ? -254 : -216), new Vector2(900, 36));
+            var steel = Ui.ArtImg("Steel", p, "well", Color.white, 30); steel.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -296), new Vector2(620, 104));
+            Ui.Label("S", steel.transform, "+" + Format.Money(s.RunSteel) + " steel" + (r.doubled ? "  (doubled)" : ""), 52, Ui.Ink).rectTransform.Fill(8);
+            // What the next run can open, and how far there is to go.
+            var unbuilt = s.Unbuilt; var next = s.NextUnlock;
+            if (unbuilt.Count > 0) Ui.Label("N", p, "<color=#2E7D32>Unlocked: the " + unbuilt[0].Name + ". Build it in TRAIN</color>", 28, Ui.Dim, TextAnchor.MiddleCenter, false).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -414), new Vector2(940, 40));
+            else if (next != null)
+            {
+                Ui.Label("N", p, "Next unlock at mile " + next.Mile + " " + next.Where + ": " + next.Name, 28, Ui.Dim, TextAnchor.MiddleCenter, false).rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -410), new Vector2(940, 38));
+                Image fill; var bar = Bar(p, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -458), new Vector2(600, 42), Ui.Gold, out fill);
+                fill.rectTransform.anchorMax = new Vector2(Mathf.Clamp((float)next.Have / Mathf.Max(1, next.Mile), 0.03f, 1), 1);
+                var bt = Ui.Label("T", bar.parent, "mile " + next.Have + " of " + next.Mile, 30, Color.white); bt.rectTransform.Fill(); bt.Stroke(2f);
+            }
 
             float y = 190;
             if (s.CanRevive)

@@ -9,7 +9,7 @@ using UnityEngine.SocialPlatforms.GameCenter;
 namespace Ironclad.Game
 {
     /// <summary>
-    /// Apple's Game Center: three leaderboards and the game's achievements, mirrored. The player signs in with their
+    /// Apple's Game Center: three leaderboards, a weekly one, and the game's achievements, mirrored. The player signs in with their
     /// own Game Center account (iOS asks once); nothing goes through our servers. Ids must match the ones created in
     /// App Store Connect by Tools/appstore/gamecenter.py: leaderboards <c>ironclad.board.*</c>, achievements
     /// <c>ironclad.ach.&lt;achievement id&gt;</c>. Does nothing in the Editor.
@@ -17,6 +17,8 @@ namespace Ironclad.Game
     public static class GameCenter
     {
         public const string Miles = "ironclad.board.miles", Distance = "ironclad.board.distance", Raiders = "ironclad.board.raiders";
+        /// <summary>A recurring board that starts again every Monday: the furthest mile of one run that week.</summary>
+        public const string Weekly = "ironclad.board.week";
         public const string AchievementPrefix = "ironclad.ach.";
         const string SentKey = "gc.sent";
 
@@ -69,7 +71,25 @@ namespace Ironclad.Game
             Social.ReportScore(value, board, ok => { if (!ok) _scores.Remove(board); });
         }
 
+        /// <summary>A run has ended at this mile: the week's board keeps the best one (Game Center starts it again each week).</summary>
+        public static void ReportRun(int mile)
+        {
+            if (!SignedIn || mile <= 1) return;
+            Social.ReportScore(mile, Weekly, ok => { });
+        }
+
         public static void ShowBoards() { if (SignedIn) Social.ShowLeaderboardUI(); }
+
+        /// <summary>Opens this week's board by itself.</summary>
+        public static void ShowWeekly()
+        {
+            if (!SignedIn) return;
+#if UNITY_IOS
+            GameCenterPlatform.ShowLeaderboardUI(Weekly, TimeScope.AllTime);
+#else
+            Social.ShowLeaderboardUI();
+#endif
+        }
         public static void ShowAchievements() { if (SignedIn) Social.ShowAchievementsUI(); }
 
         /// <summary>Erase everything: this device forgets what it sent (Game Center keeps the player's own record).</summary>

@@ -32,6 +32,18 @@
    "glyph": "medal",
    "tier": 2,
    "image": "gamecenter/board_raiders.png"
+  },
+  {
+   "id": "ironclad.board.week",
+   "ref": "week",
+   "name": "This Week's Furthest Run",
+   "description": "The furthest mile reached in a single run this week, on any line. A new board every Monday.",
+   "suffix": " miles",
+   "singular": " mile",
+   "glyph": "calendar",
+   "tier": 2,
+   "image": "gamecenter/board_week.png",
+   "recurrence": "weekly"
   }
  ],
  "achievements": [

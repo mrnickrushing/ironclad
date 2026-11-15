@@ -24,15 +24,17 @@ namespace Ironclad.Game
             public Color Rock = new Color(0.62f, 0.62f, 0.62f);      // the stones are pale: each line paints them its own colour
             public Color Plant = Color.white;                         // grass and bushes, warmed to sit in the line's own ground
             public string Cover; public int CoverCount;               // ground cover drawn instanced: thick grass on the green lines
+            public Color Kick = new Color(0.78f, 0.7f, 0.52f, 0.35f);  // what the wheels throw up: dust, red earth, snow, salt
+            public float KickRate = 1;
         }
 
         static readonly Theme[] Themes =
         {
-            new Theme { Ground = Palette.Hex(0x93A857), Patch = Palette.Hex(0xA7AE62), Bed = Palette.Hex(0x8C7B62), Fog = Palette.Hex(0xE3D6B4), Plant = new Color(1.35f, 1.0f, 0.5f), Cover = "grass", CoverCount = 1500, Near = new[] { "grass", "grass", "flowers", "rock_d", "bush" }, Far = new[] { "tree_oak", "tree_a", "rock_a", "bush", "windmill", "fence", "log_stack" } },
-            new Theme { Ground = Palette.Hex(0xC9774A), Patch = Palette.Hex(0xB5633C), Bed = Palette.Hex(0x7E5A48), Fog = Palette.Hex(0xE8B98C), Rock = new Color(0.78f, 0.42f, 0.3f), Cover = "rock_b", CoverCount = 1100, Near = new[] { "rock_d", "rock_b", "cactus_b", "stump" }, Far = new[] { "cactus_a", "cactus_a", "rock_c", "rock_e", "rock_c", "cactus_b", "cliff", "cliff" } },
-            new Theme { Ground = Palette.Hex(0xE9EEF2), Patch = Palette.Hex(0xD3DEE6), Bed = Palette.Hex(0x7A7F88), Fog = Palette.Hex(0xDCE6EE), Rock = new Color(0.8f, 0.86f, 0.95f), Cover = "rock_b", CoverCount = 700, Near = new[] { "rock_d", "stump", "rock_b" }, Far = new[] { "tree_pine", "tree_pine_b", "tree_pine", "rock_c", "tree_pine_b", "log_stack" } },
-            new Theme { Ground = Palette.Hex(0xE6DCC6), Patch = Palette.Hex(0xD6C8AC), Bed = Palette.Hex(0x9A8C78), Fog = Palette.Hex(0xF0E8D8), Rock = new Color(0.86f, 0.8f, 0.68f), Cover = "rock_b", CoverCount = 600, Near = new[] { "rock_d", "rock_b" }, Far = new[] { "rock_c", "rock_a", "cactus_a", "stump" } },
-            new Theme { Ground = Palette.Hex(0x6E5A5A), Patch = Palette.Hex(0x5C4A4C), Bed = Palette.Hex(0x4A4044), Fog = Palette.Hex(0x8A7478), Rock = new Color(0.36f, 0.3f, 0.33f), Cover = "rock_b", CoverCount = 1100, Near = new[] { "rock_d", "rock_b", "stump" }, Far = new[] { "rock_c", "rock_e", "rock_c", "rock_e", "rock_a", "cliff", "cliff" } },
+            new Theme { Ground = Palette.Hex(0x93A857), Patch = Palette.Hex(0xA7AE62), Bed = Palette.Hex(0x8C7B62), Fog = Palette.Hex(0xE3D6B4), Plant = new Color(1.35f, 1.0f, 0.5f), Cover = "grass", CoverCount = 1500, Kick = new Color(0.74f, 0.66f, 0.48f, 0.3f), KickRate = 0.7f, Near = new[] { "grass", "grass", "flowers", "rock_d", "bush" }, Far = new[] { "tree_oak", "tree_a", "rock_a", "bush", "windmill", "fence", "log_stack" } },
+            new Theme { Ground = Palette.Hex(0xC9774A), Patch = Palette.Hex(0xB5633C), Bed = Palette.Hex(0x7E5A48), Fog = Palette.Hex(0xE8B98C), Rock = new Color(0.78f, 0.42f, 0.3f), Cover = "rock_b", CoverCount = 1100, Kick = new Color(0.82f, 0.48f, 0.32f, 0.42f), Near = new[] { "rock_d", "rock_b", "cactus_b", "stump" }, Far = new[] { "cactus_a", "cactus_a", "rock_c", "rock_e", "rock_c", "cactus_b", "cliff", "cliff" } },
+            new Theme { Ground = Palette.Hex(0xE9EEF2), Patch = Palette.Hex(0xD3DEE6), Bed = Palette.Hex(0x7A7F88), Fog = Palette.Hex(0xDCE6EE), Rock = new Color(0.8f, 0.86f, 0.95f), Cover = "rock_b", CoverCount = 700, Kick = new Color(0.97f, 0.98f, 1f, 0.75f), KickRate = 1.8f, Near = new[] { "rock_d", "stump", "rock_b" }, Far = new[] { "tree_pine", "tree_pine_b", "tree_pine", "rock_c", "tree_pine_b", "log_stack" } },
+            new Theme { Ground = Palette.Hex(0xE6DCC6), Patch = Palette.Hex(0xD6C8AC), Bed = Palette.Hex(0x9A8C78), Fog = Palette.Hex(0xF0E8D8), Rock = new Color(0.86f, 0.8f, 0.68f), Cover = "rock_b", CoverCount = 600, Kick = new Color(0.96f, 0.94f, 0.88f, 0.45f), KickRate = 1.2f, Near = new[] { "rock_d", "rock_b" }, Far = new[] { "rock_c", "rock_a", "cactus_a", "stump" } },
+            new Theme { Ground = Palette.Hex(0x6E5A5A), Patch = Palette.Hex(0x5C4A4C), Bed = Palette.Hex(0x4A4044), Fog = Palette.Hex(0x8A7478), Rock = new Color(0.36f, 0.3f, 0.33f), Cover = "rock_b", CoverCount = 1100, Kick = new Color(0.42f, 0.37f, 0.37f, 0.45f), Near = new[] { "rock_d", "rock_b", "stump" }, Far = new[] { "rock_c", "rock_e", "rock_c", "rock_e", "rock_a", "cliff", "cliff" } },
         };
 
         const float Span = 170;         // the country is drawn this far either side of the engine
@@ -43,18 +45,22 @@ namespace Ironclad.Game
         readonly List<Transform> _railBits = new List<Transform>();
         float _railLen = 6, _railAt, _speed, _stationX = float.NaN;
         int _theme = -1;
+        Color _kick; float _kickRate = 1;
         string _trainKey;
         Sim _sim;
 
         sealed class CarView
         {
             public Transform Root, Gun, Body; public Vector3 Muzzle; public float Flash, Hurt, GunYaw; public bool Out; public Renderer[] Rends; public float AimOffset; public Light Lamp;
+            public float Lean;          // a knocked-out wagon sags to one side
         }
         readonly List<CarView> _cars = new List<CarView>();
 
         sealed class FoeView
         {
             public Transform Root, Bar, Fill, Body; public Vector3 At; public float Bob, Seen, Punch, Size = 1, Lunge; public double LastCooldown; public EnemyState E; public float Height; public Strider[] Striders;
+            public Quaternion Turn = Quaternion.identity;      // where it faces; a tumble is drawn over it
+            public float Tumble, TumbleSide = 1;                // the whistle bowls it over: 1 .. 0 through the roll
         }
         readonly Dictionary<int, FoeView> _foeViews = new Dictionary<int, FoeView>();
         readonly List<int> _gone = new List<int>();
@@ -138,6 +144,7 @@ namespace Ironclad.Game
             });
             bed.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             Look.FogBase = t.Fog;
+            _kick = t.Kick; _kickRate = t.KickRate;
 
             var rnd = new System.Random(theme * 977 + 5);
             System.Func<float, float, float> R = (a, b) => a + (float)rnd.NextDouble() * (b - a);
@@ -279,12 +286,56 @@ namespace Ironclad.Game
             if (_ground != null) _ground.localPosition = new Vector3(-_groundAt + Span, 0, 0);
             _railAt = Mathf.Repeat(_railAt + metres, _railLen);
             for (int i = 0; i < _railBits.Count; i++) _railBits[i].localPosition = new Vector3(-Span + i * _railLen - _railAt, 0.2f, 0);
+            if (_bestPost != null && !_bestPinned)
+            {
+                _bestX -= metres;
+                _bestPost.localPosition = new Vector3(_bestX, 0, BestZ);
+            }
             if (_station != null)
             {
                 _stationX -= metres;
                 _station.localPosition = new Vector3(_stationX, 0, 0);
                 if (_stationX < -Span - 40) { Destroy(_station.gameObject); _station = null; _stationX = float.NaN; }
             }
+        }
+
+        // ---- the best so far ----
+
+        const float BestZ = -3.8f;      // on the camera's side of the line, where it can be read
+        Transform _bestPost; float _bestX; bool _bestPinned, _bestPassed;
+
+        /// <summary>
+        /// A post beside the line where the best run on this line got to (the end of its furthest mile). On that mile it
+        /// comes toward the train as the mile runs out and waits at the engine's nose until the mile is won; then it
+        /// rolls past and the train is further than ever.
+        /// </summary>
+        void BestPost(RunState r)
+        {
+            bool want = r != null && r.startBest > 0 && r.mile == r.startBest && r.phase == (int)Phase.Rolling;
+            if (want)
+            {
+                float x = 3.2f + Mathf.Max(0, (float)(Content.MileSeconds - r.mileTime)) * Cruise;
+                if (_bestPost == null)
+                {
+                    if (x > Span - 10) { _bestPinned = false; return; }
+                    _bestPost = new GameObject("BestPost").transform; _bestPost.SetParent(transform, false);
+                    Models.Tall("flag", _bestPost, 6.5f, new Color(1.35f, 1.05f, 0.35f));
+                    _bestPassed = false;
+                }
+                if (!_bestPinned) _bestPassed = false;      // set off again (a new run, or back on the rails)
+                _bestPinned = true; _bestX = x;
+                _bestPost.localPosition = new Vector3(_bestX, 0, BestZ);
+            }
+            else _bestPinned = false;
+            if (_bestPost != null && r == null) { Destroy(_bestPost.gameObject); _bestPost = null; }
+            if (_bestPost != null && !_bestPinned && _bestX < -Span) { Destroy(_bestPost.gameObject); _bestPost = null; }
+            if (_bestPost != null && !_bestPassed && _bestX < 0 && Hud.Instance != null)
+            {
+                _bestPassed = true;
+                Hud.Instance.Pop(_cars.Count > 0 ? _cars[_cars.Count / 2].Root.position + Vector3.up * 4 : Vector3.up * 4, "PAST YOUR BEST", new Color(1f, 0.82f, 0.3f), 48, 1.8f);
+                Sfx.Play("star", 0.7f);
+            }
+            if (Hud.Instance != null) Hud.Instance.Marker(_bestPost != null && r != null ? (Vector3?)(_bestPost.position + Vector3.up * 7.2f) : null, r != null ? "YOUR BEST\n<size=26>MILE " + r.startBest + "</size>" : null);
         }
 
         // ---- the station ----
@@ -332,13 +383,20 @@ namespace Ironclad.Game
             return g;
         }
 
+        /// <summary>Builds a car's model. The engine wears the chosen livery, or another one named "engine@id".</summary>
         void BuildCar(CarView v, string type)
         {
             const float L = 5.5f;
+            string skin = S != null ? S.State.skin : "";
+            int at = type.IndexOf('@');
+            if (at >= 0) { skin = type.Substring(at + 1); type = type.Substring(0, at); }
             switch (type)
             {
                 case "engine":
-                    v.Body = Models.Along("loco_b", v.Root, L + 0.3f, true, new Color(0.92f, 0.86f, 0.86f));
+                    {
+                        var k = Content.Skin(skin) ?? Content.Skins[0];
+                        v.Body = Models.Along(k.Model, v.Root, L + 0.3f, true, new Color((float)k.R, (float)k.G, (float)k.B));
+                    }
                     Gun(v, "ship_cannon", 1.9f, 2.15f, 0); v.Gun.localPosition = new Vector3(1.4f, 2.15f, 0); v.Muzzle = new Vector3(1.4f, 2.7f, 0);
                     {
                         // The headlamp: lit at night, throwing a pool of warm light ahead and around the engine.
@@ -495,7 +553,7 @@ namespace Ironclad.Game
             var types = new List<string> { "engine" };
             if (r != null) { types.Clear(); foreach (var c in r.cars) types.Add(c.type); }
             else types.AddRange(s.State.train.GetRange(0, Mathf.Min(s.State.train.Count, s.Slots)));
-            string key = string.Join(",", types);
+            string key = string.Join(",", types) + "|" + s.State.skin;
             if (key != _trainKey) { _trainKey = key; BuildTrain(types); }
 
             bool stopped = r == null || r.phase != (int)Phase.Rolling;
@@ -531,6 +589,9 @@ namespace Ironclad.Game
             Look.Day = r != null ? Mathf.Repeat(0.12f + (r.mile - 1 + Mathf.Clamp01((float)(r.mileTime / Content.MileSeconds))) / 40f, 1f) : 0.12f;
             var headlamp = _cars.Count > 0 ? _cars[0].Lamp : null;
             if (headlamp != null) { headlamp.intensity = Look.Night * 18f; headlamp.enabled = Look.Night > 0.05f; }
+            // Trouble: the hull under 30% (the picture's edges pulse red, the danger music comes in).
+            Look.DangerWant = rolling && r != null && r.hullMax > 0 ? Mathf.Clamp01((0.3f - (float)(r.hull / r.hullMax)) / 0.22f) : 0;
+            BestPost(r);
 
             // The train.
             float rock = Mathf.Clamp01(_speed / Cruise);
@@ -538,14 +599,22 @@ namespace Ironclad.Game
             {
                 var v = _cars[i];
                 var car = r != null && i < r.cars.Count ? r.cars[i] : null;
-                v.Root.localPosition = new Vector3((float)Sim.CarX(i), 0.35f + Mathf.Sin(Time.time * 9 + i * 1.7f) * 0.025f * rock, 0);
-                v.Root.localRotation = Quaternion.Euler(Mathf.Sin(Time.time * 6 + i * 2.3f) * 0.6f * rock, 0, 0);
                 bool isOut = car != null && car.Out;
+                v.Lean = Mathf.MoveTowards(v.Lean, isOut ? 1 : 0, dt * 2.5f);
+                v.Root.localPosition = new Vector3((float)Sim.CarX(i), 0.35f + Mathf.Sin(Time.time * 9 + i * 1.7f) * 0.025f * rock - 0.12f * v.Lean, 0);
+                v.Root.localRotation = Quaternion.Euler(Mathf.Sin(Time.time * 6 + i * 2.3f) * 0.6f * rock - 5f * v.Lean, 0, 0);
+                // The wheels throw up the line's dust (snow on the High Pass) while the train rolls.
+                if (rolling && rock > 0.25f && Random.value < dt * 12 * rock * _kickRate)
+                {
+                    float side = Random.value < 0.5f ? -1 : 1, end = Random.value < 0.5f ? -1.9f : 1.9f;
+                    Fx.Smoke(v.Root.position + new Vector3(end + Random.Range(-0.4f, 0.4f), 0.15f, side * 1.15f), _kick, Random.Range(0.35f, 0.6f) * (_kickRate > 1.5f ? 1.25f : 1f),
+                        new Vector3(-_speed * Random.Range(0.45f, 0.7f), Random.Range(0.6f, 1.6f) * (_kickRate > 1.5f ? 1.6f : 1f), side * Random.Range(0.2f, 0.9f)));
+                }
                 if (isOut != v.Out) { v.Out = isOut; foreach (var rd in v.Rends) rd.enabled = true; if (isOut) Fx.Burst(v.Root.position + Vector3.up * 1.5f, 3.5f, new Color(1f, 0.6f, 0.2f)); }
                 if (v.Gun != null)
                 {
-                    float tilt = isOut ? 24 : 0;
-                    v.Gun.localRotation = Quaternion.Slerp(v.Gun.localRotation, Quaternion.Euler(tilt, v.GunYaw + v.AimOffset, 0), 1 - Mathf.Exp(-18 * dt));
+                    // A knocked-out wagon's gun hangs its barrel and stops turning.
+                    v.Gun.localRotation = Quaternion.Slerp(v.Gun.localRotation, Quaternion.Euler(0, v.GunYaw + v.AimOffset, -30f * v.Lean), 1 - Mathf.Exp(-(isOut ? 4 : 18) * dt));
                 }
                 if (!isOut && car != null && car.platingMax > 0 && car.plating < car.platingMax * 0.35 && Random.value < dt * 4) Fx.Smoke(v.Root.position + new Vector3(Random.Range(-1f, 1f), 1.6f, 0), new Color(0.3f, 0.28f, 0.28f, 0.5f), 1f, new Vector3(-_speed * 0.5f, 3, 0));      // nearly gone: it smokes
                 if (isOut && Random.value < dt * 9) Fx.Smoke(v.Root.position + new Vector3(Random.Range(-1.5f, 1.5f), 1.8f, 0), new Color(0.12f, 0.1f, 0.1f, 0.75f), 1.6f, new Vector3(-_speed * 0.5f, 4, 0));
@@ -573,9 +642,13 @@ namespace Ironclad.Game
                     v.At = Vector3.Lerp(v.At, to, 1 - Mathf.Exp(-14 * dt * Mathf.Max(1, Pace)));
                     float bob = moving ? Mathf.Abs(Mathf.Sin(Time.time * 11 * Mathf.Sqrt(Pace) + e.id)) * 0.32f * v.Bob : 0;
                     var toTrain = new Vector3(0, 0, -Mathf.Sign(v.At.z == 0 ? 1 : v.At.z));
-                    v.Root.localPosition = v.At + new Vector3(0, bob, 0) + toTrain * Mathf.Sin(v.Lunge * Mathf.PI) * 0.9f;
+                    v.Tumble = Mathf.MoveTowards(v.Tumble, 0, dt * 1.7f);
+                    float hop = Mathf.Sin(v.Tumble * Mathf.PI) * 1.4f * Mathf.Min(1, v.Size);
+                    v.Root.localPosition = v.At + new Vector3(0, bob + hop, 0) + toTrain * Mathf.Sin(v.Lunge * Mathf.PI) * 0.9f;
                     float yaw = (float)e.facing * Mathf.Rad2Deg + (e.stun > 0 ? Mathf.Sin(Time.time * 40) * 14 : 0);
-                    v.Root.localRotation = Quaternion.Slerp(v.Root.localRotation, Quaternion.Euler(moving ? -bob * 14 : 0, yaw, 0), 1 - Mathf.Exp(-10 * dt));
+                    v.Turn = Quaternion.Slerp(v.Turn, Quaternion.Euler(moving ? -bob * 14 : 0, yaw, 0), 1 - Mathf.Exp(-10 * dt));
+                    // Bowled over by the whistle: a full roll away from the train, about the line of the track.
+                    v.Root.localRotation = v.Tumble > 0 ? Quaternion.AngleAxis((1 - v.Tumble) * 360f * v.TumbleSide, Vector3.right) * v.Turn : v.Turn;
                     // A strike shows: its cooldown has just been wound back up. Shooters fire a red tracer at the car they
                     // are aiming for; the rest lunge at it.
                     if (e.striking && e.cooldown > v.LastCooldown + 0.05 && rolling)
@@ -668,7 +741,7 @@ namespace Ironclad.Game
             Fx.Burst(at + Vector3.up, boss ? 9 : 2.2f, boss ? new Color(1f, 0.6f, 0.2f) : new Color(0.9f, 0.8f, 0.6f));
             for (int i = 0; i < (boss ? 16 : 3); i++) Fx.Smoke(at + Random.insideUnitSphere * (boss ? 3 : 0.8f) + Vector3.up, new Color(0.7f, 0.62f, 0.5f, 0.6f), boss ? 3 : 1.3f, new Vector3(Random.Range(-2f, 2f), 3, Random.Range(-2f, 2f)));
             if (Hud.Instance != null && (boss || e.id % 3 == 0)) Hud.Instance.Pop(at + Vector3.up * 2.5f, "+" + Format.Money(System.Math.Max(1, scrip)), new Color(0.55f, 0.95f, 0.5f), boss ? 46 : 28);
-            if (boss) { Sfx.Play("boom", 0.9f, 0.7f); Haptics.Success(); if (CameraRig.Instance != null) CameraRig.Instance.Shake(0.8f); }
+            if (boss) { Sfx.Play("boom", 0.9f, 0.7f); Haptics.Success(); SlowMo.Hit(1.1f, 0.22f); if (CameraRig.Instance != null) { CameraRig.Instance.Shake(0.8f); CameraRig.Instance.Punch(0.14f); } }
             else if (Random.value < 0.4f) Sfx.Play("fall", 0.22f, Random.Range(0.85f, 1.2f));
         }
 
@@ -719,6 +792,15 @@ namespace Ironclad.Game
                 }
             }
             if (_cars.Count > 0) Fx.Smoke(_cars[0].Root.position + new Vector3(0.6f, 4.2f, 0), new Color(1f, 1f, 1f, 0.9f), 3f, Vector3.up * 9);
+            // Everyone it threw back goes head over heels, in a beat of slow motion.
+            foreach (var kv in _foeViews)
+            {
+                var f = kv.Value;
+                if (f.E == null || f.E.stun <= 0 || Content.Enemy(f.E.kind).Boss) continue;
+                f.Tumble = 1; f.TumbleSide = f.At.z >= 0 ? 1 : -1;
+            }
+            SlowMo.Hit(0.6f, 0.35f);
+            if (CameraRig.Instance != null) CameraRig.Instance.Punch(0.08f);
         }
 
         /// <summary>The raider nearest a point on the screen (within a thumb's width), or 0.</summary>
@@ -743,6 +825,7 @@ namespace Ironclad.Game
         public Sprite Icon(string type)
         {
             Sprite sp;
+            if (type == "engine" && S != null) type = "engine@" + S.State.skin;      // the engine's picture wears its livery
             if (_icons.TryGetValue(type, out sp)) return sp;
             var stage = new GameObject("IconStage").transform;
             stage.position = new Vector3(0, -900, 0);

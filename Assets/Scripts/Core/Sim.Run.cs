@@ -31,7 +31,7 @@ namespace Ironclad.Core
         {
             if (State.run != null) return false;
             if (!RouteOpen(State.route)) State.route = 0;
-            var r = new RunState { route = State.route };
+            var r = new RunState { route = State.route, startBest = State.best[State.route] };
             State.run = r;
             r.cars.Add(NewCar("engine"));
             foreach (var id in State.train) if (r.cars.Count - 1 < Slots) r.cars.Add(NewCar(id));
@@ -432,6 +432,7 @@ namespace Ironclad.Core
             r.enemies.Clear(); r.shells.Clear(); r.queue.Clear(); r.mark = 0;
             r.hull = Math.Min(r.hullMax, r.hull + r.hullMax * Content.StationHull);
             foreach (var c in r.cars) { c.plating = c.platingMax; c.down = false; c.cooldown = 0; }
+            r.rerolled = false;
             DealCards();
             Touch();
         }
@@ -474,12 +475,17 @@ namespace Ironclad.Core
 
         public const int RerollGems = 5;
 
-        /// <summary>Three other cards, for gems.</summary>
+        /// <summary>Other cards: the first deal at each station is free, then each costs gems.</summary>
         public bool RerollCards()
         {
             var r = State.run;
-            if (!AtStation || r.offer.Count == 0 || State.gems < RerollGems) return false;
-            State.gems -= RerollGems;
+            if (!AtStation || r.offer.Count == 0) return false;
+            if (r.rerolled)
+            {
+                if (State.gems < RerollGems) return false;
+                State.gems -= RerollGems;
+            }
+            r.rerolled = true;
             DealCards();
             Touch();
             return true;
@@ -553,6 +559,7 @@ namespace Ironclad.Core
         void EndRun()
         {
             var r = State.run;
+            if (!r.retired) NoteNearMiss();
             r.phase = (int)Phase.Over;
             r.shells.Clear();
             RunOver?.Invoke();
@@ -588,6 +595,7 @@ namespace Ironclad.Core
         {
             if (State.run == null || RunEnded) return false;
             State.run.revived = true;       // a run given up can't be revived
+            State.run.retired = true;
             EndRun();
             return true;
         }
