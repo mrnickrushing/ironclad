@@ -124,10 +124,10 @@ namespace Ironclad.Core
         public static readonly List<RouteDef> Routes = new List<RouteDef>
         {
             new RouteDef { Id = "prairie", Name = "The Prairie Line", Blurb = "Open grass and a long way between towns.", Hp = 1, Damage = 1, Steel = 1 },
-            new RouteDef { Id = "badlands", Name = "Badlands Cut", Blurb = "Red rock, dry gulches, and more of them.", Hp = 12, Damage = 5, Steel = 6, Opens = 80 },
-            new RouteDef { Id = "pass", Name = "The High Pass", Blurb = "Snow on the sleepers and raiders in the pines.", Hp = 160, Damage = 28, Steel = 40, Opens = 100 },
-            new RouteDef { Id = "salt", Name = "Salt Flats Run", Blurb = "Nowhere to hide, for anybody.", Hp = 2400, Damage = 170, Steel = 280, Opens = 120 },
-            new RouteDef { Id = "canyon", Name = "Black Canyon", Blurb = "The Baron's own country.", Hp = 40000, Damage = 1100, Steel = 2000, Opens = 140 },
+            new RouteDef { Id = "badlands", Name = "Badlands Cut", Blurb = "Red rock, dry gulches, and more of them.", Hp = 12, Damage = 5, Steel = 6, Opens = 90 },
+            new RouteDef { Id = "pass", Name = "The High Pass", Blurb = "Snow on the sleepers and raiders in the pines.", Hp = 160, Damage = 28, Steel = 40, Opens = 120 },
+            new RouteDef { Id = "salt", Name = "Salt Flats Run", Blurb = "Nowhere to hide, for anybody.", Hp = 2400, Damage = 170, Steel = 280, Opens = 150 },
+            new RouteDef { Id = "canyon", Name = "Black Canyon", Blurb = "The Baron's own country.", Hp = 40000, Damage = 1100, Steel = 2000, Opens = 180 },
         };
 
         public static readonly List<UpgradeDef> Upgrades = new List<UpgradeDef>

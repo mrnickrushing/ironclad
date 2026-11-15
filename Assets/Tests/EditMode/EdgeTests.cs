@@ -172,6 +172,27 @@ namespace Ironclad.Tests
         }
 
         [Test]
+        public void AnExpressRunSetsOffPartWayWithScripAndCards()
+        {
+            var s = Strong(200);
+            s.State.express = true;
+            Assert.AreEqual(1, s.ExpressMile, "not far enough yet");
+            s.State.best[0] = 62;
+            Assert.AreEqual(21, s.ExpressMile);
+            s.StartRun();
+            Assert.AreEqual(21, s.Run.mile);
+            Assert.AreEqual(2, s.Run.cards.Count, "a card from each station passed");
+            Assert.Greater(s.Run.scrip, 300);
+            Assert.AreEqual(0, s.Run.steel, "the miles skipped pay nothing");
+            Play(s, 30);
+            Assert.GreaterOrEqual(s.Run.mile, 21);
+            s.Retire(); s.CloseRun();
+            s.State.express = false;
+            s.StartRun();
+            Assert.AreEqual(1, s.Run.mile);
+        }
+
+        [Test]
         public void AdvertsStopAtTheDaysLimitAndComeBackTheNextDay()
         {
             double now = 1_700_000_000;

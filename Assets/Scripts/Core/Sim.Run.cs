@@ -39,9 +39,43 @@ namespace Ironclad.Core
             r.hullMax = HullMax; r.hull = r.hullMax;
             r.scrip = StartScrip;
             r.whistleIn = 0;
+            if (State.express && ExpressMile > 1) Express(ExpressMile);
             FillQueue();
             Touch();
             return true;
+        }
+
+        /// <summary>
+        /// Where an express run sets off on the chosen line: the mile after the last station in the first two fifths of
+        /// the best run there (1: not far enough yet). The miles before it pay no steel; the train arrives with about
+        /// the scrip they would have paid and the rarest card from each station passed.
+        /// </summary>
+        public int ExpressMile
+        {
+            get
+            {
+                int best = State.best[State.run != null ? State.run.route : State.route];
+                int stations = (int)(best * 0.4) / Content.StationEvery;
+                return stations <= 0 ? 1 : stations * Content.StationEvery + 1;
+            }
+        }
+
+        void Express(int from)
+        {
+            var r = State.run;
+            for (int m = 1; m < from; m++)
+            {
+                r.scrip += (5 + 1.5 * m) * Math.Pow(Content.BountyPerMile, m - 1) * ScripMult * 0.6;
+                if (m % Content.StationEvery != 0) continue;
+                DealCards();
+                int best = 0;
+                for (int i = 1; i < r.offer.Count; i++) if (r.offer[i].rarity > r.offer[best].rarity) best = i;
+                r.cards.Add(r.offer[best]);
+                r.offer.Clear();
+            }
+            r.mile = from;
+            r.hullMax = HullMax; r.hull = r.hullMax;
+            foreach (var c in r.cars) if (c.platingMax > 0) { c.platingMax = PlateOf(c); c.plating = c.platingMax; }
         }
 
         double MileHp(int mile) { return Math.Pow(Content.HpPerMile, mile - 1) * Route.Hp; }

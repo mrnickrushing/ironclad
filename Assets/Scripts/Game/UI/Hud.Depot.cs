@@ -55,6 +55,17 @@ namespace Ironclad.Game
             var auto = Ui.Button("Auto", _face, s.State.auto ? "AUTO: ON" : "AUTO: OFF", s.State.auto ? Ui.Blue : Ui.Off, () => { S.State.auto = !S.State.auto; _dirty = true; Toast(S.State.auto ? "The train sets off again by itself after each run" : "The train waits for you after each run"); }, 26);
             ((RectTransform)auto.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(390, 164), new Vector2(210, 76));
 
+            // Far enough down this line, a run can set off from part-way along it.
+            if (s.ExpressMile > 1)
+            {
+                var ex = Ui.Button("Express", _face, s.State.express ? "FROM MILE " + s.ExpressMile : "FROM MILE 1", s.State.express ? Ui.Blue : Ui.Off, () =>
+                {
+                    S.State.express = !S.State.express; _dirty = true;
+                    Toast(S.State.express ? "Express: set off at mile " + S.ExpressMile + " with scrip and a card from each station passed" : "Set off from the first mile");
+                }, 26);
+                ((RectTransform)ex.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-400, 164), new Vector2(230, 76));
+            }
+
             // The screens.
             string[] names = { "WORKSHOP", "TRAIN", "AWARDS", "SHOP", "MORE" };
             Page[] pages = { Page.Workshop, Page.Train, Page.Awards, Page.Shop, Page.Settings };

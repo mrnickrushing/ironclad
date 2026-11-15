@@ -78,6 +78,7 @@ namespace Ironclad.Core
         public int route;                   // the line chosen for the next run
         public int speed;                   // index into Content.Speeds
         public bool auto;                   // set off again by itself when a run ends
+        public bool express;                // set off from part-way down the line (Sim.ExpressMile)
         public List<string> train = new List<string>();      // the wagons coupled on, front to back (the engine isn't listed)
         public List<Level> cars = new List<Level>();         // wagons built, and their workshop levels
         public List<Level> upgrades = new List<Level>();

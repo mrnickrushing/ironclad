@@ -51,7 +51,7 @@ namespace Ironclad.Tests
             while (clock < 6 * 3600 && run < 400)
             {
                 Spend(s);
-                s.SetSpeed(s.SpeedsOpen - 1);
+                s.SetSpeed(s.SpeedsOpen - 1); s.State.express = true;
                 s.StartRun(); run++;
                 double started = clock;
                 for (int i = 0; i < 200000 && !s.RunEnded; i++)
