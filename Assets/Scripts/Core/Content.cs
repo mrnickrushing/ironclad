@@ -87,6 +87,7 @@ namespace Ironclad.Core
         public const double CritBase = 0.05, CritDamageBase = 2;
         public const double WhistleCooldown = 60, WhistleRange = 13, WhistleStun = 3, WhistlePush = 7;
         public const int StartSlots = 2, MaxSlots = 8;
+        public const int MaxRaiders = 120;         // on the field at once: more wait their turn (and the mile waits for them)
         public const double SpawnRing = 30;         // how far out raiders appear
         public const double ReviveHull = 0.5;
         public const double StationHull = 0.3;      // share of the hull a station puts back

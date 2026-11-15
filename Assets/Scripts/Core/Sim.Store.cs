@@ -41,11 +41,19 @@ namespace Ironclad.Core
             new ProductDef { Id = "ironclad.gems.medium", Name = "Strongbox of Gems", Blurb = "300 gems", Gems = 300, FallbackPrice = "$4.99" },
             new ProductDef { Id = "ironclad.gems.large", Name = "Mail Sack of Gems", Blurb = "700 gems", Gems = 700, FallbackPrice = "$9.99" },
             new ProductDef { Id = "ironclad.gems.huge", Name = "Boxcar of Gems", Blurb = "1,600 gems: the best value", Gems = 1600, FallbackPrice = "$19.99" },
-            new ProductDef { Id = "ironclad.starter", Name = "Fireman's Pack", Blurb = "250 gems and 1,500 steel to get the workshop going.", Gems = 250, Steel = 1500, Once = true, FallbackPrice = "$2.99" },
+            new ProductDef { Id = "ironclad.starter", Name = "Fireman's Pack", Blurb = "250 gems and 1,500 steel (or four hours of the depot, if that is more).", Gems = 250, Steel = 1500, Once = true, FallbackPrice = "$2.99" },
             new ProductDef { Id = "ironclad.doubler", Name = "Rolling Mill", Blurb = "All steel doubled, for good: every mile, every boss, the depot.", Once = true, FallbackPrice = "$7.99" },
             new ProductDef { Id = "ironclad.pass", Name = "Conductor's Pass", Blurb = "Every advert reward without watching the advert, for good.", Once = true, FallbackPrice = "$4.99" },
             new ProductDef { Id = "ironclad.depot", Name = "Night Shift", Blurb = "The depot's patrols work 4 more hours while you're away, for good.", Once = true, FallbackPrice = "$3.99" },
         };
+
+        /// <summary>The Fireman's Pack is shown once, by itself, to someone who has come back on another day and
+        /// finished a few runs. Never on the first day, never twice.</summary>
+        public bool StarterOfferDue
+        {
+            get { return !State.starterOffered && !Owns("ironclad.starter") && State.firstDay >= 0 && Today > State.firstDay && State.runs >= 8 && State.run == null; }
+        }
+        public void StarterOffered() { State.starterOffered = true; }
 
         public bool Owns(string product) { return State.owned.Contains(product); }
 
@@ -58,7 +66,8 @@ namespace Ironclad.Core
             if (p == null) return false;
             if (!string.IsNullOrEmpty(transaction)) { if (State.transactions.Contains(transaction)) return false; State.transactions.Add(transaction); }
             if (p.Once) { if (State.owned.Contains(product)) return false; State.owned.Add(product); }
-            if (!restored) { State.gems += p.Gems; State.steel += p.Steel; State.lifetime += p.Steel; }
+            // A pack's steel is never worth less than four hours of the depot, so it means something late on as well.
+            if (!restored) { double steel = p.Steel > 0 ? Math.Max(p.Steel, Math.Floor(DepotRate * 4)) : 0; State.gems += p.Gems; State.steel += steel; State.lifetime += steel; }
             EndPurchase(product);
             Changed?.Invoke();
             return true;

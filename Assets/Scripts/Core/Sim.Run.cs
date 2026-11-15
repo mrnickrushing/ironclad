@@ -156,7 +156,7 @@ namespace Ironclad.Core
             if (r.whistleIn > 0) r.whistleIn -= dt;
 
             // Raiders ride in.
-            if (r.queue.Count > 0)
+            if (r.queue.Count > 0 && r.enemies.Count < Content.MaxRaiders)
             {
                 r.spawnIn -= dt;
                 if (r.spawnIn <= 0) { Spawn(r.queue[0]); r.queue.RemoveAt(0); r.spawnIn += r.spawnGap; }

@@ -96,6 +96,7 @@ namespace Ironclad.Core
         public List<string> seenFeatures = new List<string>();
         public long firstDay = -1;
         public long giftDay = -1; public int giftStreak;
+        public bool starterOffered;         // the Fireman's Pack has been shown once
         public long taskDay = -1; public int taskClaimed; public List<double> taskBase = new List<double>();
 
         // The shop.

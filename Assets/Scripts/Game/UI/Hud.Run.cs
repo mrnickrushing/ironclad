@@ -22,6 +22,10 @@ namespace Ironclad.Game
         }
         float _lastHullBuzz;
 
+        /// <summary>From the second run on the depot has steel to bring home while the player is away: the moment to
+        /// ask, once, whether the game may say so with a notification.</summary>
+        void AfterRun() { if (S.State.runs >= 2) Reminders.AskOnce(); }
+
         const float AutoCollectAfter = 12;
         Text _collectLabel; float _overAuto;
 
@@ -34,7 +38,7 @@ namespace Ironclad.Game
             if (p != null && p.press.isPressed) _overAuto = AutoCollectAfter;      // someone is here: let them choose
             _overAuto -= Time.unscaledDeltaTime;
             if (_collectLabel != null) _collectLabel.text = "COLLECT  <size=28>" + Mathf.CeilToInt(Mathf.Max(0, _overAuto)) + "</size>";
-            if (_overAuto <= 0 && s.CloseRun()) { Sfx.Play("claim", 0.6f); GameRoot.Instance.Save(true); }
+            if (_overAuto <= 0 && s.CloseRun()) { Sfx.Play("claim", 0.6f); GameRoot.Instance.Save(true); AfterRun(); }
         }
 
         static string Short(string type)
@@ -326,7 +330,7 @@ namespace Ironclad.Game
             var c = Ui.Button("Collect", p, "COLLECT", Ui.Green, () =>
             {
                 int mile = S.Run.mile;
-                if (S.CloseRun()) { Sfx.Play("claim", 0.9f); Haptics.Success(); GameRoot.Instance.Save(true); if (mile >= 20) RateSoon(); }
+                if (S.CloseRun()) { Sfx.Play("claim", 0.9f); Haptics.Success(); GameRoot.Instance.Save(true); if (mile >= 20) RateSoon(); AfterRun(); }
             }, 44);
             ((RectTransform)c.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(AdReady(AdReward.DoubleRun) ? 250 : 0, 44), new Vector2(470, 120));
             _collectLabel = c.GetComponentInChildren<Text>(); _overAuto = AutoCollectAfter;

@@ -113,7 +113,25 @@ namespace Ironclad.Game
             if (show) _depotText.text = "DEPOT  +" + Format.Money(waiting) + (s.DepotSeconds >= s.DepotCap ? "  (full)" : "");
             if (_awardDot != null) _awardDot.gameObject.SetActive(s.AchievementsReady > 0);
             if (_todayDot != null) _todayDot.gameObject.SetActive(s.TodayReady > 0);
+            if (s.StarterOfferDue && !ModalOpen && !ScreenOpen && Store.Available) OfferStarter();
             if (_trainDot != null) _trainDot.gameObject.SetActive(s.Unbuilt.Count > 0);
+        }
+
+        /// <summary>The Fireman's Pack, offered once (see <see cref="Sim.StarterOfferDue"/>): what it gives, its price, and
+        /// a plain way to say no.</summary>
+        void OfferStarter()
+        {
+            S.StarterOffered(); GameRoot.Instance.Save();
+            var prod = Sim.Product("ironclad.starter");
+            var card = Card(900, 560, "FIREMAN'S PACK");
+            var gem = Ui.ArtImg("Gem", card, "gem", Color.white, 0); gem.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(-150, -100), new Vector2(120, 120));
+            var steel = Ui.ArtImg("Steel", card, "steel", Color.white, 0); steel.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(150, -100), new Vector2(120, 120));
+            Ui.Label("B", card, "<b>250 gems</b> and <b>" + Format.Money(Math.Max(prod.Steel, Math.Floor(S.DepotRate * 4))) + " steel</b> to get the workshop going.\nOne time only. Everything in the game can still be earned by playing.", 30, Ui.Ink, TextAnchor.UpperCenter, false)
+                .rectTransform.Band(true, -240, 150, 60);
+            var buy = Ui.Button("Buy", card, Store.Price(prod), Ui.Green, () => Store.Buy(prod, (ok, msg) => { Toast(msg); if (ok) { Sfx.Play("confirm"); CloseCard(); _dirty = true; } }), 42);
+            ((RectTransform)buy.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(205, 44), new Vector2(380, 116));
+            var no = Ui.Button("No", card, "NOT NOW", Ui.Off, CloseCard, 38);
+            ((RectTransform)no.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-205, 44), new Vector2(380, 116));
         }
 
         /// <summary>The patrols' steel: collect it, or twice over (free once a day, then for an advert).</summary>

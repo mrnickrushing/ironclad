@@ -63,7 +63,7 @@ namespace Ironclad.Tests
             Assert.GreaterOrEqual(s.Run.mile, 50);
             Assert.IsFalse(double.IsInfinity(s.Run.scrip) || double.IsNaN(s.Run.scrip));
             Assert.IsFalse(double.IsInfinity(s.RunSteel) || double.IsNaN(s.RunSteel));
-            Assert.LessOrEqual(s.Run.enemies.Count, 400, "raiders don't pile up without end");
+            Assert.LessOrEqual(s.Run.enemies.Count, Content.MaxRaiders + 1, "raiders don't pile up without end");
             StringAssert.DoesNotContain("NaN", Format.Money(s.RunSteel));
         }
 
@@ -190,6 +190,22 @@ namespace Ironclad.Tests
             s.State.express = false;
             s.StartRun();
             Assert.AreEqual(1, s.Run.mile);
+        }
+
+        [Test]
+        public void TheStarterPackIsOfferedOnceAndNeverOnTheFirstDay()
+        {
+            double now = 1_700_000_000;
+            var s = new Sim(GameState.New()); s.RealNow = () => now;
+            s.Tick(0.1); s.State.runs = 20;
+            Assert.IsFalse(s.StarterOfferDue, "not on the first day");
+            now += 86400;
+            Assert.IsTrue(s.StarterOfferDue);
+            s.StarterOffered();
+            Assert.IsFalse(s.StarterOfferDue, "once");
+            var t = new Sim(GameState.New()); t.RealNow = () => now; t.Tick(0.1); t.State.runs = 20; now += 86400;
+            t.Grant("ironclad.starter", "x");
+            Assert.IsFalse(t.StarterOfferDue, "not to someone who has it");
         }
 
         [Test]

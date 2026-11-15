@@ -32,7 +32,7 @@ PRODUCTS = [
     ("ironclad.gems.medium", "CONSUMABLE", "4.99", "Strongbox of Gems", "300 gems"),
     ("ironclad.gems.large", "CONSUMABLE", "9.99", "Mail Sack of Gems", "700 gems"),
     ("ironclad.gems.huge", "CONSUMABLE", "19.99", "Boxcar of Gems", "1,600 gems"),
-    ("ironclad.starter", "NON_CONSUMABLE", "2.99", "Fireman's Pack", "250 gems and 1,500 steel"),
+    ("ironclad.starter", "NON_CONSUMABLE", "2.99", "Fireman's Pack", "250 gems and steel for the workshop"),
     ("ironclad.doubler", "NON_CONSUMABLE", "7.99", "Rolling Mill", "All steel doubled, for good"),
     ("ironclad.pass", "NON_CONSUMABLE", "4.99", "Conductor's Pass", "Advert rewards without the advert"),
     ("ironclad.depot", "NON_CONSUMABLE", "3.99", "Night Shift", "The depot works 4 more hours"),
