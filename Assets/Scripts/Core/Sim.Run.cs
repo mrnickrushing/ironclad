@@ -594,8 +594,7 @@ namespace Ironclad.Core
             if (!shells) left.RemoveAll(c => c.Id == "splash");
             left.RemoveAll(c => c.Needs != null && (c.Needs == "splash" ? !shells : !r.cars.Exists(k => k.type == c.Needs)));
             left.RemoveAll(c => c.Behaviour && r.cards.Exists(p => p.card == c.Id));
-            int lucky = PerkLevel("lucky");
-            double epic = Content.RarityOdds[2] + 0.01 * lucky, rare = Content.RarityOdds[1] + 0.03 * lucky;
+            var odds = CardOdds; double epic = odds[2], rare = odds[1];
             for (int i = 0; i < 3 + PerkLevel("hand") && left.Count > 0; i++)
             {
                 int k = (int)(Roll() * left.Count);
@@ -626,6 +625,18 @@ namespace Ironclad.Core
         }
 
         public const int RerollGems = 5;
+
+        /// <summary>The chance of a Common, Rare and Epic card in a deal (the Lucky Table perk tilts it): printed at the
+        /// station, since a deal can be bought with gems.</summary>
+        public double[] CardOdds
+        {
+            get
+            {
+                int lucky = PerkLevel("lucky");
+                double epic = Content.RarityOdds[2] + 0.01 * lucky, rare = Content.RarityOdds[1] + 0.03 * lucky;
+                return new[] { 1 - rare - epic, rare, epic };
+            }
+        }
 
         /// <summary>Other cards: the first deal at each station is free, then each costs gems.</summary>
         public bool RerollCards()
