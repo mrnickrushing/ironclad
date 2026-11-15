@@ -132,6 +132,19 @@ namespace Ironclad.Tests
         }
 
         [Test]
+        public void TheCardOddsAddUpAndTheLuckyTableTiltsThem()
+        {
+            var s = TestGame.New();
+            var o = s.CardOdds;
+            Assert.AreEqual(1.0, o[0] + o[1] + o[2], 1e-9);
+            Assert.AreEqual(Content.RarityOdds[2], o[2], 1e-9);
+            s.State.perks.Add(new Level { id = "lucky", level = 5 });
+            var l = s.CardOdds;
+            Assert.AreEqual(1.0, l[0] + l[1] + l[2], 1e-9);
+            Assert.Greater(l[2], o[2]); Assert.Greater(l[1], o[1]); Assert.Less(l[0], o[0]);
+        }
+
+        [Test]
         public void EachStationDealsOtherCardsOnceForNothing()
         {
             var s = Strong();

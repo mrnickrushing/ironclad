@@ -342,6 +342,8 @@ namespace Ironclad.Game
             ((RectTransform)tb.transform).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 12), new Vector2(cw - 80, 64));
         }
 
+        static string Pct(double x) { return Mathf.RoundToInt((float)(x * 100)) + "%"; }
+
         /// <summary>The wagons in the train a card works on (at most four, the engine for the hull).</summary>
         List<string> CardHelps(CardDef def)
         {
@@ -384,13 +386,16 @@ namespace Ironclad.Game
                 {
                     int k = i; var pick = r.offer[i];
                     int nc = r.offer.Count; float cw = nc <= 3 ? 410 : nc == 4 ? 340 : 276, gap = cw + 22;
-                    CardFace(p, pick, new Vector2((i - (nc - 1) * 0.5f) * gap, -48), cw, () => { if (S.TakeCard(k)) { Sfx.Play("claim", 0.8f); Haptics.Success(); if (Content.Card(pick.card).Behaviour) Telemetry.Log("Card.tactic", ("Card.id", pick.card)); } });
+                    CardFace(p, pick, new Vector2((i - (nc - 1) * 0.5f) * gap, -54), cw, () => { if (S.TakeCard(k)) { Sfx.Play("claim", 0.8f); Haptics.Success(); if (Content.Card(pick.card).Behaviour) Telemetry.Log("Card.tactic", ("Card.id", pick.card)); } });
                 }
                 // The first deal of other cards at each station is free; after that it costs gems.
                 bool free = s.FreeReroll, canRoll = free || s.State.gems >= Sim.RerollGems;
                 var roll = Ui.Button("Roll", p, s.State.run.offer.Count + " OTHER CARDS  ·  " + (free ? "FREE" : Sim.RerollGems + " gems"), free ? Ui.Green : canRoll ? Ui.Grape : Ui.Off,
                     canRoll ? (Action)(() => { if (S.RerollCards()) { Sfx.Play("open", 0.7f); _stationShownFor = -1; } }) : null, 26);
                 ((RectTransform)roll.transform).Place(new Vector2(1, 1), new Vector2(1, 1), new Vector2(-30, -20), new Vector2(330, 62));
+                var co = s.CardOdds;
+                var odds = Ui.Label("Odds", p, "Odds for each card:  Common " + Pct(co[0]) + "  ·  Rare " + Pct(co[1]) + "  ·  Epic " + Pct(co[2]), 24, Ui.Ink, TextAnchor.MiddleCenter, false);
+                odds.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -103), new Vector2(1300, 28));
                 _stationIdle = 0;
                 return;
             }
